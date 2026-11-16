@@ -95,42 +95,51 @@ export const VideoCallSettings: React.FC<VideoCallSettingsProps> = ({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#453F3B] pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#181615]/20 pb-5">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-zinc-50">
-            Planos de Vídeo Chamada (Vitrine Pública)
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#524B45]">
+            Chamadas Ao Vivo
+          </p>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold uppercase tracking-tight text-[#181615] mt-1">
+            Planos de Vídeo Chamada
           </h2>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm text-[#524B45] mt-1">
             Edite títulos, durações em minutos, preços em R$, descrições e visibilidade dos 4 planos em destaque na página pública.
           </p>
         </div>
         <button
           type="button"
           onClick={handleResetDefaults}
-          className="inline-flex items-center gap-2 rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 transition-colors shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-2 rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-[#181615] hover:border-[#181615] hover:bg-[#E7E1D9] transition-colors shrink-0 cursor-pointer"
         >
-          <RotateCcw className="h-3.5 w-3.5 text-[#D4AF37]" />
+          <RotateCcw className="h-3.5 w-3.5" />
           Restaurar Valores Padrão
         </button>
       </div>
 
       {/* KPI Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#453F3B] rounded-xl border border-[#453F3B] bg-[#23201E]">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#181615]/15 rounded-sm border border-[#181615]/20 bg-[#F3EFEA]">
         <div className="p-5">
-          <p className="text-xs text-zinc-400 mb-1">Planos Ativos na Vitrine</p>
-          <p className="font-mono text-2xl font-semibold text-zinc-50 tabular-nums">
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+            Planos Ativos na Vitrine
+          </p>
+          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
             {plans.filter((p) => p.active).length} / 4
           </p>
         </div>
         <div className="p-5">
-          <p className="text-xs text-zinc-400 mb-1">Receita em Vídeo Chamadas</p>
-          <p className="font-mono text-2xl font-semibold text-[#E5C158] tabular-nums">
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+            Receita em Vídeo Chamadas
+          </p>
+          <p className="font-mono text-2xl font-bold text-[#8A5A00] tabular-nums">
             {formatBrl(paidCallRevenue)}
           </p>
         </div>
         <div className="p-5">
-          <p className="text-xs text-zinc-400 mb-1">Reservas Registradas</p>
-          <p className="font-mono text-2xl font-semibold text-zinc-50 tabular-nums">
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+            Reservas Registradas
+          </p>
+          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
             {videoCallSales.length}
           </p>
         </div>
@@ -142,28 +151,31 @@ export const VideoCallSettings: React.FC<VideoCallSettingsProps> = ({
           {plans.map((plan, idx) => (
             <div
               key={plan.id}
-              className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-4"
+              className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-6 space-y-4"
             >
-              <div className="flex items-center justify-between gap-3 border-b border-[#453F3B]/80 pb-3">
+              <div className="flex items-center justify-between gap-3 border-b border-[#181615]/15 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <Video className="h-4 w-4 text-[#D4AF37]" />
-                  <span className="font-display text-base font-semibold text-zinc-100">
+                  <span className="font-display text-lg font-bold text-[#181615] tabular-nums">
+                    0{idx + 1}.
+                  </span>
+                  <Video className="h-4 w-4 text-[#181615]" />
+                  <span className="font-display text-lg font-bold uppercase tracking-tight text-[#181615]">
                     Plano {idx + 1}
                   </span>
                 </div>
-                <label className="inline-flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+                <label className="inline-flex items-center gap-2 text-xs font-medium text-[#181615] cursor-pointer">
                   <input
                     type="checkbox"
                     checked={plan.active}
                     onChange={(e) => updatePlanField(idx, 'active', e.target.checked)}
-                    className="h-4 w-4 accent-[#D4AF37]"
+                    className="h-4 w-4 accent-[#181615]"
                   />
                   <span>Exibir na vitrine</span>
                 </label>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                <label className="block text-xs font-semibold text-[#181615] mb-1.5">
                   Nome do Plano
                 </label>
                 <input
@@ -173,17 +185,17 @@ export const VideoCallSettings: React.FC<VideoCallSettingsProps> = ({
                   value={plan.title}
                   onChange={(e) => updatePlanField(idx, 'title', e.target.value)}
                   placeholder="Ex: Chamada Express"
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                  <label className="block text-xs font-semibold text-[#181615] mb-1.5">
                     Duração (minutos)
                   </label>
                   <div className="relative">
-                    <Clock className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
+                    <Clock className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#524B45]" />
                     <input
                       type="number"
                       min="1"
@@ -192,13 +204,13 @@ export const VideoCallSettings: React.FC<VideoCallSettingsProps> = ({
                       required
                       value={plan.duration_minutes}
                       onChange={(e) => updatePlanField(idx, 'duration_minutes', Number(e.target.value))}
-                      className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] pl-8 pr-3 py-2 font-mono text-sm text-zinc-100 tabular-nums focus:border-[#D4AF37] focus:outline-none"
+                      className="w-full rounded-sm border border-[#181615]/25 bg-white pl-8 pr-3 py-2 font-mono text-sm text-[#181615] tabular-nums focus:border-[#181615] focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                  <label className="block text-xs font-semibold text-[#181615] mb-1.5">
                     Valor (R$)
                   </label>
                   <input
@@ -208,13 +220,13 @@ export const VideoCallSettings: React.FC<VideoCallSettingsProps> = ({
                     required
                     value={plan.price_brl}
                     onChange={(e) => updatePlanField(idx, 'price_brl', Number(e.target.value))}
-                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2 font-mono text-sm text-[#E5C158] tabular-nums focus:border-[#D4AF37] focus:outline-none"
+                    className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2 font-mono text-sm font-bold text-[#8A5A00] tabular-nums focus:border-[#181615] focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                <label className="block text-xs font-semibold text-[#181615] mb-1.5">
                   Descrição curta na vitrine
                 </label>
                 <textarea
@@ -222,11 +234,11 @@ export const VideoCallSettings: React.FC<VideoCallSettingsProps> = ({
                   maxLength={220}
                   value={plan.description}
                   onChange={(e) => updatePlanField(idx, 'description', e.target.value)}
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2 text-xs text-[#181615] focus:border-[#181615] focus:outline-none"
                 />
               </div>
 
-              <p className="text-[11px] font-mono text-zinc-400 pt-1">
+              <p className="text-[11px] font-mono text-[#524B45] pt-1">
                 Prévia: {plan.duration_minutes} min · {formatBrl(plan.price_brl)}
               </p>
             </div>
@@ -235,16 +247,16 @@ export const VideoCallSettings: React.FC<VideoCallSettingsProps> = ({
 
         {msg && (
           <div
-            className={`flex items-center gap-2.5 rounded-lg border p-3.5 text-xs ${
+            className={`flex items-center gap-2.5 rounded-sm border p-3.5 text-xs ${
               msg.type === 'ok'
-                ? 'border-emerald-700/60 bg-emerald-950/30 text-emerald-200'
-                : 'border-rose-700/60 bg-rose-950/30 text-rose-200'
+                ? 'border-emerald-700/35 bg-emerald-50 text-emerald-900'
+                : 'border-rose-700/35 bg-rose-50 text-rose-900'
             }`}
           >
             {msg.type === 'ok' ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
             ) : (
-              <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+              <AlertCircle className="h-4 w-4 text-rose-700 shrink-0" />
             )}
             <span>{msg.text}</span>
           </div>
@@ -253,54 +265,54 @@ export const VideoCallSettings: React.FC<VideoCallSettingsProps> = ({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-[#E5C158] px-6 py-2.5 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
+          className="rounded-sm bg-[#181615] px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-50 transition-colors cursor-pointer"
         >
           {saving ? 'Salvando Planos...' : 'Salvar os 4 Planos de Vídeo Chamada'}
         </button>
       </form>
 
       {/* Video Call Bookings Table */}
-      <div className="space-y-4 pt-2 border-t border-[#453F3B]/80">
-        <h3 className="font-display text-lg font-semibold text-zinc-50">
+      <div className="space-y-4 pt-4 border-t border-[#181615]/15">
+        <h3 className="font-display text-xl font-bold uppercase tracking-tight text-[#181615]">
           Reservas de Vídeo Chamada Recentes ({videoCallSales.length})
         </h3>
         {videoCallSales.length === 0 ? (
-          <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-8 text-center text-xs text-zinc-400">
+          <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-8 text-center text-xs text-[#524B45]">
             Nenhuma Vídeo Chamada reservada ainda. As compras feitas na seção de destaque da página pública aparecerão aqui com o contato do cliente.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-[#453F3B] bg-[#23201E]">
+          <div className="overflow-x-auto rounded-sm border border-[#181615]/20 bg-white">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-[#453F3B] text-zinc-400">
+              <thead className="border-b border-[#181615]/15 bg-[#F3EFEA] text-[#524B45] uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Data / Hora</th>
-                  <th className="px-4 py-3 font-medium">Ref</th>
-                  <th className="px-4 py-3 font-medium">Comprador & Contato</th>
-                  <th className="px-4 py-3 font-medium">Plano</th>
-                  <th className="px-4 py-3 font-medium text-right">Valor</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-semibold">Data / Hora</th>
+                  <th className="px-4 py-3 font-semibold">Ref</th>
+                  <th className="px-4 py-3 font-semibold">Comprador & Contato</th>
+                  <th className="px-4 py-3 font-semibold">Plano</th>
+                  <th className="px-4 py-3 font-semibold text-right">Valor</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#453F3B]/70">
+              <tbody className="divide-y divide-[#181615]/10">
                 {videoCallSales.map((sale) => (
-                  <tr key={sale.id} className="hover:bg-[#1C1918]/50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-zinc-400 tabular-nums whitespace-nowrap">
+                  <tr key={sale.id} className="hover:bg-[#FAF8F5] transition-colors">
+                    <td className="px-4 py-3 font-mono text-[#524B45] tabular-nums whitespace-nowrap">
                       {formatDateTime(sale.created_at)}
                     </td>
-                    <td className="px-4 py-3 font-mono text-zinc-300 whitespace-nowrap">
+                    <td className="px-4 py-3 font-mono text-[#181615] whitespace-nowrap">
                       {sale.external_ref || sale.id.slice(0, 8)}
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-zinc-100 font-medium">{sale.buyer_email}</p>
-                      {sale.buyer_name && <p className="text-zinc-400">{sale.buyer_name}</p>}
+                      <p className="text-[#181615] font-semibold">{sale.buyer_email}</p>
+                      {sale.buyer_name && <p className="text-[#524B45]">{sale.buyer_name}</p>}
                     </td>
-                    <td className="px-4 py-3 text-zinc-200">
+                    <td className="px-4 py-3 text-[#181615]">
                       {sale.media_title || 'Vídeo Chamada ao Vivo'}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono font-semibold text-[#E5C158] tabular-nums">
+                    <td className="px-4 py-3 text-right font-mono font-bold text-[#8A5A00] tabular-nums">
                       {formatBrl(sale.amount_brl)}
                     </td>
-                    <td className="px-4 py-3 text-zinc-300">
+                    <td className="px-4 py-3 font-medium text-[#181615]">
                       {sale.status === 'paid' ? 'Pago' : sale.status === 'pending' ? 'Pendente' : 'Estornado'}
                     </td>
                   </tr>

@@ -198,12 +198,15 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#453F3B] pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#181615]/20 pb-5">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-zinc-50">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#524B45]">
+            Acervo Digital
+          </p>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold uppercase tracking-tight text-[#181615] mt-1">
             Editar Fotos & Vídeos ({mediaItems.length})
           </h2>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm text-[#524B45] mt-1">
             Visualize, edite títulos, coleções, preços, troque arquivos/capas ou oculte mídias da vitrine.
           </p>
         </div>
@@ -211,7 +214,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
         <button
           type="button"
           onClick={onGoToUpload}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#D4AF37] px-4 py-2 text-xs font-semibold text-zinc-950 hover:bg-[#E5C158] transition-colors shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-sm bg-[#181615] px-4 py-2.5 text-xs font-semibold text-[#FAF8F5] hover:bg-[#332E2C] transition-colors shrink-0 cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           Enviar Nova Foto/Vídeo
@@ -221,14 +224,16 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
       {/* Filters & Search */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-[#23201E] border border-[#453F3B]">
+          <div className="flex items-center gap-1 p-1 rounded-sm bg-[#EFEBE5] border border-[#181615]/20">
             {(['all', 'photo', 'video'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setFilterType(t)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
-                  filterType === t ? 'bg-[#E5C158] text-[#1C1918] font-semibold' : 'text-zinc-400 hover:text-zinc-100'
+                className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-colors cursor-pointer ${
+                  filterType === t
+                    ? 'bg-[#181615] text-[#FAF8F5] font-semibold'
+                    : 'text-[#524B45] hover:text-[#181615]'
                 }`}
               >
                 {t === 'all' ? 'Todos' : t === 'photo' ? 'Fotos' : 'Vídeos'}
@@ -240,7 +245,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
             value={filterTier}
             onChange={(e) => setFilterTier(e.target.value as 'all' | 'vip' | 'ppv' | 'free')}
             aria-label="Filtrar por nível de acesso"
-            className="rounded-lg border border-[#453F3B] bg-[#23201E] px-3 py-2 text-xs text-zinc-200 focus:border-[#D4AF37] focus:outline-none"
+            className="rounded-sm border border-[#181615]/25 bg-white px-3 py-2 text-xs text-[#181615] focus:border-[#181615] focus:outline-none"
           >
             <option value="all">Todos os acessos</option>
             <option value="vip">Clube VIP</option>
@@ -251,23 +256,23 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
 
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:flex-initial">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#7A726B]" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar título ou coleção..."
-              className="w-full sm:w-56 rounded-lg border border-[#453F3B] bg-[#23201E] pl-9 pr-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+              className="w-full sm:w-56 rounded-sm border border-[#181615]/25 bg-white pl-9 pr-3 py-2 text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
             />
           </div>
 
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-[#23201E] border border-[#453F3B]">
+          <div className="flex items-center gap-1 p-1 rounded-sm bg-[#EFEBE5] border border-[#181615]/20">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
               aria-label="Visualizar em grade"
-              className={`p-1.5 rounded-md cursor-pointer ${
-                viewMode === 'grid' ? 'bg-[#D4AF37] text-zinc-950' : 'text-zinc-400 hover:text-zinc-100'
+              className={`p-1.5 rounded-sm cursor-pointer ${
+                viewMode === 'grid' ? 'bg-[#181615] text-[#FAF8F5]' : 'text-[#524B45] hover:text-[#181615]'
               }`}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
@@ -276,8 +281,8 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
               type="button"
               onClick={() => setViewMode('table')}
               aria-label="Visualizar em lista"
-              className={`p-1.5 rounded-md cursor-pointer ${
-                viewMode === 'table' ? 'bg-[#D4AF37] text-zinc-950' : 'text-zinc-400 hover:text-zinc-100'
+              className={`p-1.5 rounded-sm cursor-pointer ${
+                viewMode === 'table' ? 'bg-[#181615] text-[#FAF8F5]' : 'text-[#524B45] hover:text-[#181615]'
               }`}
             >
               <List className="h-3.5 w-3.5" />
@@ -287,9 +292,9 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-12 text-center space-y-3">
-          <p className="font-display text-lg text-zinc-200">Nenhuma mídia encontrada</p>
-          <p className="text-xs text-zinc-400">
+        <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-12 text-center space-y-2">
+          <p className="font-display text-xl font-bold uppercase text-[#181615]">Nenhuma mídia encontrada</p>
+          <p className="text-xs text-[#524B45]">
             {mediaItems.length === 0
               ? 'Clique em "Enviar Nova Foto/Vídeo" para adicionar seu primeiro conteúdo.'
               : 'Ajuste os filtros ou a busca para visualizar outras mídias.'}
@@ -302,13 +307,13 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
             return (
               <div
                 key={item.id}
-                className="rounded-xl border border-[#453F3B] bg-[#23201E] overflow-hidden flex flex-col justify-between"
+                className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] overflow-hidden flex flex-col justify-between"
               >
                 <div>
                   <div
                     onClick={() => setPreviewItem(item)}
                     onContextMenu={(e) => e.preventDefault()}
-                    className="relative aspect-[4/3] bg-zinc-950 overflow-hidden cursor-pointer group media-shield"
+                    className="relative aspect-[4/3] bg-black overflow-hidden cursor-pointer group media-shield border-b border-[#181615]/15"
                   >
                     {item.media_type === 'video' && item.media_url && (!item.preview_url || item.preview_url.includes('/api/media/fallback/')) ? (
                       <ProtectedVideo
@@ -325,37 +330,37 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-zinc-600">
+                      <div className="flex h-full w-full items-center justify-center text-zinc-400">
                         {item.media_type === 'video' ? (
-                          <Film className="h-8 w-8 text-[#D4AF37]" />
+                          <Film className="h-8 w-8 text-[#E5C158]" />
                         ) : (
                           <ImageIcon className="h-8 w-8" />
                         )}
                       </div>
                     )}
-                    <div className="pointer-events-none absolute inset-0 z-20 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="inline-flex items-center gap-1.5 rounded-md bg-black/80 border border-zinc-600 px-3 py-1.5 text-xs font-medium text-zinc-100">
+                    <div className="pointer-events-none absolute inset-0 z-20 bg-black/35 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="inline-flex items-center gap-1.5 rounded-sm bg-[#181615]/95 border border-[#FAF8F5]/20 px-3 py-1.5 text-xs font-medium text-[#FAF8F5]">
                         {item.media_type === 'video' ? (
                           <>
-                            <Play className="h-3.5 w-3.5 text-[#D4AF37]" /> Assistir
+                            <Play className="h-3.5 w-3.5 text-[#E5C158]" /> Assistir
                           </>
                         ) : (
                           <>
-                            <Eye className="h-3.5 w-3.5 text-[#D4AF37]" /> Visualizar
+                            <Eye className="h-3.5 w-3.5 text-[#E5C158]" /> Visualizar
                           </>
                         )}
                       </span>
                     </div>
                   </div>
 
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-center justify-between gap-2 text-[11px] text-zinc-400">
-                      <span className="truncate">
+                  <div className="p-4 space-y-2 bg-white">
+                    <div className="flex items-center justify-between gap-2 text-[11px] text-[#524B45]">
+                      <span className="truncate font-medium">
                         {item.media_type === 'video' ? 'Vídeo' : 'Foto'}
                         {item.duration_seconds ? ` · ${formatDuration(item.duration_seconds)}` : ''} ·{' '}
                         {item.collection_name}
                       </span>
-                      <span className="font-mono text-[#E5C158] shrink-0">
+                      <span className="font-mono font-semibold text-[#8A5A00] shrink-0">
                         {item.access_tier === 'free'
                           ? 'Prévia'
                           : item.access_tier === 'vip'
@@ -364,30 +369,30 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                       </span>
                     </div>
 
-                    <h3 className="font-display text-base font-medium text-zinc-100 truncate">
+                    <h3 className="font-display text-lg font-bold uppercase tracking-tight text-[#181615] truncate">
                       {item.title}
                     </h3>
                     {item.description && (
-                      <p className="text-xs text-zinc-400 line-clamp-2">{item.description}</p>
+                      <p className="text-xs text-[#524B45] line-clamp-2">{item.description}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="px-4 py-3 border-t border-[#453F3B]/80 flex items-center justify-between gap-2">
+                <div className="px-4 py-3 border-t border-[#181615]/15 bg-[#F3EFEA] flex items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => handleTogglePublished(item)}
-                    className="inline-flex items-center gap-1.5 text-xs hover:text-white cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium hover:text-[#181615] cursor-pointer"
                   >
                     {item.is_published ? (
                       <>
-                        <Eye className="h-3.5 w-3.5 text-emerald-400" />
-                        <span className="text-emerald-300">Publicado</span>
+                        <Eye className="h-3.5 w-3.5 text-emerald-700" />
+                        <span className="text-emerald-800 font-semibold">Publicado</span>
                       </>
                     ) : (
                       <>
-                        <EyeOff className="h-3.5 w-3.5 text-zinc-500" />
-                        <span className="text-zinc-500">Rascunho</span>
+                        <EyeOff className="h-3.5 w-3.5 text-[#7A726B]" />
+                        <span className="text-[#524B45]">Rascunho</span>
                       </>
                     )}
                   </button>
@@ -396,7 +401,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                     <button
                       type="button"
                       onClick={() => openEdit(item)}
-                      className="inline-flex items-center gap-1 rounded-md border border-[#453F3B] bg-[#1C1918] px-2.5 py-1.5 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer"
+                      className="inline-flex items-center gap-1 rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-2.5 py-1.5 text-xs font-semibold text-[#181615] hover:border-[#181615] hover:bg-[#E7E1D9] cursor-pointer"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                       Editar
@@ -407,14 +412,14 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                         <button
                           type="button"
                           onClick={() => handleDelete(item.id)}
-                          className="rounded-md bg-rose-600 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-500 cursor-pointer"
+                          className="rounded-sm bg-rose-700 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-800 cursor-pointer"
                         >
                           Excluir
                         </button>
                         <button
                           type="button"
                           onClick={() => setConfirmDeleteId(null)}
-                          className="rounded-md border border-[#453F3B] px-2 py-1 text-xs text-zinc-300 cursor-pointer"
+                          className="rounded-sm border border-[#181615]/30 bg-white px-2 py-1 text-xs text-[#181615] cursor-pointer"
                         >
                           Não
                         </button>
@@ -424,7 +429,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                         type="button"
                         onClick={() => setConfirmDeleteId(item.id)}
                         aria-label="Excluir mídia"
-                        className="rounded-md border border-[#453F3B] bg-[#1C1918] p-1.5 text-zinc-400 hover:border-rose-500 hover:text-rose-300 cursor-pointer"
+                        className="rounded-sm border border-[#181615]/25 bg-white p-1.5 text-[#524B45] hover:border-rose-700 hover:text-rose-700 cursor-pointer"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -436,28 +441,28 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
           })}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-[#453F3B] bg-[#23201E]">
+        <div className="overflow-x-auto rounded-sm border border-[#181615]/20 bg-white">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-[#453F3B] text-zinc-400">
+            <thead className="border-b border-[#181615]/20 bg-[#F3EFEA] text-[11px] uppercase tracking-wider text-[#524B45]">
               <tr>
-                <th className="px-4 py-3 font-medium">Mídia</th>
-                <th className="px-4 py-3 font-medium">Coleção</th>
-                <th className="px-4 py-3 font-medium">Acesso / Preço</th>
-                <th className="px-4 py-3 font-medium text-right">Tamanho</th>
-                <th className="px-4 py-3 font-medium text-right">Desbloqueios</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium text-right">Ações</th>
+                <th className="px-4 py-3 font-semibold">Mídia</th>
+                <th className="px-4 py-3 font-semibold">Coleção</th>
+                <th className="px-4 py-3 font-semibold">Acesso / Preço</th>
+                <th className="px-4 py-3 font-semibold text-right">Tamanho</th>
+                <th className="px-4 py-3 font-semibold text-right">Desbloqueios</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#453F3B]/70">
+            <tbody className="divide-y divide-[#181615]/10">
               {filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-[#1C1918]/50 transition-colors">
+                <tr key={item.id} className="hover:bg-[#FAF8F5] transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={() => setPreviewItem(item)}
-                        className="h-11 w-14 overflow-hidden rounded-md border border-[#453F3B] bg-zinc-950 shrink-0 flex items-center justify-center cursor-pointer"
+                        className="h-11 w-14 overflow-hidden rounded-sm border border-[#181615]/20 bg-black shrink-0 flex items-center justify-center cursor-pointer"
                       >
                         {item.media_type === 'photo' && (item.media_url || item.preview_url) ? (
                           <ProtectedImage
@@ -472,37 +477,37 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                             className="h-full w-full object-cover"
                           />
                         ) : item.media_type === 'video' ? (
-                          <Film className="h-4 w-4 text-[#D4AF37]" />
+                          <Film className="h-4 w-4 text-[#E5C158]" />
                         ) : (
-                          <ImageIcon className="h-4 w-4 text-zinc-500" />
+                          <ImageIcon className="h-4 w-4 text-zinc-400" />
                         )}
                       </button>
                       <div className="min-w-0">
-                        <p className="font-medium text-zinc-100 truncate max-w-[220px]">{item.title}</p>
-                        <p className="text-zinc-500">
+                        <p className="font-semibold text-[#181615] truncate max-w-[220px]">{item.title}</p>
+                        <p className="text-[#524B45]">
                           {item.media_type === 'video' ? 'Vídeo' : 'Foto'} · {formatDateShort(item.created_at)}
                         </p>
                       </div>
                     </div>
                   </td>
 
-                  <td className="px-4 py-3 text-zinc-300">{item.collection_name}</td>
+                  <td className="px-4 py-3 text-[#524B45]">{item.collection_name}</td>
 
-                  <td className="px-4 py-3 font-mono tabular-nums">
+                  <td className="px-4 py-3 font-mono tabular-nums font-semibold">
                     {item.access_tier === 'free' ? (
-                      <span className="text-zinc-300">Prévia Gratuita</span>
+                      <span className="text-[#524B45]">Prévia Gratuita</span>
                     ) : item.access_tier === 'vip' ? (
-                      <span className="text-[#E5C158]">Clube VIP</span>
+                      <span className="text-[#8A5A00]">Clube VIP</span>
                     ) : (
-                      <span className="text-emerald-300">{formatBrl(item.price_brl)} (Avulso)</span>
+                      <span className="text-emerald-800">{formatBrl(item.price_brl)} (Avulso)</span>
                     )}
                   </td>
 
-                  <td className="px-4 py-3 text-right font-mono text-zinc-400 tabular-nums">
+                  <td className="px-4 py-3 text-right font-mono text-[#524B45] tabular-nums">
                     {formatBytes(item.file_size_bytes)}
                   </td>
 
-                  <td className="px-4 py-3 text-right font-mono text-zinc-200 tabular-nums">
+                  <td className="px-4 py-3 text-right font-mono font-semibold text-[#181615] tabular-nums">
                     {item.unlocks_count}
                   </td>
 
@@ -510,17 +515,17 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                     <button
                       type="button"
                       onClick={() => handleTogglePublished(item)}
-                      className="inline-flex items-center gap-1.5 text-zinc-300 hover:text-white cursor-pointer"
+                      className="inline-flex items-center gap-1.5 text-[#524B45] hover:text-[#181615] cursor-pointer"
                     >
                       {item.is_published ? (
                         <>
-                          <Eye className="h-3.5 w-3.5 text-emerald-400" />
-                          <span className="text-emerald-300">Publicado</span>
+                          <Eye className="h-3.5 w-3.5 text-emerald-700" />
+                          <span className="text-emerald-800 font-semibold">Publicado</span>
                         </>
                       ) : (
                         <>
-                          <EyeOff className="h-3.5 w-3.5 text-zinc-500" />
-                          <span className="text-zinc-500">Rascunho</span>
+                          <EyeOff className="h-3.5 w-3.5 text-[#7A726B]" />
+                          <span className="text-[#524B45]">Rascunho</span>
                         </>
                       )}
                     </button>
@@ -532,7 +537,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                         type="button"
                         onClick={() => openEdit(item)}
                         aria-label="Editar mídia"
-                        className="rounded-md border border-[#453F3B] bg-[#1C1918] p-1.5 text-zinc-300 hover:border-zinc-500 hover:text-white cursor-pointer"
+                        className="rounded-sm border border-[#181615]/25 bg-[#EFEBE5] p-1.5 text-[#181615] hover:border-[#181615] cursor-pointer"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -542,14 +547,14 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                           <button
                             type="button"
                             onClick={() => handleDelete(item.id)}
-                            className="rounded-md bg-rose-600 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-500 cursor-pointer"
+                            className="rounded-sm bg-rose-700 px-2 py-1 text-xs font-semibold text-white hover:bg-rose-800 cursor-pointer"
                           >
                             Confirmar
                           </button>
                           <button
                             type="button"
                             onClick={() => setConfirmDeleteId(null)}
-                            className="rounded-md border border-[#453F3B] px-2 py-1 text-xs text-zinc-300 cursor-pointer"
+                            className="rounded-sm border border-[#181615]/25 bg-white px-2 py-1 text-xs text-[#181615] cursor-pointer"
                           >
                             Cancelar
                           </button>
@@ -559,7 +564,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                           type="button"
                           onClick={() => setConfirmDeleteId(item.id)}
                           aria-label="Excluir mídia"
-                          className="rounded-md border border-[#453F3B] bg-[#1C1918] p-1.5 text-zinc-400 hover:border-rose-500 hover:text-rose-300 cursor-pointer"
+                          className="rounded-sm border border-[#181615]/25 bg-white p-1.5 text-[#524B45] hover:border-rose-700 hover:text-rose-700 cursor-pointer"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -577,18 +582,18 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
       {previewItem && (
         <div
           onClick={() => setPreviewItem(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-3xl rounded-xl border border-[#453F3B] bg-[#23201E] overflow-hidden shadow-2xl"
+            className="w-full max-w-3xl rounded-sm border-2 border-[#181615] bg-[#FAF8F5] overflow-hidden shadow-2xl"
           >
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#453F3B]">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#181615]/20 bg-[#F3EFEA]">
               <div className="min-w-0">
-                <p className="font-display text-base font-semibold text-zinc-50 truncate">
+                <p className="font-display text-lg font-bold uppercase tracking-tight text-[#181615] truncate">
                   {previewItem.title}
                 </p>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-[#524B45]">
                   {previewItem.collection_name} · {previewItem.media_type === 'video' ? 'Vídeo' : 'Foto'}
                 </p>
               </div>
@@ -600,7 +605,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                     setPreviewItem(null);
                     openEdit(target);
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-md bg-[#D4AF37] px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-[#E5C158] cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-sm bg-[#181615] px-3 py-1.5 text-xs font-semibold text-[#FAF8F5] hover:bg-[#332E2C] cursor-pointer"
                 >
                   <Pencil className="h-3.5 w-3.5" />
                   Editar Item
@@ -608,7 +613,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                 <button
                   type="button"
                   onClick={() => setPreviewItem(null)}
-                  className="rounded-md border border-[#453F3B] p-1.5 text-zinc-300 hover:text-white cursor-pointer"
+                  className="rounded-sm border border-[#181615]/30 bg-white p-1.5 text-[#181615] hover:bg-[#EFEBE5] cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -644,61 +649,61 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
 
       {/* Full Edit Modal */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 overflow-y-auto">
           <form
             onSubmit={handleSaveEdit}
-            className="w-full max-w-lg rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-4 shadow-2xl my-auto"
+            className="w-full max-w-lg rounded-sm border-2 border-[#181615] bg-[#FAF8F5] p-6 space-y-4 shadow-2xl my-auto text-[#181615]"
           >
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-xl font-semibold text-zinc-50">
+            <div className="flex items-center justify-between border-b border-[#181615]/20 pb-3">
+              <h3 className="font-display text-2xl font-bold uppercase tracking-tight text-[#181615]">
                 Editar {editing.media_type === 'video' ? 'Vídeo' : 'Foto'}
               </h3>
               <button
                 type="button"
                 onClick={() => setEditing(null)}
-                className="rounded-md p-1 text-zinc-400 hover:text-white cursor-pointer"
+                className="rounded-sm border border-[#181615]/25 bg-white p-1.5 text-[#524B45] hover:text-[#181615] cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1">Título</label>
+              <label className="block text-xs font-semibold text-[#181615] mb-1">Título</label>
               <input
                 type="text"
                 required
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-zinc-300 mb-1">Descrição / Legenda</label>
+              <label className="block text-xs font-semibold text-[#181615] mb-1">Descrição / Legenda</label>
               <textarea
                 rows={3}
                 value={editDesc}
                 onChange={(e) => setEditDesc(e.target.value)}
-                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Coleção</label>
+                <label className="block text-xs font-semibold text-[#181615] mb-1">Coleção</label>
                 <input
                   type="text"
                   value={editCollection}
                   onChange={(e) => setEditCollection(e.target.value)}
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Acesso</label>
+                <label className="block text-xs font-semibold text-[#181615] mb-1">Acesso</label>
                 <select
                   value={editTier}
                   onChange={(e) => setEditTier(e.target.value as AccessTier)}
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
                 >
                   <option value="vip">Clube VIP</option>
                   <option value="ppv">Avulso (PPV)</option>
@@ -709,28 +714,28 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
 
             {editTier === 'ppv' && (
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">Preço Avulso (R$)</label>
+                <label className="block text-xs font-semibold text-[#181615] mb-1">Preço Avulso (R$)</label>
                 <input
                   type="number"
                   step="0.50"
                   min="5"
                   value={editPrice}
                   onChange={(e) => setEditPrice(e.target.value)}
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 font-mono text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 font-mono text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
                 />
               </div>
             )}
 
             {/* Replace primary photo/video */}
-            <div className="rounded-lg border border-[#453F3B] bg-[#1C1918]/60 p-3.5 space-y-2">
+            <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-3.5 space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-medium text-zinc-200">Substituir Arquivo (Foto ou Vídeo)</p>
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-xs font-semibold text-[#181615]">Substituir Arquivo (Foto ou Vídeo)</p>
+                  <p className="text-[11px] text-[#524B45]">
                     {newMediaFile ? newMediaFile.name : 'Mantendo o arquivo atual no Supabase'}
                   </p>
                 </div>
-                <label className="inline-flex items-center gap-1.5 rounded-md border border-[#453F3B] bg-[#1C1918] px-3 py-1.5 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer shrink-0">
+                <label className="inline-flex items-center gap-1.5 rounded-sm border border-[#181615]/30 bg-white px-3 py-1.5 text-xs font-semibold text-[#181615] hover:border-[#181615] cursor-pointer shrink-0">
                   <Upload className="h-3.5 w-3.5" />
                   Trocar Mídia
                   <input
@@ -742,18 +747,18 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                 </label>
               </div>
               {newMediaPreviewUrl && (
-                <p className="text-[11px] text-emerald-300">
+                <p className="text-[11px] font-semibold text-emerald-800">
                   Novo arquivo pronto para envio ({(newMediaFile!.size / (1024 * 1024)).toFixed(1)} MB)
                 </p>
               )}
             </div>
 
             {/* Replace or remove cover preview */}
-            <div className="rounded-lg border border-[#453F3B] bg-[#1C1918]/60 p-3.5 space-y-2">
+            <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-3.5 space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   {(newCoverPreviewUrl || (!removeCover && editing.preview_url)) && (
-                    <div className="h-10 w-14 rounded overflow-hidden border border-[#453F3B] shrink-0">
+                    <div className="h-10 w-14 rounded-sm overflow-hidden border border-[#181615]/25 shrink-0">
                       <ProtectedImage
                         src={newCoverPreviewUrl || editing.preview_url || ''}
                         alt="Capa"
@@ -762,8 +767,8 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-zinc-200">Capa de Prévia / Teaser</p>
-                    <p className="text-[11px] text-zinc-400 truncate">
+                    <p className="text-xs font-semibold text-[#181615]">Capa de Prévia / Teaser</p>
+                    <p className="text-[11px] text-[#524B45] truncate">
                       {newCoverFile
                         ? newCoverFile.name
                         : removeCover
@@ -775,7 +780,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <label className="inline-flex items-center gap-1.5 rounded-md border border-[#453F3B] bg-[#1C1918] px-2.5 py-1.5 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 rounded-sm border border-[#181615]/30 bg-white px-2.5 py-1.5 text-xs font-semibold text-[#181615] hover:border-[#181615] cursor-pointer">
                     <Upload className="h-3.5 w-3.5" />
                     Capa
                     <input
@@ -793,7 +798,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                         setNewCoverPreviewUrl(null);
                         setRemoveCover(true);
                       }}
-                      className="text-[11px] text-zinc-400 hover:text-rose-300 underline cursor-pointer"
+                      className="text-[11px] font-medium text-[#524B45] hover:text-rose-700 underline cursor-pointer"
                     >
                       Remover
                     </button>
@@ -802,34 +807,34 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
               </div>
             </div>
 
-            <label className="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">
+            <label className="flex items-center gap-2.5 text-xs font-medium text-[#181615] cursor-pointer">
               <input
                 type="checkbox"
                 checked={editPublished}
                 onChange={(e) => setEditPublished(e.target.checked)}
-                className="h-4 w-4 accent-[#D4AF37]"
+                className="h-4 w-4 accent-[#181615]"
               />
               <span>Publicado na vitrine pública</span>
             </label>
 
             {saveError && (
-              <p className="rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200">
+              <p className="rounded-sm border border-rose-700/35 bg-rose-50 p-3 text-xs text-rose-900">
                 {saveError}
               </p>
             )}
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-[#181615]/15">
               <button
                 type="button"
                 onClick={() => setEditing(null)}
-                className="rounded-lg border border-[#453F3B] px-4 py-2 text-xs text-zinc-300 hover:text-white cursor-pointer"
+                className="rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-4 py-2 text-xs font-semibold text-[#181615] hover:bg-[#E7E1D9] cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-lg bg-[#D4AF37] px-4 py-2 text-xs font-semibold text-zinc-950 hover:bg-[#E5C158] disabled:opacity-50 cursor-pointer"
+                className="rounded-sm bg-[#181615] px-4 py-2 text-xs font-semibold text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-50 cursor-pointer"
               >
                 {saving ? 'Salvando...' : 'Salvar Alterações'}
               </button>

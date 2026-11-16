@@ -11,6 +11,9 @@ import { CreatorStudio, type StudioTab } from './components/CreatorStudio';
 import { MediaModal } from './components/MediaModal';
 import type { CreatorProfile, FanAccount, MediaItem, StorefrontStats, SupabaseStatus, VideoCallPlan } from './types';
 import { DEFAULT_VIDEO_CALL_PLANS } from './lib/videoCalls';
+import { DEFAULT_CREATOR_ABOUT } from './lib/creatorAbout';
+import { buildWhatsappReceiptUrl } from './lib/whatsapp';
+import { useLocalFavorites } from './lib/favorites';
 
 const INITIAL_PROFILE: CreatorProfile = {
   id: 'default-solo-creator',
@@ -18,14 +21,16 @@ const INITIAL_PROFILE: CreatorProfile = {
   display_name: 'Valentina Noir',
   handle: '@valentinanoir',
   bio: 'Ensaios autorais, bastidores íntimos e vídeos exclusivos em 4K. Conteúdo estritamente para maiores de 18 anos.',
-  location: 'São Paulo, Brasil',
+  location: 'Rio de Janeiro, Brasil',
   avatar_url: '/api/profile/asset/avatar',
   hero_url: '/api/profile/asset/hero',
   vip_monthly_price_brl: 49.9,
   vip_description:
     'Acesso ilimitado a todos os ensaios e vídeos marcados como VIP, atualizações semanais e prioridade em pedidos.',
   pix_key: '',
+  whatsapp_number: '',
   video_call_plans: DEFAULT_VIDEO_CALL_PLANS,
+  about_section: DEFAULT_CREATOR_ABOUT,
   age_verified_18: true,
   updated_at: new Date().toISOString(),
 };
@@ -67,6 +72,7 @@ export default function App() {
   const [fanEmail, setFanEmail] = useState<string>(() => localStorage.getItem('mp_fan_email') || '');
   const [fan, setFan] = useState<FanAccount | null>(null);
   const [loadingStorefront, setLoadingStorefront] = useState(true);
+  const { favoriteIds, isFavorite, toggleFavorite } = useLocalFavorites();
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
@@ -151,7 +157,7 @@ export default function App() {
       <div
         className={`min-h-screen flex flex-col ${
           activeView === 'studio'
-            ? 'bg-[#1C1918] text-[#F4F1ED]'
+            ? 'bg-[#D2CCC4] text-[#181615]'
             : 'bg-[#D8D4CF] text-[#1C1918]'
         }`}
       >
@@ -204,6 +210,8 @@ export default function App() {
                   }
                   onLogoutFan={handleLogoutFan}
                   onNavigateToStudio={(tab) => handleNavigateToStudio(tab || 'overview')}
+                  favoriteIds={favoriteIds}
+                  onToggleFavorite={toggleFavorite}
                 />
               </motion.div>
             ) : (
@@ -235,7 +243,23 @@ export default function App() {
           <p>
             © {new Date().getFullYear()} {profile.display_name} · Conteúdo exclusivo para maiores de 18 anos (+18).
           </p>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6">
+            {(() => {
+              const footerWaUrl = buildWhatsappReceiptUrl(profile.whatsapp_number, {
+                creatorName: profile.display_name,
+                isReceipt: true,
+              });
+              return footerWaUrl ? (
+                <a
+                  href={footerWaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#E5C158] hover:text-[#f0cf6b] transition-colors font-medium"
+                >
+                  Enviar Comprovante (WhatsApp)
+                </a>
+              ) : null;
+            })()}
             <button
               type="button"
               onClick={() => handleNavigateToStudio('supabase')}
@@ -266,6 +290,9 @@ export default function App() {
         onFanAuthenticated={handleFanAuthenticated}
         onPurchaseSuccess={handleFanAuthenticated}
         onGoToSupabaseSetup={() => handleNavigateToStudio('supabase')}
+        onGoToProfileSetup={() => handleNavigateToStudio('profile')}
+        isFavorite={modalState.mediaItem ? isFavorite(modalState.mediaItem.id) : false}
+        onToggleFavorite={toggleFavorite}
       />
       </div>
     </MotionConfig>

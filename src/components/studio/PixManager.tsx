@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { QrCode, CheckCircle2, AlertCircle, KeyRound, Receipt, ArrowRight } from 'lucide-react';
+import { QrCode, CheckCircle2, AlertCircle, KeyRound, Receipt, ArrowRight, MessageCircle } from 'lucide-react';
 import type { CreatorDashboardData, CreatorProfile, SaleRecord, SaleStatus, SaleType } from '../../types';
 import { detectPixKeyType } from '../../lib/pixBrCode';
 import { formatBrl, formatDateTime } from '../../lib/format';
 import { resolveVideoCallPlans } from '../../lib/videoCalls';
+import { formatWhatsappDisplay } from '../../lib/whatsapp';
 import { PixQrCard } from '../PixQrCard';
 
 interface PixManagerProps {
@@ -28,6 +29,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
   onGoToSales,
 }) => {
   const [pixKeyInput, setPixKeyInput] = useState(profile.pix_key || '');
+  const [whatsappInput, setWhatsappInput] = useState(profile.whatsapp_number || '');
   const [savingKey, setSavingKey] = useState(false);
   const [keyMsg, setKeyMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
@@ -45,7 +47,8 @@ export const PixManager: React.FC<PixManagerProps> = ({
 
   useEffect(() => {
     setPixKeyInput(profile.pix_key || '');
-  }, [profile.pix_key]);
+    setWhatsappInput(profile.whatsapp_number || '');
+  }, [profile.pix_key, profile.whatsapp_number]);
 
   const videoCallPlans = useMemo(
     () => resolveVideoCallPlans(profile.video_call_plans),
@@ -109,7 +112,10 @@ export const PixManager: React.FC<PixManagerProps> = ({
           'Content-Type': 'application/json',
           'x-creator-token': creatorToken,
         },
-        body: JSON.stringify({ pix_key: clean }),
+        body: JSON.stringify({
+          pix_key: clean,
+          whatsapp_number: whatsappInput.trim(),
+        }),
       });
       const data = await resp.json();
       if (!resp.ok) {
@@ -118,7 +124,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
       await onRefreshAll();
       setKeyMsg({
         type: 'ok',
-        text: 'Chave PIX salva e integrada ao checkout público e ao gerador de QR Code!',
+        text: 'Chave PIX e WhatsApp de comprovantes salvos e integrados ao checkout público!',
       });
     } catch (err) {
       setKeyMsg({
@@ -230,12 +236,15 @@ export const PixManager: React.FC<PixManagerProps> = ({
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#453F3B] pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#181615]/20 pb-5">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-zinc-50">
-            Chave PIX & QR Code de Pagamentos
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#524B45]">
+            Recebimentos Diretos
+          </p>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold uppercase tracking-tight text-[#181615] mt-1">
+            Chave PIX & QR Code
           </h2>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm text-[#524B45] mt-1">
             Cadastre sua chave PIX, visualize o QR Code oficial EMV para cobranças e integre cada transação ao Banco de Vendas.
           </p>
         </div>
@@ -243,97 +252,128 @@ export const PixManager: React.FC<PixManagerProps> = ({
         <button
           type="button"
           onClick={onGoToSales}
-          className="inline-flex items-center gap-2 rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-2 rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#181615] hover:border-[#181615] hover:bg-[#E7E1D9] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
         >
-          <Receipt className="h-3.5 w-3.5 text-[#D4AF37]" />
+          <Receipt className="h-3.5 w-3.5" />
           Abrir Banco de Vendas
           <ArrowRight className="h-3.5 w-3.5" />
         </button>
       </div>
 
       {/* KPI Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#453F3B] rounded-xl border border-[#453F3B] bg-[#23201E]">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#181615]/15 rounded-sm border border-[#181615]/20 bg-[#F3EFEA]">
         <div className="p-5">
-          <p className="text-xs text-zinc-400 mb-1">Chave PIX Ativa</p>
-          <p className="font-mono text-sm font-medium text-zinc-100 truncate">
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+            Chave PIX & WhatsApp Ativos
+          </p>
+          <p className="font-mono text-sm font-semibold text-[#181615] truncate">
             {profile.pix_key ? profile.pix_key : 'Não cadastrada'}
           </p>
-          <p className="text-xs text-zinc-500 mt-1">
-            {profile.pix_key ? detectPixKeyType(profile.pix_key) : 'Cadastre abaixo para ativar no checkout'}
+          <p className="text-xs text-[#524B45] mt-1 truncate">
+            {profile.whatsapp_number
+              ? `WhatsApp: ${formatWhatsappDisplay(profile.whatsapp_number)}`
+              : profile.pix_key
+              ? detectPixKeyType(profile.pix_key)
+              : 'Cadastre abaixo para ativar no checkout'}
           </p>
         </div>
         <div className="p-5">
-          <p className="text-xs text-zinc-400 mb-1">Recebido via PIX</p>
-          <p className="font-mono text-2xl font-semibold text-[#E5C158] tabular-nums">
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+            Recebido via PIX
+          </p>
+          <p className="font-mono text-2xl font-bold text-[#8A5A00] tabular-nums">
             {formatBrl(pixPaidTotal)}
           </p>
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-xs text-[#524B45] mt-1">
             {pixSales.filter((s) => s.status === 'paid').length} transações confirmadas
           </p>
         </div>
         <div className="p-5">
-          <p className="text-xs text-zinc-400 mb-1">Aguardando Confirmação PIX</p>
-          <p className="font-mono text-2xl font-semibold text-zinc-50 tabular-nums">
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+            Aguardando Confirmação PIX
+          </p>
+          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
             {formatBrl(pixPendingTotal)}
           </p>
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-xs text-[#524B45] mt-1">
             {pixSales.filter((s) => s.status === 'pending').length} cobranças pendentes
           </p>
         </div>
       </div>
 
-      {/* Main Two-Column Grid: Left = Register Pix Key & Transaction Form, Right = Live QR Code Preview */}
+      {/* Main Two-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-6 space-y-6">
           {/* Form 1: Cadastrar Chave PIX */}
           <form
             onSubmit={handleSavePixKey}
-            className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-4"
+            className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-6 space-y-4"
           >
-            <div className="flex items-center gap-2.5">
-              <KeyRound className="h-4 w-4 text-[#D4AF37]" />
-              <h3 className="font-display text-lg font-semibold text-zinc-50">
+            <div className="flex items-center gap-2.5 border-b border-[#181615]/15 pb-3">
+              <KeyRound className="h-4 w-4 text-[#181615]" />
+              <h3 className="font-display text-lg font-bold uppercase tracking-tight text-[#181615]">
                 1. Cadastrar Chave PIX
               </h3>
             </div>
 
-            <p className="text-xs text-zinc-400 leading-relaxed">
+            <p className="text-xs text-[#524B45] leading-relaxed">
               Esta chave será usada automaticamente no QR Code do checkout público (Clube VIP, Avulsos e Mimos) e nas cobranças geradas abaixo.
             </p>
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-medium text-zinc-300">
+                <label className="block text-xs font-semibold text-[#181615]">
                   Chave PIX (CPF, CNPJ, E-mail, Celular ou EVP)
                 </label>
-                <span className="text-xs text-zinc-400">{detectPixKeyType(pixKeyInput)}</span>
+                <span className="text-xs text-[#524B45]">{detectPixKeyType(pixKeyInput)}</span>
               </div>
               <input
                 type="text"
                 value={pixKeyInput}
                 onChange={(e) => setPixKeyInput(e.target.value)}
                 placeholder="Ex: zoebratubrasil@gmail.com ou CPF/CNPJ"
-                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 font-mono text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
               />
             </div>
 
-            <div className="flex items-center justify-between text-xs text-zinc-400 pt-1">
-              <span>Titular exibido no QR: <span className="text-zinc-200">{profile.display_name}</span></span>
-              <span>Cidade: <span className="text-zinc-200">{profile.location.split(',')[0]}</span></span>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#181615]">
+                  <MessageCircle className="h-3.5 w-3.5 text-emerald-700" />
+                  WhatsApp para Enviar Comprovantes (com DDD)
+                </label>
+                {whatsappInput && (
+                  <span className="text-[11px] font-mono text-emerald-800 font-medium">
+                    {formatWhatsappDisplay(whatsappInput) || 'Digite DDD + número'}
+                  </span>
+                )}
+              </div>
+              <input
+                type="text"
+                value={whatsappInput}
+                onChange={(e) => setWhatsappInput(e.target.value)}
+                placeholder="Ex: (21) 99999-9999"
+                className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 font-mono text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-[#524B45] pt-1">
+              <span>Titular exibido no QR: <span className="text-[#181615] font-semibold">{profile.display_name}</span></span>
+              <span>Cidade: <span className="text-[#181615] font-semibold">{profile.location.split(',')[0]}</span></span>
             </div>
 
             {keyMsg && (
               <div
-                className={`flex items-start gap-2 rounded-lg border p-3 text-xs ${
+                className={`flex items-start gap-2 rounded-sm border p-3 text-xs ${
                   keyMsg.type === 'ok'
-                    ? 'border-emerald-700/60 bg-emerald-950/30 text-emerald-200'
-                    : 'border-rose-700/60 bg-rose-950/30 text-rose-200'
+                    ? 'border-emerald-700/35 bg-emerald-50 text-emerald-900'
+                    : 'border-rose-700/35 bg-rose-50 text-rose-900'
                 }`}
               >
                 {keyMsg.type === 'ok' ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
                 ) : (
-                  <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+                  <AlertCircle className="h-4 w-4 text-rose-700 shrink-0" />
                 )}
                 <span>{keyMsg.text}</span>
               </div>
@@ -342,31 +382,31 @@ export const PixManager: React.FC<PixManagerProps> = ({
             <button
               type="submit"
               disabled={savingKey}
-              className="rounded-lg bg-[#D4AF37] px-5 py-2.5 text-xs font-semibold text-zinc-950 hover:bg-[#E5C158] disabled:opacity-50 transition-colors cursor-pointer"
+              className="rounded-sm bg-[#181615] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-50 transition-colors cursor-pointer"
             >
-              {savingKey ? 'Salvando chave...' : 'Salvar Chave PIX'}
+              {savingKey ? 'Salvando...' : 'Salvar Chave PIX & WhatsApp'}
             </button>
           </form>
 
-          {/* Form 2: Configurar Transação e Integrar ao Banco de Vendas */}
-          <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-4">
-            <div className="flex items-center justify-between gap-2">
+          {/* Form 2: Configurar Transação */}
+          <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-6 space-y-4">
+            <div className="flex items-center justify-between gap-2 border-b border-[#181615]/15 pb-3">
               <div className="flex items-center gap-2.5">
-                <QrCode className="h-4 w-4 text-[#D4AF37]" />
-                <h3 className="font-display text-lg font-semibold text-zinc-50">
+                <QrCode className="h-4 w-4 text-[#181615]" />
+                <h3 className="font-display text-lg font-bold uppercase tracking-tight text-[#181615]">
                   2. Transação & Banco de Vendas
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setTxid(makeTxid())}
-                className="text-xs text-[#E5C158] hover:underline cursor-pointer"
+                className="text-xs font-semibold text-[#181615] hover:underline cursor-pointer"
               >
                 Nova ref
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-lg bg-[#1C1918] border border-[#453F3B]">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-sm bg-[#EFEBE5] border border-[#181615]/20">
               {(
                 [
                   { id: 'vip_subscription', label: 'Clube VIP' },
@@ -379,10 +419,10 @@ export const PixManager: React.FC<PixManagerProps> = ({
                   key={opt.id}
                   type="button"
                   onClick={() => setSaleType(opt.id)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap ${
+                  className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-colors cursor-pointer whitespace-nowrap ${
                     saleType === opt.id
-                      ? 'bg-[#E5C158] text-[#1C1918] font-semibold'
-                      : 'text-zinc-400 hover:text-zinc-100'
+                      ? 'bg-[#181615] text-[#FAF8F5] font-semibold'
+                      : 'text-[#524B45] hover:text-[#181615]'
                   }`}
                 >
                   {opt.label}
@@ -392,13 +432,13 @@ export const PixManager: React.FC<PixManagerProps> = ({
 
             {saleType === 'video_call' && (
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                <label className="block text-xs font-semibold text-[#181615] mb-1.5">
                   Selecionar Plano de Vídeo Chamada
                 </label>
                 <select
                   value={selectedCallPlanId}
                   onChange={(e) => setSelectedCallPlanId(e.target.value)}
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-xs text-[#181615] focus:border-[#181615] focus:outline-none"
                 >
                   {videoCallPlans.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -411,18 +451,18 @@ export const PixManager: React.FC<PixManagerProps> = ({
 
             {saleType === 'ppv' && (
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                <label className="block text-xs font-semibold text-[#181615] mb-1.5">
                   Selecionar Foto ou Vídeo
                 </label>
                 {ppvOrAllMedia.length === 0 ? (
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-[#524B45]">
                     Nenhuma mídia cadastrada ainda. Envie fotos/vídeos primeiro ou use valor personalizado.
                   </p>
                 ) : (
                   <select
                     value={selectedMediaId}
                     onChange={(e) => setSelectedMediaId(e.target.value)}
-                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                    className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-xs text-[#181615] focus:border-[#181615] focus:outline-none"
                   >
                     {ppvOrAllMedia.map((m) => (
                       <option key={m.id} value={m.id}>
@@ -436,63 +476,63 @@ export const PixManager: React.FC<PixManagerProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">Valor da Compra (R$)</label>
+                <label className="block text-xs font-semibold text-[#181615] mb-1.5">Valor da Compra (R$)</label>
                 <input
                   type="number"
                   min="1"
                   step="0.50"
                   value={amountInput}
                   onChange={(e) => setAmountInput(e.target.value)}
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 font-mono text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">Identificador (TXID)</label>
+                <label className="block text-xs font-semibold text-[#181615] mb-1.5">Identificador (TXID)</label>
                 <input
                   type="text"
                   maxLength={25}
                   value={txid}
                   onChange={(e) => setTxid(e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())}
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 font-mono text-xs text-[#181615] focus:border-[#181615] focus:outline-none"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">E-mail do Comprador</label>
+                <label className="block text-xs font-semibold text-[#181615] mb-1.5">E-mail do Comprador</label>
                 <input
                   type="email"
                   value={buyerEmail}
                   onChange={(e) => setBuyerEmail(e.target.value)}
                   placeholder="cliente@email.com"
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">Nome (opcional)</label>
+                <label className="block text-xs font-semibold text-[#181615] mb-1.5">Nome (opcional)</label>
                 <input
                   type="text"
                   value={buyerName}
                   onChange={(e) => setBuyerName(e.target.value)}
                   placeholder="Nome do cliente"
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
                 />
               </div>
             </div>
 
             {saleMsg && (
               <div
-                className={`flex items-start gap-2 rounded-lg border p-3 text-xs ${
+                className={`flex items-start gap-2 rounded-sm border p-3 text-xs ${
                   saleMsg.type === 'ok'
-                    ? 'border-emerald-700/60 bg-emerald-950/30 text-emerald-200'
-                    : 'border-rose-700/60 bg-rose-950/30 text-rose-200'
+                    ? 'border-emerald-700/35 bg-emerald-50 text-emerald-900'
+                    : 'border-rose-700/35 bg-rose-50 text-rose-900'
                 }`}
               >
                 {saleMsg.type === 'ok' ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
                 ) : (
-                  <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+                  <AlertCircle className="h-4 w-4 text-rose-700 shrink-0" />
                 )}
                 <span>{saleMsg.text}</span>
               </div>
@@ -503,7 +543,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                 type="button"
                 disabled={recordingSale}
                 onClick={() => handleRecordPixSale('paid')}
-                className="flex-1 rounded-lg bg-[#D4AF37] px-4 py-2.5 text-xs font-semibold text-zinc-950 hover:bg-[#E5C158] disabled:opacity-50 transition-colors cursor-pointer"
+                className="flex-1 rounded-sm bg-[#181615] px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {recordingSale ? 'Registrando...' : 'Confirmar Pix Pago no Banco'}
               </button>
@@ -511,7 +551,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                 type="button"
                 disabled={recordingSale}
                 onClick={() => handleRecordPixSale('pending')}
-                className="flex-1 rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2.5 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] disabled:opacity-50 transition-colors cursor-pointer"
+                className="flex-1 rounded-sm border border-[#181615]/30 bg-white px-4 py-2.5 text-xs font-semibold text-[#181615] hover:border-[#181615] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 Registrar Cobrança Pendente
               </button>
@@ -520,19 +560,20 @@ export const PixManager: React.FC<PixManagerProps> = ({
         </div>
 
         {/* Right Column: Live Scannable QR Code Preview */}
-        <div className="lg:col-span-6 rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-4">
-          <div className="flex items-center justify-between gap-2">
+        <div className="lg:col-span-6 rounded-sm border border-[#181615]/20 bg-white p-6 space-y-4">
+          <div className="flex items-center justify-between gap-2 border-b border-[#181615]/15 pb-3">
             <div>
-              <h3 className="font-display text-lg font-semibold text-zinc-50">
+              <h3 className="font-display text-lg font-bold uppercase tracking-tight text-[#181615]">
                 Pré-visualização do QR Code PIX
               </h3>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-[#524B45] mt-0.5">
                 Padrão Banco Central (BR Code EMV) · Pronto para leitura em qualquer aplicativo bancário.
               </p>
             </div>
           </div>
 
           <PixQrCard
+            theme="light"
             pixKey={activePixKey}
             merchantName={profile.display_name}
             merchantCity={profile.location}
@@ -549,8 +590,8 @@ export const PixManager: React.FC<PixManagerProps> = ({
             }
           />
 
-          <p className="text-xs text-zinc-400 leading-relaxed">
-            Ao confirmar o recebimento acima ou pelo checkout da vitrine pública, o valor em <span className="font-mono text-zinc-200">{formatBrl(parsedAmount)}</span> é integrado imediatamente ao Banco de Vendas e libera o acesso correspondente ao e-mail do comprador.
+          <p className="text-xs text-[#524B45] leading-relaxed">
+            Ao confirmar o recebimento acima ou pelo checkout da vitrine pública, o valor em <span className="font-mono font-semibold text-[#181615]">{formatBrl(parsedAmount)}</span> é integrado imediatamente ao Banco de Vendas e libera o acesso correspondente ao e-mail do comprador.
           </p>
         </div>
       </div>
@@ -558,46 +599,46 @@ export const PixManager: React.FC<PixManagerProps> = ({
       {/* Pix Ledger Snapshot */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-lg font-semibold text-zinc-50">
+          <h3 className="font-display text-xl font-bold uppercase tracking-tight text-[#181615]">
             Transações PIX Integradas ao Banco de Vendas ({pixSales.length})
           </h3>
         </div>
 
         {pixSales.length === 0 ? (
-          <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-10 text-center space-y-2">
-            <p className="font-display text-base text-zinc-200">Nenhuma transação PIX registrada ainda</p>
-            <p className="text-xs text-zinc-400">
+          <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-10 text-center space-y-2">
+            <p className="font-display text-lg font-bold text-[#181615]">Nenhuma transação PIX registrada ainda</p>
+            <p className="text-xs text-[#524B45]">
               Compras feitas na vitrine via Pix ou cobranças registradas acima aparecerão aqui com atualização em tempo real.
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-[#453F3B] bg-[#23201E]">
+          <div className="overflow-x-auto rounded-sm border border-[#181615]/20 bg-white">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-[#453F3B] text-zinc-400">
+              <thead className="border-b border-[#181615]/15 bg-[#F3EFEA] text-[#524B45] uppercase tracking-wider text-[11px]">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Data / Hora</th>
-                  <th className="px-4 py-3 font-medium">Ref</th>
-                  <th className="px-4 py-3 font-medium">Comprador</th>
-                  <th className="px-4 py-3 font-medium">Tipo</th>
-                  <th className="px-4 py-3 font-medium text-right">Valor</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium text-right">QR Code</th>
+                  <th className="px-4 py-3 font-semibold">Data / Hora</th>
+                  <th className="px-4 py-3 font-semibold">Ref</th>
+                  <th className="px-4 py-3 font-semibold">Comprador</th>
+                  <th className="px-4 py-3 font-semibold">Tipo</th>
+                  <th className="px-4 py-3 font-semibold text-right">Valor</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3 font-semibold text-right">QR Code</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#453F3B]/70">
+              <tbody className="divide-y divide-[#181615]/10">
                 {pixSales.map((sale) => (
-                  <tr key={sale.id} className="hover:bg-[#1C1918]/50 transition-colors">
-                    <td className="px-4 py-3 font-mono text-zinc-400 tabular-nums whitespace-nowrap">
+                  <tr key={sale.id} className="hover:bg-[#FAF8F5] transition-colors">
+                    <td className="px-4 py-3 font-mono text-[#524B45] tabular-nums whitespace-nowrap">
                       {formatDateTime(sale.created_at)}
                     </td>
-                    <td className="px-4 py-3 font-mono text-zinc-300 whitespace-nowrap">
+                    <td className="px-4 py-3 font-mono text-[#181615] whitespace-nowrap">
                       {sale.external_ref || sale.id.slice(0, 8)}
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-zinc-100 font-medium">{sale.buyer_email}</p>
-                      {sale.buyer_name && <p className="text-zinc-500">{sale.buyer_name}</p>}
+                      <p className="text-[#181615] font-semibold">{sale.buyer_email}</p>
+                      {sale.buyer_name && <p className="text-[#524B45]">{sale.buyer_name}</p>}
                     </td>
-                    <td className="px-4 py-3 text-zinc-300">
+                    <td className="px-4 py-3 text-[#181615]">
                       {sale.sale_type === 'vip_subscription'
                         ? 'Clube VIP'
                         : sale.sale_type === 'video_call'
@@ -606,7 +647,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                         ? 'Personalizado / Mimo'
                         : sale.media_title || 'Mídia Avulsa'}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono font-semibold text-zinc-100 tabular-nums">
+                    <td className="px-4 py-3 text-right font-mono font-bold text-[#181615] tabular-nums">
                       {formatBrl(sale.amount_brl)}
                     </td>
                     <td className="px-4 py-3">
@@ -614,12 +655,12 @@ export const PixManager: React.FC<PixManagerProps> = ({
                         value={sale.status}
                         disabled={updatingSaleId === sale.id}
                         onChange={(e) => handleStatusChange(sale.id, e.target.value as SaleStatus)}
-                        className={`rounded-md border border-[#453F3B] bg-[#1C1918] px-2 py-1 text-xs font-medium focus:outline-none ${
+                        className={`rounded-sm border border-[#181615]/25 bg-white px-2 py-1 text-xs font-semibold focus:outline-none ${
                           sale.status === 'paid'
-                            ? 'text-emerald-300'
+                            ? 'text-emerald-800'
                             : sale.status === 'pending'
-                            ? 'text-amber-300'
-                            : 'text-rose-300'
+                            ? 'text-amber-800'
+                            : 'text-rose-800'
                         }`}
                       >
                         <option value="paid">Pago</option>
@@ -631,9 +672,9 @@ export const PixManager: React.FC<PixManagerProps> = ({
                       <button
                         type="button"
                         onClick={() => handleInspectSaleQr(sale)}
-                        className="inline-flex items-center gap-1 rounded-md border border-[#453F3B] bg-[#1C1918] px-2.5 py-1 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer"
+                        className="inline-flex items-center gap-1 rounded-sm border border-[#181615]/25 bg-[#EFEBE5] px-2.5 py-1 text-xs font-medium text-[#181615] hover:border-[#181615] cursor-pointer"
                       >
-                        <QrCode className="h-3.5 w-3.5 text-[#D4AF37]" />
+                        <QrCode className="h-3.5 w-3.5" />
                         Ver QR
                       </button>
                     </td>

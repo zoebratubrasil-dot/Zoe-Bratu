@@ -16,6 +16,7 @@ create table if not exists public.creator_profile (
   vip_monthly_price_brl numeric(10,2) not null default 49.90,
   vip_description text not null default 'Acesso ilimitado a todos os ensaios e vídeos marcados como VIP, atualizações semanais e prioridade em pedidos.',
   pix_key text default '',
+  whatsapp_number text default '',
   admin_email text,
   video_call_plans jsonb,
   age_verified_18 boolean not null default true,
@@ -225,6 +226,10 @@ create trigger trg_welcome_first_purchase
 alter table public.creator_profile
   add column if not exists video_call_plans jsonb;
 
+-- 8. Conteúdo Editável da Seção "Sobre a Criadora"
+alter table public.creator_profile
+  add column if not exists about_section jsonb;
+
 do $$
 begin
   alter table public.sales drop constraint if exists sales_sale_type_check;
@@ -233,4 +238,5 @@ begin
 exception
   when others then null;
 end $$;
+
 

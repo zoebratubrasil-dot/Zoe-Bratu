@@ -13,6 +13,36 @@ export interface VideoCallPlan {
   active: boolean;
 }
 
+export interface CreatorAboutStep {
+  id: string;
+  step: string;
+  title: string;
+  description: string;
+}
+
+export interface CreatorAboutExperience {
+  id: string;
+  badge: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  duration_hint: string;
+}
+
+export interface CreatorAboutContent {
+  headline_tag: string;
+  carioca_title: string;
+  carioca_bio: string;
+  carioca_traits: string[];
+  site_how_title: string;
+  site_how_intro: string;
+  site_steps: CreatorAboutStep[];
+  videocall_title: string;
+  videocall_intro: string;
+  videocall_experiences: CreatorAboutExperience[];
+  signature_quote: string;
+}
+
 export interface CreatorProfile {
   id: string;
   slug: string;
@@ -25,7 +55,9 @@ export interface CreatorProfile {
   vip_monthly_price_brl: number;
   vip_description: string;
   pix_key: string;
+  whatsapp_number?: string | null;
   video_call_plans?: VideoCallPlan[];
+  about_section?: CreatorAboutContent;
   age_verified_18: boolean;
   updated_at: string;
 }

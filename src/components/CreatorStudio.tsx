@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import type { CreatorDashboardData, CreatorProfile, SupabaseStatus } from '../types';
 import { getBrowserSupabaseClient } from '../lib/supabaseBrowser';
+import { ProtectedImage } from './ProtectedMedia';
 import { AdminOverview } from './studio/AdminOverview';
 import { MediaUploader } from './studio/MediaUploader';
 import { MediaManager } from './studio/MediaManager';
@@ -513,394 +514,425 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
   const supabaseReady = Boolean(supabaseStatus?.connected && supabaseStatus?.schemaReady);
   const isFirstPasswordCreation = Boolean(authConfig?.needsSetup || authConfig?.needsPasswordSetup);
 
+  const heroPhotoSrc = studioProfile.hero_url || '/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG';
+  const avatarPhotoSrc = studioProfile.avatar_url || '/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG';
+
   if (!creatorToken) {
     return (
-      <main className="mx-auto max-w-[1440px] px-6 py-14 lg:px-10">
-        <div className="mx-auto max-w-md rounded-xl border border-[#453F3B] bg-[#23201E] p-8 space-y-6">
-          <div className="flex items-center gap-3.5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#453F3B] bg-[#1C1918] text-[#D4AF37] shrink-0">
-              <Lock className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="font-display text-xl font-semibold text-zinc-50">
-                Acesso da Administradora
-              </h1>
-              <p className="text-xs text-zinc-400">
-                {authConfig?.needsSetup
-                  ? 'Defina seu e-mail e senha ou conecte seu Gmail'
-                  : authConfig?.needsPasswordSetup
-                  ? `Defina sua senha para ${authConfig.adminEmailHint}`
-                  : authConfig?.adminEmailHint
-                  ? `Conta autorizada: ${authConfig.adminEmailHint}`
-                  : 'Entre com e-mail e senha ou conecte seu Gmail'}
-              </p>
-            </div>
-          </div>
-
-          {/* Gmail / Google Login Button */}
-          <button
-            type="button"
-            onClick={handleGmailLogin}
-            disabled={authLoading}
-            className="w-full flex items-center justify-center gap-3 rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2.5 text-sm font-medium text-zinc-100 hover:border-[#D4AF37] hover:bg-zinc-800/80 disabled:opacity-50 transition-colors cursor-pointer"
-          >
-            <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="#EA4335"
-                d="M12 10.2v3.9h5.5c-.24 1.25-.96 2.31-2.05 3.02l3.31 2.57c1.93-1.78 3.04-4.4 3.04-7.5 0-.72-.06-1.41-.19-2.09H12z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 21c2.76 0 5.07-.91 6.76-2.48l-3.31-2.57c-.92.61-2.09.98-3.45.98-2.65 0-4.9-1.79-5.7-4.2H2.88v2.64C4.56 18.71 8.01 21 12 21z"
-              />
-              <path
-                fill="#4A90E2"
-                d="M6.3 12.73A5.41 5.41 0 0 1 6 11c0-.6.11-1.18.3-1.73V6.63H2.88A8.98 8.98 0 0 0 2 11c0 1.45.35 2.82.88 4.37l3.42-2.64z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M12 5.07c1.5 0 2.85.52 3.91 1.53l2.93-2.93C17.06 2.02 14.76 1 12 1 8.01 1 4.56 3.29 2.88 6.63l3.42 2.64C7.1 6.86 9.35 5.07 12 5.07z"
-              />
-            </svg>
-            Continuar com Gmail (Google)
-          </button>
-
-          {authConfig && !authConfig.googleProviderEnabled && authConfig.supabaseProjectRef && (
-            <div className="rounded-lg border border-[#453F3B] bg-[#1C1918]/70 p-3.5 text-xs text-zinc-300 space-y-2">
-              <p className="text-zinc-300 leading-relaxed">
-                O provedor Google ainda está desativado no seu Supabase. Para ativar o botão Google acima, habilite-o no painel e adicione esta URL em <span className="text-zinc-100 font-medium">Redirect URLs</span>:
-              </p>
-              <code className="block rounded bg-zinc-950 px-2.5 py-1.5 text-[11px] text-[#E5C158] break-all select-all">
-                {window.location.origin}/
-              </code>
-              <a
-                href={`https://supabase.com/dashboard/project/${authConfig.supabaseProjectRef}/auth/providers`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-[#E5C158] hover:underline font-medium"
-              >
-                Abrir Providers no Supabase Dashboard
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            </div>
-          )}
-
-          {googleOAuthUrl && (
-            <div className="rounded-lg border border-[#D4AF37]/50 bg-[#D4AF37]/10 p-3.5 text-xs text-zinc-200 space-y-2.5">
-              <p>
-                Clique abaixo para autorizar sua conta Google em uma nova aba. Esta tela será liberada automaticamente após o login:
-              </p>
-              <a
-                href={googleOAuthUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-[#D4AF37] px-4 py-2 text-xs font-semibold text-zinc-950 hover:bg-[#E5C158] transition-colors"
-              >
-                Abrir Login Google em Nova Aba
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            </div>
-          )}
-
-          <div className="flex items-center gap-3 text-xs text-zinc-500">
-            <span className="h-px flex-1 bg-zinc-800" />
-            <span>
-              {authMode === 'password'
-                ? 'ou entre com e-mail e senha'
-                : authMode === 'otp'
-                ? 'entrar com código no Gmail'
-                : 'redefinir com Service Role Key'}
-            </span>
-            <span className="h-px flex-1 bg-zinc-800" />
-          </div>
-
-          {authMode === 'password' ? (
-            <form onSubmit={handleEmailLogin} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                  E-mail da Administradora
-                </label>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-                  <input
-                    type="email"
-                    required
-                    autoFocus
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    placeholder="zoebratubrasil@gmail.com"
-                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] pl-10 pr-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+      <main className="mx-auto max-w-[1100px] px-6 py-12 lg:px-10">
+        <div className="rounded-sm bg-[#181615] p-3 sm:p-5 shadow-xl">
+          <div className="grid grid-cols-1 md:grid-cols-12 rounded-sm bg-[#FAF8F5] border border-[#181615]/20 overflow-hidden">
+            {/* Editorial Photo Side Column */}
+            <div className="hidden md:flex md:col-span-5 flex-col justify-between bg-[#F3EFEA] border-r border-[#181615]/15 p-5">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-[#524B45] font-semibold">
+                  <span>Estúdio Privado</span>
+                  <span>+18</span>
+                </div>
+                <div className="aspect-[4/5] w-full overflow-hidden rounded-sm border border-[#181615]/20 bg-[#181615]">
+                  <ProtectedImage
+                    src={heroPhotoSrc}
+                    alt={studioProfile.display_name}
+                    className="h-full w-full object-cover object-top"
                   />
                 </div>
               </div>
+              <div className="pt-4 border-t border-[#181615]/15 space-y-1">
+                <p className="font-display text-2xl font-bold uppercase tracking-tight text-[#181615]">
+                  {studioProfile.display_name}
+                </p>
+                <p className="text-xs font-mono text-[#524B45]">{studioProfile.handle}</p>
+              </div>
+            </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-medium text-zinc-300">
-                    {isFirstPasswordCreation ? 'Criar Senha de Acesso (mín. 6 dígitos)' : 'Senha'}
-                  </label>
-                  {!isFirstPasswordCreation && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthError(null);
-                        setAuthInfo(null);
-                        setAuthMode('otp');
-                      }}
-                      className="text-[11px] text-[#E5C158] hover:underline cursor-pointer"
-                    >
-                      Esqueci a senha
-                    </button>
-                  )}
+            {/* Login Form Column */}
+            <div className="md:col-span-7 p-6 sm:p-9 space-y-6">
+              <div className="flex items-center gap-3.5 border-b border-[#181615]/15 pb-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-sm border border-[#181615]/25 bg-[#181615] text-[#FAF8F5] shrink-0">
+                  <Lock className="h-5 w-5" />
                 </div>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    minLength={6}
-                    value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
-                    placeholder={isFirstPasswordCreation ? 'Digite a senha que deseja usar' : 'Sua senha de acesso'}
-                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] pl-3.5 pr-10 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    aria-label={showPassword ? 'Ocultar senha' : 'Ver senha'}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-200 cursor-pointer"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                <div>
+                  <h1 className="font-display text-2xl font-bold uppercase tracking-tight text-[#181615]">
+                    Acesso da Administradora
+                  </h1>
+                  <p className="text-xs text-[#524B45]">
+                    {authConfig?.needsSetup
+                      ? 'Defina seu e-mail e senha ou conecte seu Gmail'
+                      : authConfig?.needsPasswordSetup
+                      ? `Defina sua senha para ${authConfig.adminEmailHint}`
+                      : authConfig?.adminEmailHint
+                      ? `Conta autorizada: ${authConfig.adminEmailHint}`
+                      : 'Entre com e-mail e senha ou conecte seu Gmail'}
+                  </p>
                 </div>
               </div>
 
-              {authInfo && (
-                <p className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3 text-xs text-emerald-200 leading-relaxed">
-                  {authInfo}
-                </p>
-              )}
-
-              {authError && (
-                <p className="rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200 leading-relaxed">
-                  {authError}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full rounded-lg bg-[#E5C158] px-5 py-2.5 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
-              >
-                {authLoading
-                  ? 'Autenticando...'
-                  : isFirstPasswordCreation
-                  ? 'Definir Senha e Entrar'
-                  : 'Entrar no Estúdio'}
-              </button>
-
+              {/* Gmail / Google Login Button */}
               <button
                 type="button"
-                onClick={() => {
-                  setAuthError(null);
-                  setAuthInfo(null);
-                  setAuthMode('otp');
-                }}
-                className="w-full flex items-center justify-center gap-2 rounded-lg border border-[#453F3B] bg-[#1C1918]/50 px-4 py-2 text-xs text-zinc-300 hover:border-[#453F3B] hover:text-zinc-100 transition-colors cursor-pointer"
+                onClick={handleGmailLogin}
+                disabled={authLoading}
+                className="w-full flex items-center justify-center gap-3 rounded-sm border border-[#181615]/30 bg-white px-4 py-2.5 text-sm font-medium text-[#181615] hover:border-[#181615] hover:bg-[#EFEBE5] disabled:opacity-50 transition-colors cursor-pointer"
               >
-                <KeyRound className="h-3.5 w-3.5 text-[#D4AF37]" />
-                Esqueci a senha / Entrar com código ou chave Supabase
-              </button>
-            </form>
-          ) : authMode === 'otp' ? (
-            <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                  E-mail Gmail da Administradora
-                </label>
-                <div className="relative">
-                  <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-                  <input
-                    type="email"
-                    required
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    placeholder="zoebratubrasil@gmail.com"
-                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] pl-10 pr-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    fill="#EA4335"
+                    d="M12 10.2v3.9h5.5c-.24 1.25-.96 2.31-2.05 3.02l3.31 2.57c1.93-1.78 3.04-4.4 3.04-7.5 0-.72-.06-1.41-.19-2.09H12z"
                   />
+                  <path
+                    fill="#34A853"
+                    d="M12 21c2.76 0 5.07-.91 6.76-2.48l-3.31-2.57c-.92.61-2.09.98-3.45.98-2.65 0-4.9-1.79-5.7-4.2H2.88v2.64C4.56 18.71 8.01 21 12 21z"
+                  />
+                  <path
+                    fill="#4A90E2"
+                    d="M6.3 12.73A5.41 5.41 0 0 1 6 11c0-.6.11-1.18.3-1.73V6.63H2.88A8.98 8.98 0 0 0 2 11c0 1.45.35 2.82.88 4.37l3.42-2.64z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M12 5.07c1.5 0 2.85.52 3.91 1.53l2.93-2.93C17.06 2.02 14.76 1 12 1 8.01 1 4.56 3.29 2.88 6.63l3.42 2.64C7.1 6.86 9.35 5.07 12 5.07z"
+                  />
+                </svg>
+                Continuar com Gmail (Google)
+              </button>
+
+              {authConfig && !authConfig.googleProviderEnabled && authConfig.supabaseProjectRef && (
+                <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-3.5 text-xs text-[#524B45] space-y-2">
+                  <p className="leading-relaxed">
+                    O provedor Google ainda está desativado no seu Supabase. Para ativar o botão Google acima, habilite-o no painel e adicione esta URL em <span className="text-[#181615] font-semibold">Redirect URLs</span>:
+                  </p>
+                  <code className="block rounded-sm border border-[#181615]/15 bg-white px-2.5 py-1.5 text-[11px] text-[#181615] break-all select-all">
+                    {window.location.origin}/
+                  </code>
+                  <a
+                    href={`https://supabase.com/dashboard/project/${authConfig.supabaseProjectRef}/auth/providers`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[#181615] hover:underline font-semibold"
+                  >
+                    Abrir Providers no Supabase Dashboard
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
                 </div>
+              )}
+
+              {googleOAuthUrl && (
+                <div className="rounded-sm border border-[#181615]/30 bg-[#EFEBE5] p-3.5 text-xs text-[#181615] space-y-2.5">
+                  <p>
+                    Clique abaixo para autorizar sua conta Google em uma nova aba. Esta tela será liberada automaticamente após o login:
+                  </p>
+                  <a
+                    href={googleOAuthUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-sm bg-[#181615] px-4 py-2 text-xs font-semibold text-[#FAF8F5] hover:bg-[#332E2C] transition-colors"
+                  >
+                    Abrir Login Google em Nova Aba
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 text-xs text-[#524B45]">
+                <span className="h-px flex-1 bg-[#181615]/15" />
+                <span>
+                  {authMode === 'password'
+                    ? 'ou entre com e-mail e senha'
+                    : authMode === 'otp'
+                    ? 'entrar com código no Gmail'
+                    : 'redefinir com Service Role Key'}
+                </span>
+                <span className="h-px flex-1 bg-[#181615]/15" />
               </div>
 
-              {otpSent && (
-                <>
+              {authMode === 'password' ? (
+                <form onSubmit={handleEmailLogin} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                      Código recebido no Gmail
+                    <label className="block text-xs font-semibold text-[#181615] mb-1.5">
+                      E-mail da Administradora
+                    </label>
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#524B45]" />
+                      <input
+                        type="email"
+                        required
+                        autoFocus
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="zoebratubrasil@gmail.com"
+                        className="w-full rounded-sm border border-[#181615]/25 bg-white pl-10 pr-3.5 py-2.5 text-sm text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-semibold text-[#181615]">
+                        {isFirstPasswordCreation ? 'Criar Senha de Acesso (mín. 6 dígitos)' : 'Senha'}
+                      </label>
+                      {!isFirstPasswordCreation && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAuthError(null);
+                            setAuthInfo(null);
+                            setAuthMode('otp');
+                          }}
+                          className="text-[11px] font-medium text-[#524B45] hover:text-[#181615] hover:underline cursor-pointer"
+                        >
+                          Esqueci a senha
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        minLength={6}
+                        value={passwordInput}
+                        onChange={(e) => setPasswordInput(e.target.value)}
+                        placeholder={isFirstPasswordCreation ? 'Digite a senha que deseja usar' : 'Sua senha de acesso'}
+                        className="w-full rounded-sm border border-[#181615]/25 bg-white pl-3.5 pr-10 py-2.5 text-sm text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? 'Ocultar senha' : 'Ver senha'}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#524B45] hover:text-[#181615] cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {authInfo && (
+                    <p className="rounded-sm border border-emerald-700/35 bg-emerald-50 p-3 text-xs text-emerald-900 leading-relaxed">
+                      {authInfo}
+                    </p>
+                  )}
+
+                  {authError && (
+                    <p className="rounded-sm border border-rose-700/35 bg-rose-50 p-3 text-xs text-rose-900 leading-relaxed">
+                      {authError}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full rounded-sm bg-[#181615] px-5 py-2.5 text-sm font-semibold text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-50 transition-colors cursor-pointer"
+                  >
+                    {authLoading
+                      ? 'Autenticando...'
+                      : isFirstPasswordCreation
+                      ? 'Definir Senha e Entrar'
+                      : 'Entrar no Estúdio'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthError(null);
+                      setAuthInfo(null);
+                      setAuthMode('otp');
+                    }}
+                    className="w-full flex items-center justify-center gap-2 rounded-sm border border-[#181615]/25 bg-[#F3EFEA] px-4 py-2 text-xs text-[#181615] hover:border-[#181615] transition-colors cursor-pointer"
+                  >
+                    <KeyRound className="h-3.5 w-3.5 text-[#524B45]" />
+                    Esqueci a senha / Entrar com código ou chave Supabase
+                  </button>
+                </form>
+              ) : authMode === 'otp' ? (
+                <form onSubmit={otpSent ? handleVerifyOtp : handleSendOtp} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-[#181615] mb-1.5">
+                      E-mail Gmail da Administradora
+                    </label>
+                    <div className="relative">
+                      <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#524B45]" />
+                      <input
+                        type="email"
+                        required
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="zoebratubrasil@gmail.com"
+                        className="w-full rounded-sm border border-[#181615]/25 bg-white pl-10 pr-3.5 py-2.5 text-sm text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {otpSent && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-semibold text-[#181615] mb-1.5">
+                          Código recebido no Gmail
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          autoFocus
+                          value={otpCodeInput}
+                          onChange={(e) => setOtpCodeInput(e.target.value)}
+                          placeholder="Ex: 123456"
+                          className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm tracking-widest text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-[#181615] mb-1.5">
+                          Definir nova senha (opcional, mín. 6 dígitos)
+                        </label>
+                        <input
+                          type="password"
+                          minLength={6}
+                          value={newPasswordInput}
+                          onChange={(e) => setNewPasswordInput(e.target.value)}
+                          placeholder="Deixe vazio ou crie uma nova senha"
+                          className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {authInfo && (
+                    <p className="rounded-sm border border-emerald-700/35 bg-emerald-50 p-3 text-xs text-emerald-900 leading-relaxed">
+                      {authInfo}
+                    </p>
+                  )}
+
+                  {authError && (
+                    <p className="rounded-sm border border-rose-700/35 bg-rose-50 p-3 text-xs text-rose-900 leading-relaxed">
+                      {authError}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full rounded-sm bg-[#181615] px-5 py-2.5 text-sm font-semibold text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-50 transition-colors cursor-pointer"
+                  >
+                    {authLoading
+                      ? 'Processando...'
+                      : otpSent
+                      ? 'Validar Código e Entrar'
+                      : 'Enviar código / link para o Gmail'}
+                  </button>
+
+                  {otpSent && (
+                    <button
+                      type="button"
+                      disabled={authLoading}
+                      onClick={() => handleSendOtp()}
+                      className="w-full text-center text-xs text-[#524B45] hover:text-[#181615] cursor-pointer"
+                    >
+                      Reenviar código para o Gmail
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthError(null);
+                      setAuthInfo(null);
+                      setAuthMode('service_key');
+                    }}
+                    className="w-full rounded-sm border border-[#181615]/25 bg-[#F3EFEA] px-4 py-2 text-xs text-[#181615] hover:border-[#181615] transition-colors cursor-pointer"
+                  >
+                    Código não chegou? Redefinir com a Service Role Key do Supabase
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthError(null);
+                      setAuthInfo(null);
+                      setOtpSent(false);
+                      setAuthMode('password');
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 text-xs text-[#524B45] hover:text-[#181615] cursor-pointer"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    Voltar para E-mail e Senha
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleResetWithServiceKey} className="space-y-4">
+                  <p className="text-xs text-[#524B45] leading-relaxed">
+                    Copie sua chave <span className="font-mono font-semibold text-[#181615]">service_role</span> no painel do Supabase (Settings → API) para definir uma nova senha imediatamente sem depender de e-mail.
+                  </p>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#181615] mb-1.5">
+                      E-mail da Administradora
                     </label>
                     <input
-                      type="text"
+                      type="email"
                       required
-                      autoFocus
-                      value={otpCodeInput}
-                      onChange={(e) => setOtpCodeInput(e.target.value)}
-                      placeholder="Ex: 123456"
-                      className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm tracking-widest text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                      value={emailInput}
+                      onChange={(e) => setEmailInput(e.target.value)}
+                      placeholder="zoebratubrasil@gmail.com"
+                      className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                      Definir nova senha (opcional, mín. 6 dígitos)
+                    <label className="block text-xs font-semibold text-[#181615] mb-1.5">
+                      Service Role Key (Supabase)
                     </label>
                     <input
                       type="password"
+                      required
+                      value={serviceKeyInput}
+                      onChange={(e) => setServiceKeyInput(e.target.value)}
+                      placeholder="eyJhbGciOi... ou sb_secret_..."
+                      className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 font-mono text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#181615] mb-1.5">
+                      Nova Senha de Acesso (mín. 6 dígitos)
+                    </label>
+                    <input
+                      type="password"
+                      required
                       minLength={6}
                       value={newPasswordInput}
                       onChange={(e) => setNewPasswordInput(e.target.value)}
-                      placeholder="Deixe vazio ou crie uma nova senha"
-                      className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                      placeholder="Digite sua nova senha"
+                      className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
                     />
                   </div>
-                </>
+
+                  {authError && (
+                    <p className="rounded-sm border border-rose-700/35 bg-rose-50 p-3 text-xs text-rose-900 leading-relaxed">
+                      {authError}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={authLoading}
+                    className="w-full rounded-sm bg-[#181615] px-5 py-2.5 text-sm font-semibold text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-50 transition-colors cursor-pointer"
+                  >
+                    {authLoading ? 'Validando...' : 'Redefinir Senha e Entrar'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthError(null);
+                      setAuthInfo(null);
+                      setAuthMode('password');
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 text-xs text-[#524B45] hover:text-[#181615] cursor-pointer"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    Voltar para E-mail e Senha
+                  </button>
+                </form>
               )}
-
-              {authInfo && (
-                <p className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3 text-xs text-emerald-200 leading-relaxed">
-                  {authInfo}
-                </p>
-              )}
-
-              {authError && (
-                <p className="rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200 leading-relaxed">
-                  {authError}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full rounded-lg bg-[#E5C158] px-5 py-2.5 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
-              >
-                {authLoading
-                  ? 'Processando...'
-                  : otpSent
-                  ? 'Validar Código e Entrar'
-                  : 'Enviar código / link para o Gmail'}
-              </button>
-
-              {otpSent && (
-                <button
-                  type="button"
-                  disabled={authLoading}
-                  onClick={() => handleSendOtp()}
-                  className="w-full text-center text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"
-                >
-                  Reenviar código para o Gmail
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthError(null);
-                  setAuthInfo(null);
-                  setAuthMode('service_key');
-                }}
-                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918]/50 px-4 py-2 text-xs text-[#E5C158] hover:border-[#D4AF37]/60 transition-colors cursor-pointer"
-              >
-                Código não chegou? Redefinir com a Service Role Key do Supabase
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthError(null);
-                  setAuthInfo(null);
-                  setOtpSent(false);
-                  setAuthMode('password');
-                }}
-                className="w-full flex items-center justify-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                Voltar para E-mail e Senha
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleResetWithServiceKey} className="space-y-4">
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Copie sua chave <span className="font-mono text-zinc-200">service_role</span> no painel do Supabase (Settings → API) para definir uma nova senha imediatamente sem depender de e-mail.
-              </p>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                  E-mail da Administradora
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  placeholder="zoebratubrasil@gmail.com"
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                  Service Role Key (Supabase)
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={serviceKeyInput}
-                  onChange={(e) => setServiceKeyInput(e.target.value)}
-                  placeholder="eyJhbGciOi... ou sb_secret_..."
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                  Nova Senha de Acesso (mín. 6 dígitos)
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  value={newPasswordInput}
-                  onChange={(e) => setNewPasswordInput(e.target.value)}
-                  placeholder="Digite sua nova senha"
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
-                />
-              </div>
-
-              {authError && (
-                <p className="rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200 leading-relaxed">
-                  {authError}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={authLoading}
-                className="w-full rounded-lg bg-[#E5C158] px-5 py-2.5 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
-              >
-                {authLoading ? 'Validando...' : 'Redefinir Senha e Entrar'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthError(null);
-                  setAuthInfo(null);
-                  setAuthMode('password');
-                }}
-                className="w-full flex items-center justify-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                Voltar para E-mail e Senha
-              </button>
-            </form>
-          )}
+            </div>
+          </div>
         </div>
       </main>
     );
@@ -919,16 +951,117 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
   ];
 
   return (
-    <main className="mx-auto max-w-[1440px] px-6 py-8 lg:px-10">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <aside className="lg:col-span-3 rounded-sm border border-[#453F3B]/80 bg-[#23201E] p-4 space-y-6">
-          <div className="px-2 pt-1">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-[#E5C158] font-semibold">Administração do Site</p>
-            <p className="font-display text-2xl font-bold uppercase tracking-tight text-[#F4F1ED] truncate mt-1">
+    <main className="mx-auto max-w-[1440px] px-4 sm:px-6 py-8 lg:px-10 space-y-8">
+      {/* Top Editorial Lookbook Masthead (framed in dark #181615 like the reference mockup) */}
+      <div className="rounded-sm bg-[#181615] p-3 sm:p-5 shadow-lg">
+        <div className="rounded-sm bg-[#FAF8F5] border border-[#181615]/20 overflow-hidden">
+          {/* Top Editorial Mini Navigation */}
+          <div className="hidden sm:flex items-center justify-between gap-4 border-b border-[#181615]/15 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#524B45]">
+            <div className="flex items-center gap-6">
+              <button type="button" onClick={() => setActiveTab('overview')} className="hover:text-[#181615] cursor-pointer">
+                Painel
+              </button>
+              <button type="button" onClick={() => setActiveTab('manage')} className="hover:text-[#181615] cursor-pointer">
+                Acervo
+              </button>
+              <button type="button" onClick={() => setActiveTab('video_calls')} className="hover:text-[#181615] cursor-pointer">
+                Vídeo Chamada
+              </button>
+              <button type="button" onClick={() => setActiveTab('pix')} className="hover:text-[#181615] cursor-pointer">
+                Pix & QR
+              </button>
+              <button type="button" onClick={() => setActiveTab('sales')} className="hover:text-[#181615] cursor-pointer">
+                Vendas
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenStorefront}
+              className="inline-flex items-center gap-1.5 text-[#181615] hover:underline cursor-pointer"
+            >
+              Vitrine Pública
+              <ExternalLink className="h-3 w-3" />
+            </button>
+          </div>
+
+          {/* 4-Frame Horizontal Collage Strip (ONLY creator photo) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 border-b border-[#181615]/15 bg-[#EFEBE5]">
+            <div className="aspect-[16/10] overflow-hidden border-r border-b md:border-b-0 border-[#181615]/15">
+              <ProtectedImage
+                src={heroPhotoSrc}
+                alt={studioProfile.display_name}
+                className="h-full w-full object-cover object-top"
+              />
+            </div>
+            <div className="aspect-[16/10] overflow-hidden md:border-r border-b md:border-b-0 border-[#181615]/15">
+              <ProtectedImage
+                src={avatarPhotoSrc}
+                alt={studioProfile.display_name}
+                className="h-full w-full object-cover object-[50%_20%] scale-105"
+              />
+            </div>
+            <div className="aspect-[16/10] overflow-hidden border-r border-[#181615]/15">
+              <ProtectedImage
+                src={heroPhotoSrc}
+                alt={studioProfile.display_name}
+                className="h-full w-full object-cover object-center scale-110"
+              />
+            </div>
+            <div className="aspect-[16/10] overflow-hidden">
+              <ProtectedImage
+                src={avatarPhotoSrc}
+                alt={studioProfile.display_name}
+                className="h-full w-full object-cover object-[50%_15%]"
+              />
+            </div>
+          </div>
+
+          {/* Masthead Title Row ("PORTFOLIO"-scale bold condensed title + creator tagline) */}
+          <div className="px-5 py-5 sm:px-7 sm:py-6 flex flex-col lg:flex-row lg:items-end justify-between gap-5">
+            <div>
+              <h1 className="font-display text-5xl sm:text-6xl lg:text-[4.25rem] font-bold uppercase tracking-[-0.02em] leading-[0.88] text-[#181615]">
+                ADMINISTRAÇÃO
+              </h1>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:gap-6">
+              <div className="space-y-0.5">
+                <p className="font-display text-xl font-bold uppercase tracking-tight text-[#181615]">
+                  {studioProfile.display_name}{' '}
+                  <span className="font-mono text-xs font-normal text-[#524B45] ml-1">
+                    {studioProfile.handle}
+                  </span>
+                </p>
+                <p className="text-xs text-[#524B45]">
+                  Estúdio de mídia privada, chamadas ao vivo & finanças ·{' '}
+                  {supabaseReady ? 'Supabase Ativo' : 'Conexão Pendente'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenStorefront}
+                className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#181615] px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] hover:bg-[#332E2C] transition-colors shrink-0 cursor-pointer"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Abrir Vitrine
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main 12-Col Editorial Workspace Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
+        <aside className="lg:col-span-3 rounded-sm border border-[#181615]/20 bg-[#FAF8F5] p-4 space-y-5 shadow-sm">
+          <div className="px-2 pt-1 border-b border-[#181615]/15 pb-3">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-[#524B45] font-semibold">
+              Navegação do Estúdio
+            </p>
+            <p className="font-display text-2xl font-bold uppercase tracking-tight text-[#181615] truncate mt-1">
               {studioProfile.display_name}
             </p>
-            <p className="text-xs text-[#DED9D3]/80 truncate mt-0.5">{adminEmail}</p>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-[#524B45] truncate mt-0.5">{adminEmail}</p>
+            <p className="text-[11px] font-mono text-[#524B45] mt-1">
               {supabaseReady ? 'Supabase conectado e ativo' : 'Supabase pendente de conexão'}
             </p>
           </div>
@@ -943,15 +1076,15 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                   onClick={() => setActiveTab(item.id)}
                   className={`relative w-full flex items-center gap-2.5 rounded-sm px-3 py-2.5 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                     isActive
-                      ? 'text-[#1C1918] font-semibold'
-                      : 'text-[#DED9D3] hover:bg-[#1C1918] hover:text-[#F4F1ED]'
+                      ? 'text-[#FAF8F5] font-semibold'
+                      : 'text-[#524B45] hover:bg-[#EFEBE5] hover:text-[#181615]'
                   }`}
                 >
                   {isActive && (
                     <motion.span
                       layoutId="studio-sidebar-pill"
                       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                      className="absolute inset-0 rounded-sm bg-[#E5C158]"
+                      className="absolute inset-0 rounded-sm bg-[#181615]"
                     />
                   )}
                   <span className="relative z-10 flex items-center gap-2.5 min-w-0">
@@ -963,11 +1096,11 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
             })}
           </nav>
 
-          <div className="border-t border-[#453F3B] pt-4">
+          <div className="border-t border-[#181615]/15 pt-4">
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full flex items-center gap-2.5 rounded-sm px-3 py-2 text-xs text-zinc-400 hover:text-[#F4F1ED] hover:bg-[#1C1918] transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 rounded-sm px-3 py-2 text-xs font-medium text-[#524B45] hover:text-[#181615] hover:bg-[#EFEBE5] transition-colors cursor-pointer"
             >
               <LogOut className="h-4 w-4" />
               Sair da Conta Adm
@@ -975,9 +1108,9 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
           </div>
         </aside>
 
-        <section className="lg:col-span-9 min-w-0">
+        <section className="lg:col-span-9 min-w-0 rounded-sm border border-[#181615]/20 bg-[#FAF8F5] p-6 sm:p-8 shadow-sm">
           {loadingDash && dashboard.mediaItems.length === 0 && activeTab !== 'supabase' ? (
-            <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-12 text-center text-xs text-zinc-400">
+            <div className="rounded-sm border border-[#181615]/15 bg-[#F3EFEA] p-12 text-center text-xs text-[#524B45] mb-6">
               Sincronizando dados do Supabase...
             </div>
           ) : null}

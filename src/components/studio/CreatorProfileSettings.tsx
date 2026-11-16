@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2, AlertCircle, Upload, RotateCcw } from 'lucide-react';
-import type { CreatorProfile } from '../../types';
+import type { CreatorAboutContent, CreatorProfile } from '../../types';
 import { inferMediaKind, uploadFileToSupabaseBucket } from '../../lib/uploadMedia';
+import { resolveCreatorAboutContent } from '../../lib/creatorAbout';
 import { ProtectedImage } from '../ProtectedMedia';
+import { AboutCreatorEditor } from './AboutCreatorEditor';
 
-const DEFAULT_AVATAR_ASSET_PATH = '/src/assets/images/creator_avatar_portrait_1794805425733.jpg';
-const DEFAULT_HERO_ASSET_PATH = '/src/assets/images/creator_hero_editorial_1794805426073.jpg';
+const DEFAULT_AVATAR_ASSET_PATH = '/public/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG';
+const DEFAULT_HERO_ASSET_PATH = '/public/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG';
 const DEFAULT_AVATAR_URL = '/api/profile/asset/avatar';
 const DEFAULT_HERO_URL = '/api/profile/asset/hero';
 
@@ -33,6 +35,10 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
   const [vipPrice, setVipPrice] = useState(String(profile.vip_monthly_price_brl));
   const [vipDesc, setVipDesc] = useState(profile.vip_description);
   const [pixKey, setPixKey] = useState(profile.pix_key || '');
+  const [whatsappNumber, setWhatsappNumber] = useState(profile.whatsapp_number || '');
+  const [aboutSection, setAboutSection] = useState<CreatorAboutContent>(() =>
+    resolveCreatorAboutContent(profile.about_section)
+  );
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || DEFAULT_AVATAR_URL);
   const [heroUrl, setHeroUrl] = useState(profile.hero_url || DEFAULT_HERO_URL);
   const [newAdminEmail, setNewAdminEmail] = useState(adminEmail || '');
@@ -50,6 +56,8 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
     setVipPrice(String(profile.vip_monthly_price_brl));
     setVipDesc(profile.vip_description);
     setPixKey(profile.pix_key || '');
+    setWhatsappNumber(profile.whatsapp_number || '');
+    setAboutSection(resolveCreatorAboutContent(profile.about_section));
     setAvatarUrl(profile.avatar_url || DEFAULT_AVATAR_URL);
     setHeroUrl(profile.hero_url || DEFAULT_HERO_URL);
   }, [profile]);
@@ -171,6 +179,8 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
           vip_monthly_price_brl: Number(vipPrice || 49.9),
           vip_description: vipDesc,
           pix_key: pixKey,
+          whatsapp_number: whatsappNumber,
+          about_section: aboutSection,
           newAdminEmail:
             newAdminEmail.trim() && newAdminEmail.trim().toLowerCase() !== adminEmail.trim().toLowerCase()
               ? newAdminEmail.trim()
@@ -195,21 +205,24 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
 
   return (
     <div className="space-y-8">
-      <div className="border-b border-[#453F3B] pb-5">
-        <h2 className="font-display text-2xl font-semibold text-zinc-50">
+      <div className="border-b border-[#181615]/20 pb-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#524B45]">
+          Identidade & Vitrine
+        </p>
+        <h2 className="font-display text-3xl sm:text-4xl font-bold uppercase tracking-tight text-[#181615] mt-1">
           Informações do Site, Fotos de Capa & Preços
         </h2>
-        <p className="text-sm text-zinc-400 mt-1">
+        <p className="text-sm text-[#524B45] mt-1">
           Edite a foto de perfil, banner principal da vitrine, textos, assinatura mensal VIP, chave Pix e dados de acesso.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-6 space-y-6">
         {/* Visual Identity Uploads (zero URL exposure) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-[#453F3B]">
-          <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-[#181615]/15">
+          <div className="space-y-3 rounded-sm border border-[#181615]/15 bg-white p-4">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full overflow-hidden border border-[#453F3B] shrink-0 bg-[#1C1918]">
+              <div className="h-16 w-16 rounded-full overflow-hidden border border-[#181615]/25 shrink-0 bg-[#181615]">
                 <ProtectedImage
                   src={avatarUrl || DEFAULT_AVATAR_URL}
                   alt="Avatar"
@@ -217,9 +230,9 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
                 />
               </div>
               <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-zinc-200">Foto de Perfil (Avatar 1:1)</p>
+                <p className="text-xs font-semibold text-[#181615]">Foto de Perfil (Avatar 1:1)</p>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex items-center gap-1.5 rounded-md border border-[#453F3B] bg-[#1C1918] px-3 py-1.5 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-3 py-1.5 text-xs font-medium text-[#181615] hover:border-[#181615] cursor-pointer">
                     <Upload className="h-3.5 w-3.5" />
                     {uploadingAsset === 'avatar' ? 'Enviando...' : 'Enviar Foto'}
                     <input
@@ -237,7 +250,7 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
                     type="button"
                     disabled={uploadingAsset === 'avatar'}
                     onClick={() => resetAssetToDefault('avatar')}
-                    className="inline-flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] text-[#524B45] hover:text-[#181615] cursor-pointer"
                   >
                     <RotateCcw className="h-3 w-3" />
                     Padrão
@@ -245,14 +258,14 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
                 </div>
               </div>
             </div>
-            <p className="text-[11px] text-zinc-500">
+            <p className="text-[11px] text-[#524B45]">
               Armazenada com endereço oculto e bloqueio contra cópia.
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 rounded-sm border border-[#181615]/15 bg-white p-4">
             <div className="flex items-center gap-4">
-              <div className="h-16 w-28 rounded-md overflow-hidden border border-[#453F3B] shrink-0 bg-[#1C1918]">
+              <div className="h-16 w-28 rounded-sm overflow-hidden border border-[#181615]/25 shrink-0 bg-[#181615]">
                 <ProtectedImage
                   src={heroUrl || DEFAULT_HERO_URL}
                   alt="Capa Hero"
@@ -260,9 +273,9 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
                 />
               </div>
               <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-zinc-200">Capa Principal da Vitrine (Hero)</p>
+                <p className="text-xs font-semibold text-[#181615]">Capa Principal da Vitrine (Hero)</p>
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="inline-flex items-center gap-1.5 rounded-md border border-[#453F3B] bg-[#1C1918] px-3 py-1.5 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-3 py-1.5 text-xs font-medium text-[#181615] hover:border-[#181615] cursor-pointer">
                     <Upload className="h-3.5 w-3.5" />
                     {uploadingAsset === 'hero' ? 'Enviando...' : 'Enviar Capa'}
                     <input
@@ -280,7 +293,7 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
                     type="button"
                     disabled={uploadingAsset === 'hero'}
                     onClick={() => resetAssetToDefault('hero')}
-                    className="inline-flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] text-[#524B45] hover:text-[#181615] cursor-pointer"
                   >
                     <RotateCcw className="h-3 w-3" />
                     Padrão
@@ -288,7 +301,7 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
                 </div>
               </div>
             </div>
-            <p className="text-[11px] text-zinc-500">
+            <p className="text-[11px] text-[#524B45]">
               Exibição via streaming protegido sem exposição de link.
             </p>
           </div>
@@ -296,16 +309,16 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
 
         {msg && (
           <div
-            className={`flex items-center gap-2.5 rounded-lg border p-3.5 text-xs ${
+            className={`flex items-center gap-2.5 rounded-sm border p-3.5 text-xs ${
               msg.type === 'ok'
-                ? 'border-emerald-700/60 bg-emerald-950/30 text-emerald-200'
-                : 'border-rose-700/60 bg-rose-950/30 text-rose-200'
+                ? 'border-emerald-700/35 bg-emerald-50 text-emerald-900'
+                : 'border-rose-700/35 bg-rose-50 text-rose-900'
             }`}
           >
             {msg.type === 'ok' ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
             ) : (
-              <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+              <AlertCircle className="h-4 w-4 text-rose-700 shrink-0" />
             )}
             <span>{msg.text}</span>
           </div>
@@ -313,49 +326,49 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">Nome Artístico / Marca</label>
+            <label className="block text-xs font-semibold text-[#181615] mb-1.5">Nome Artístico / Marca</label>
             <input
               type="text"
               required
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+              className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">Arroba / Handle</label>
+            <label className="block text-xs font-semibold text-[#181615] mb-1.5">Arroba / Handle</label>
             <input
               type="text"
               required
               value={handle}
               onChange={(e) => setHandle(e.target.value)}
-              className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+              className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">Cidade / Localização</label>
+            <label className="block text-xs font-semibold text-[#181615] mb-1.5">Cidade / Localização</label>
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+              className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-zinc-300 mb-1.5">Biografia da Vitrine (Hero)</label>
+          <label className="block text-xs font-semibold text-[#181615] mb-1.5">Biografia da Vitrine (Hero)</label>
           <textarea
             rows={3}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+            className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-[#453F3B] pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-[#181615]/15 pt-6">
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            <label className="block text-xs font-semibold text-[#181615] mb-1.5">
               Mensalidade Clube VIP (R$)
             </label>
             <input
@@ -364,11 +377,11 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
               min="9.90"
               value={vipPrice}
               onChange={(e) => setVipPrice(e.target.value)}
-              className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+              className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 font-mono text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            <label className="block text-xs font-semibold text-[#181615] mb-1.5">
               Chave Pix de Recebimento
             </label>
             <input
@@ -376,11 +389,26 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
               value={pixKey}
               onChange={(e) => setPixKey(e.target.value)}
               placeholder="E-mail, CPF/CNPJ ou Chave Aleatória"
-              className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+              className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 font-mono text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
             />
           </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs font-semibold text-[#181615] mb-1.5">
+              WhatsApp para Receber Comprovantes de Pagamento (com DDD)
+            </label>
+            <input
+              type="text"
+              value={whatsappNumber}
+              onChange={(e) => setWhatsappNumber(e.target.value)}
+              placeholder="Ex: (21) 99999-9999 ou 5521999999999"
+              className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 font-mono text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+            />
+            <p className="text-[11px] text-[#524B45] mt-1">
+              Quando preenchido, os compradores verão um botão direto para abrir seu WhatsApp e enviar o comprovante de pagamento.
+            </p>
+          </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            <label className="block text-xs font-semibold text-[#181615] mb-1.5">
               E-mail de Login do Administrador (ou Gmail)
             </label>
             <input
@@ -388,11 +416,11 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
               value={newAdminEmail}
               onChange={(e) => setNewAdminEmail(e.target.value)}
               placeholder="seu@gmail.com"
-              className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+              className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+            <label className="block text-xs font-semibold text-[#181615] mb-1.5">
               Nova Senha de Acesso (opcional)
             </label>
             <input
@@ -401,33 +429,40 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
               value={newAdminPassword}
               onChange={(e) => setNewAdminPassword(e.target.value)}
               placeholder="Mínimo 6 caracteres"
-              className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+              className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-zinc-300 mb-1.5">Descrição dos Benefícios VIP</label>
+          <label className="block text-xs font-semibold text-[#181615] mb-1.5">Descrição dos Benefícios VIP</label>
           <textarea
             rows={2}
             value={vipDesc}
             onChange={(e) => setVipDesc(e.target.value)}
-            className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+            className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2.5 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
           />
         </div>
 
+        <AboutCreatorEditor
+          value={aboutSection}
+          onChange={setAboutSection}
+          creatorToken={creatorToken}
+          onUpdated={onUpdated}
+        />
+
         {onOpenVideoCalls && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-sm border border-[#181615]/20 bg-white px-4 py-3.5">
             <div>
-              <p className="text-xs font-semibold text-zinc-100">Planos de Vídeo Chamada na Vitrine (4 planos)</p>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs font-semibold text-[#181615]">Planos de Vídeo Chamada na Vitrine (4 planos)</p>
+              <p className="text-xs text-[#524B45]">
                 Personalize minutos, valores em R$ e títulos exibidos no destaque da página pública.
               </p>
             </div>
             <button
               type="button"
               onClick={onOpenVideoCalls}
-              className="rounded-lg border border-[#D4AF37]/60 bg-[#D4AF37]/10 px-3.5 py-2 text-xs font-medium text-[#E5C158] hover:bg-[#D4AF37]/20 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-3.5 py-2 text-xs font-semibold text-[#181615] hover:border-[#181615] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               Editar Planos de Vídeo Chamada →
             </button>
@@ -436,16 +471,16 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
 
         {msg && (
           <div
-            className={`flex items-center gap-2.5 rounded-lg border p-3.5 text-xs ${
+            className={`flex items-center gap-2.5 rounded-sm border p-3.5 text-xs ${
               msg.type === 'ok'
-                ? 'border-emerald-700/60 bg-emerald-950/30 text-emerald-200'
-                : 'border-rose-700/60 bg-rose-950/30 text-rose-200'
+                ? 'border-emerald-700/35 bg-emerald-50 text-emerald-900'
+                : 'border-rose-700/35 bg-rose-50 text-rose-900'
             }`}
           >
             {msg.type === 'ok' ? (
-              <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
             ) : (
-              <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+              <AlertCircle className="h-4 w-4 text-rose-700 shrink-0" />
             )}
             <span>{msg.text}</span>
           </div>
@@ -454,7 +489,7 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-lg bg-[#E5C158] px-6 py-2.5 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
+          className="rounded-sm bg-[#181615] px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-50 transition-colors cursor-pointer"
         >
           {saving ? 'Salvando...' : 'Salvar Informações do Site'}
         </button>

@@ -288,24 +288,27 @@ export const FansManager: React.FC<FansManagerProps> = ({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#453F3B] pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#181615]/20 pb-5">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-zinc-50">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#524B45]">
+            Comunidade & Automação
+          </p>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold uppercase tracking-tight text-[#181615] mt-1">
             Assinantes & Acessos VIP ({fans.length})
           </h2>
-          <p className="text-sm text-zinc-400 mt-1">
+          <p className="text-sm text-[#524B45] mt-1">
             Gerencie acessos VIP por e-mail e o disparo automático de boas-vindas via Supabase Edge Function.
           </p>
         </div>
 
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-[#23201E] border border-[#453F3B] w-fit shrink-0">
+        <div className="flex items-center gap-1 p-1 rounded-sm bg-[#EFEBE5] border border-[#181615]/20 w-fit shrink-0">
           <button
             type="button"
             onClick={() => setSubTab('fans')}
-            className={`px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+            className={`px-3.5 py-1.5 text-xs font-medium rounded-sm transition-colors cursor-pointer ${
               subTab === 'fans'
-                ? 'bg-[#E5C158] text-[#1C1918] font-semibold'
-                : 'text-zinc-400 hover:text-zinc-100'
+                ? 'bg-[#181615] text-[#FAF8F5] font-semibold'
+                : 'text-[#524B45] hover:text-[#181615]'
             }`}
           >
             Assinantes
@@ -313,10 +316,10 @@ export const FansManager: React.FC<FansManagerProps> = ({
           <button
             type="button"
             onClick={() => setSubTab('welcome_email')}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium rounded-sm transition-colors cursor-pointer ${
               subTab === 'welcome_email'
-                ? 'bg-[#E5C158] text-[#1C1918] font-semibold'
-                : 'text-zinc-400 hover:text-zinc-100'
+                ? 'bg-[#181615] text-[#FAF8F5] font-semibold'
+                : 'text-[#524B45] hover:text-[#181615]'
             }`}
           >
             <Mail className="h-3.5 w-3.5" />
@@ -330,49 +333,49 @@ export const FansManager: React.FC<FansManagerProps> = ({
           {/* Add / Grant VIP form */}
           <form
             onSubmit={handleAddOrGrantFan}
-            className="rounded-xl border border-[#453F3B] bg-[#23201E] p-5 space-y-4"
+            className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-5 space-y-4"
           >
-            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-200">
-              <UserPlus className="h-4 w-4 text-[#D4AF37]" />
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#181615]">
+              <UserPlus className="h-4 w-4 text-[#8A5A00]" />
               <span>Cadastrar Cliente ou Liberar VIP Manualmente</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
               <div className="md:col-span-5">
-                <label className="block text-xs text-zinc-400 mb-1">E-mail do Cliente</label>
+                <label className="block text-xs font-semibold text-[#181615] mb-1">E-mail do Cliente</label>
                 <input
                   type="email"
                   required
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="cliente@email.com"
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2 text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
                 />
               </div>
               <div className="md:col-span-4">
-                <label className="block text-xs text-zinc-400 mb-1">Nome / Apelido (opcional)</label>
+                <label className="block text-xs font-semibold text-[#181615] mb-1">Nome / Apelido (opcional)</label>
                 <input
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder="Ex: Lucas SP"
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3.5 py-2 text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
                 />
               </div>
               <div className="md:col-span-3 flex items-center gap-3">
-                <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer shrink-0">
+                <label className="flex items-center gap-2 text-xs font-medium text-[#181615] cursor-pointer shrink-0">
                   <input
                     type="checkbox"
                     checked={newIsVip}
                     onChange={(e) => setNewIsVip(e.target.checked)}
-                    className="h-4 w-4 accent-[#D4AF37]"
+                    className="h-4 w-4 accent-[#181615]"
                   />
                   <span>VIP 30 dias</span>
                 </label>
                 <button
                   type="submit"
                   disabled={adding}
-                  className="w-full rounded-lg bg-[#D4AF37] px-4 py-2 text-xs font-semibold text-zinc-950 hover:bg-[#E5C158] disabled:opacity-50 transition-colors cursor-pointer"
+                  className="w-full rounded-sm bg-[#181615] px-4 py-2 text-xs font-semibold text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-50 transition-colors cursor-pointer"
                 >
                   {adding ? 'Salvando...' : 'Salvar'}
                 </button>
@@ -381,16 +384,16 @@ export const FansManager: React.FC<FansManagerProps> = ({
 
             {msg && (
               <div
-                className={`flex items-center gap-2 rounded-lg border p-3 text-xs ${
+                className={`flex items-center gap-2 rounded-sm border p-3 text-xs ${
                   msg.type === 'ok'
-                    ? 'border-emerald-700/60 bg-emerald-950/30 text-emerald-200'
-                    : 'border-rose-700/60 bg-rose-950/30 text-rose-200'
+                    ? 'border-emerald-700/35 bg-emerald-50 text-emerald-900'
+                    : 'border-rose-700/35 bg-rose-50 text-rose-900'
                 }`}
               >
                 {msg.type === 'ok' ? (
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                  <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
                 ) : (
-                  <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+                  <AlertCircle className="h-4 w-4 text-rose-700 shrink-0" />
                 )}
                 <span>{msg.text}</span>
               </div>
@@ -399,7 +402,7 @@ export const FansManager: React.FC<FansManagerProps> = ({
 
           {/* Filter Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-[#23201E] border border-[#453F3B] w-fit">
+            <div className="flex items-center gap-1 p-1 rounded-sm bg-[#EFEBE5] border border-[#181615]/20 w-fit">
               {(
                 [
                   { id: 'all', label: 'Todos' },
@@ -411,10 +414,10 @@ export const FansManager: React.FC<FansManagerProps> = ({
                   key={opt.id}
                   type="button"
                   onClick={() => setTierFilter(opt.id)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
+                  className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-colors cursor-pointer ${
                     tierFilter === opt.id
-                      ? 'bg-[#E5C158] text-[#1C1918] font-semibold'
-                      : 'text-zinc-400 hover:text-zinc-100'
+                      ? 'bg-[#181615] text-[#FAF8F5] font-semibold'
+                      : 'text-[#524B45] hover:text-[#181615]'
                   }`}
                 >
                   {opt.label}
@@ -423,60 +426,60 @@ export const FansManager: React.FC<FansManagerProps> = ({
             </div>
 
             <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#7A726B]" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por e-mail ou nome..."
-                className="w-64 rounded-lg border border-[#453F3B] bg-[#23201E] pl-9 pr-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                className="w-64 rounded-sm border border-[#181615]/25 bg-white pl-9 pr-3 py-2 text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
               />
             </div>
           </div>
 
           {/* Fans Table */}
           {filteredFans.length === 0 ? (
-            <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-12 text-center space-y-2">
-              <p className="font-display text-lg text-zinc-200">Nenhum assinante encontrado</p>
-              <p className="text-xs text-zinc-400">
+            <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-12 text-center space-y-2">
+              <p className="font-display text-xl font-bold uppercase text-[#181615]">Nenhum assinante encontrado</p>
+              <p className="text-xs text-[#524B45]">
                 Clientes cadastrados pela vitrine ou liberados manualmente aparecerão aqui.
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-[#453F3B] bg-[#23201E]">
+            <div className="overflow-x-auto rounded-sm border border-[#181615]/20 bg-white">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-[#453F3B] text-zinc-400">
+                <thead className="border-b border-[#181615]/20 bg-[#F3EFEA] text-[11px] uppercase tracking-wider text-[#524B45]">
                   <tr>
-                    <th className="px-4 py-3 font-medium">Assinante</th>
-                    <th className="px-4 py-3 font-medium">Status VIP</th>
-                    <th className="px-4 py-3 font-medium">Expira em</th>
-                    <th className="px-4 py-3 font-medium">Cadastro</th>
-                    <th className="px-4 py-3 font-medium text-right">Ações</th>
+                    <th className="px-4 py-3 font-semibold">Assinante</th>
+                    <th className="px-4 py-3 font-semibold">Status VIP</th>
+                    <th className="px-4 py-3 font-semibold">Expira em</th>
+                    <th className="px-4 py-3 font-semibold">Cadastro</th>
+                    <th className="px-4 py-3 font-semibold text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#453F3B]/70">
+                <tbody className="divide-y divide-[#181615]/10">
                   {filteredFans.map((fan) => {
                     const activeVip = isFanVipActive(fan);
                     return (
-                      <tr key={fan.id} className="hover:bg-[#1C1918]/50 transition-colors">
+                      <tr key={fan.id} className="hover:bg-[#FAF8F5] transition-colors">
                         <td className="px-4 py-3">
-                          <p className="font-medium text-zinc-100">{fan.email}</p>
-                          {fan.display_name && <p className="text-zinc-500">{fan.display_name}</p>}
+                          <p className="font-semibold text-[#181615]">{fan.email}</p>
+                          {fan.display_name && <p className="text-[#524B45]">{fan.display_name}</p>}
                         </td>
                         <td className="px-4 py-3">
                           {activeVip ? (
-                            <span className="inline-flex items-center gap-1.5 text-[#E5C158] font-medium">
+                            <span className="inline-flex items-center gap-1.5 text-[#8A5A00] font-semibold">
                               <Crown className="h-3.5 w-3.5" />
                               VIP Ativo
                             </span>
                           ) : (
-                            <span className="text-zinc-400">Conta Padrão</span>
+                            <span className="text-[#524B45]">Conta Padrão</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 font-mono text-zinc-400 tabular-nums">
+                        <td className="px-4 py-3 font-mono text-[#524B45] tabular-nums">
                           {fan.vip_expires_at ? formatDateShort(fan.vip_expires_at) : '—'}
                         </td>
-                        <td className="px-4 py-3 font-mono text-zinc-500 tabular-nums">
+                        <td className="px-4 py-3 font-mono text-[#524B45] tabular-nums">
                           {formatDateShort(fan.created_at)}
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -485,9 +488,9 @@ export const FansManager: React.FC<FansManagerProps> = ({
                               type="button"
                               disabled={busyId === fan.id}
                               onClick={() => handleUpdateVip(fan, { is_vip: true, extend_days: 30 })}
-                              className="inline-flex items-center gap-1 rounded-md border border-[#453F3B] bg-[#1C1918] px-2.5 py-1 text-xs text-[#E5C158] hover:border-[#D4AF37] disabled:opacity-50 cursor-pointer"
+                              className="inline-flex items-center gap-1 rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-2.5 py-1 text-xs font-semibold text-[#181615] hover:border-[#181615] hover:bg-[#E7E1D9] disabled:opacity-50 cursor-pointer"
                             >
-                              <CalendarPlus className="h-3.5 w-3.5" />
+                              <CalendarPlus className="h-3.5 w-3.5 text-[#8A5A00]" />
                               {activeVip ? '+30 dias' : 'Ativar VIP'}
                             </button>
                             {activeVip && (
@@ -495,7 +498,7 @@ export const FansManager: React.FC<FansManagerProps> = ({
                                 type="button"
                                 disabled={busyId === fan.id}
                                 onClick={() => handleUpdateVip(fan, { is_vip: false })}
-                                className="inline-flex items-center gap-1 rounded-md border border-[#453F3B] bg-[#1C1918] px-2.5 py-1 text-xs text-zinc-400 hover:border-rose-500 hover:text-rose-300 disabled:opacity-50 cursor-pointer"
+                                className="inline-flex items-center gap-1 rounded-sm border border-[#181615]/25 bg-white px-2.5 py-1 text-xs font-medium text-[#524B45] hover:border-rose-700 hover:text-rose-700 disabled:opacity-50 cursor-pointer"
                               >
                                 <ShieldOff className="h-3.5 w-3.5" />
                                 Remover VIP
@@ -515,10 +518,12 @@ export const FansManager: React.FC<FansManagerProps> = ({
         /* WELCOME EMAIL EDGE FUNCTION TAB */
         <div className="space-y-6">
           {/* Status Strip */}
-          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#453F3B] rounded-xl border border-[#453F3B] bg-[#23201E]">
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#181615]/20 rounded-sm border border-[#181615]/20 bg-[#F3EFEA]">
             <div className="p-5 space-y-1">
-              <p className="text-xs text-zinc-400">Edge Function (Supabase)</p>
-              <p className="text-sm font-semibold text-zinc-100">
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-[#524B45]">
+                Edge Function (Supabase)
+              </p>
+              <p className="text-sm font-bold text-[#181615]">
                 {loadingWelcome
                   ? 'Verificando...'
                   : welcomeInfo?.edgeDeployed
@@ -527,14 +532,18 @@ export const FansManager: React.FC<FansManagerProps> = ({
               </p>
             </div>
             <div className="p-5 space-y-1">
-              <p className="text-xs text-zinc-400">Provedor de Envio (Resend)</p>
-              <p className="text-sm font-semibold text-zinc-100">
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-[#524B45]">
+                Provedor de Envio (Resend)
+              </p>
+              <p className="text-sm font-bold text-[#181615]">
                 {welcomeInfo?.resendConfigured ? 'Chave Resend Configurada' : 'Pendente (RESEND_API_KEY)'}
               </p>
             </div>
             <div className="p-5 space-y-1">
-              <p className="text-xs text-zinc-400">Gatilhos Automáticos</p>
-              <p className="text-sm font-semibold text-[#E5C158]">
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-[#524B45]">
+                Gatilhos Automáticos
+              </p>
+              <p className="text-sm font-bold text-[#8A5A00]">
                 Novo Cadastro & 1ª Compra
               </p>
             </div>
@@ -542,16 +551,16 @@ export const FansManager: React.FC<FansManagerProps> = ({
 
           {edgeActionMsg && (
             <div
-              className={`flex items-center gap-2.5 rounded-xl border p-4 text-xs ${
+              className={`flex items-center gap-2.5 rounded-sm border p-4 text-xs ${
                 edgeActionMsg.type === 'ok'
-                  ? 'border-emerald-700/60 bg-emerald-950/30 text-emerald-200'
-                  : 'border-rose-700/60 bg-rose-950/30 text-rose-200'
+                  ? 'border-emerald-700/35 bg-emerald-50 text-emerald-900'
+                  : 'border-rose-700/35 bg-rose-50 text-rose-900'
               }`}
             >
               {edgeActionMsg.type === 'ok' ? (
-                <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
               ) : (
-                <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+                <AlertCircle className="h-4 w-4 text-rose-700 shrink-0" />
               )}
               <span>{edgeActionMsg.text}</span>
             </div>
@@ -559,19 +568,19 @@ export const FansManager: React.FC<FansManagerProps> = ({
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Deploy & Email Provider Card */}
-            <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-5">
+            <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-6 space-y-5">
               <div>
-                <h3 className="font-display text-lg font-semibold text-zinc-50">
+                <h3 className="font-display text-xl font-bold uppercase tracking-tight text-[#181615]">
                   Publicar Edge Function & Configurar Envio
                 </h3>
-                <p className="text-xs text-zinc-400 mt-1">
-                  A Edge Function <span className="font-mono text-zinc-300">welcome-fan-email</span> garante idempotência (1 boas-vindas por fã) e dispara via Resend API.
+                <p className="text-xs text-[#524B45] mt-1">
+                  A Edge Function <span className="font-mono font-semibold text-[#181615]">welcome-fan-email</span> garante idempotência (1 boas-vindas por fã) e dispara via Resend API.
                 </p>
               </div>
 
-              <form onSubmit={handleSaveEmailConfig} className="space-y-3 border-b border-[#453F3B] pb-5">
+              <form onSubmit={handleSaveEmailConfig} className="space-y-3 border-b border-[#181615]/15 pb-5">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">
+                  <label className="block text-xs font-semibold text-[#181615] mb-1">
                     Chave API do Resend (re_...)
                   </label>
                   <input
@@ -579,11 +588,11 @@ export const FansManager: React.FC<FansManagerProps> = ({
                     value={resendKeyInput}
                     onChange={(e) => setResendKeyInput(e.target.value)}
                     placeholder={welcomeInfo?.resendConfigured ? 'Chave já salva (digite para alterar)' : 're_xxxxxxxxxxxxx'}
-                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                    className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 font-mono text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">
+                  <label className="block text-xs font-semibold text-[#181615] mb-1">
                     Remetente (From)
                   </label>
                   <input
@@ -591,13 +600,13 @@ export const FansManager: React.FC<FansManagerProps> = ({
                     value={fromEmailInput}
                     onChange={(e) => setFromEmailInput(e.target.value)}
                     placeholder="Maison Privé <boasvindas@seudominio.com>"
-                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                    className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={edgeBusy !== null}
-                  className="rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] disabled:opacity-50 cursor-pointer"
+                  className="rounded-sm border border-[#181615]/30 bg-white px-4 py-2 text-xs font-semibold text-[#181615] hover:border-[#181615] disabled:opacity-50 cursor-pointer"
                 >
                   {edgeBusy === 'save' ? 'Salvando...' : 'Salvar Credenciais de E-mail'}
                 </button>
@@ -605,7 +614,7 @@ export const FansManager: React.FC<FansManagerProps> = ({
 
               <form onSubmit={handleDeployEdgeFunction} className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1">
+                  <label className="block text-xs font-semibold text-[#181615] mb-1">
                     Publicar Edge Function + Logs no Supabase (1 Clique)
                   </label>
                   <input
@@ -613,13 +622,13 @@ export const FansManager: React.FC<FansManagerProps> = ({
                     value={supabasePatInput}
                     onChange={(e) => setSupabasePatInput(e.target.value)}
                     placeholder="Token Pessoal Supabase (sbp_...)"
-                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                    className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 font-mono text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={edgeBusy !== null || !supabaseReady}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#D4AF37] px-4 py-2.5 text-xs font-semibold text-zinc-950 hover:bg-[#E5C158] disabled:opacity-50 cursor-pointer"
+                  className="inline-flex items-center gap-2 rounded-sm bg-[#181615] px-4 py-2.5 text-xs font-semibold text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-50 cursor-pointer"
                 >
                   <Rocket className="h-3.5 w-3.5" />
                   {edgeBusy === 'deploy' ? 'Publicando no Supabase...' : 'Publicar Edge Function no Supabase'}
@@ -628,35 +637,35 @@ export const FansManager: React.FC<FansManagerProps> = ({
             </div>
 
             {/* Manual Test Card */}
-            <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-5 flex flex-col justify-between">
+            <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-6 space-y-5 flex flex-col justify-between">
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-display text-lg font-semibold text-zinc-50">
+                  <h3 className="font-display text-xl font-bold uppercase tracking-tight text-[#181615]">
                     Testar Disparo de Boas-Vindas
                   </h3>
-                  <p className="text-xs text-zinc-400 mt-1">
+                  <p className="text-xs text-[#524B45] mt-1">
                     Simule imediatamente um novo cadastro ou primeira compra para validar a Edge Function e os logs.
                   </p>
                 </div>
 
                 <form onSubmit={handleSendTestEmail} className="space-y-3">
                   <div>
-                    <label className="block text-xs font-medium text-zinc-300 mb-1">E-mail de Destino</label>
+                    <label className="block text-xs font-semibold text-[#181615] mb-1">E-mail de Destino</label>
                     <input
                       type="email"
                       required
                       value={testEmailInput}
                       onChange={(e) => setTestEmailInput(e.target.value)}
                       placeholder="fa.teste@gmail.com"
-                      className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                      className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-zinc-300 mb-1">Modelo de Mensagem</label>
+                    <label className="block text-xs font-semibold text-[#181615] mb-1">Modelo de Mensagem</label>
                     <select
                       value={testTrigger}
                       onChange={(e) => setTestTrigger(e.target.value as 'signup' | 'first_purchase')}
-                      className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                      className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 text-xs text-[#181615] focus:border-[#181615] focus:outline-none"
                     >
                       <option value="signup">Boas-Vindas de Novo Cadastro</option>
                       <option value="first_purchase">Boas-Vindas de Primeira Compra</option>
@@ -665,7 +674,7 @@ export const FansManager: React.FC<FansManagerProps> = ({
                   <button
                     type="submit"
                     disabled={edgeBusy !== null || !supabaseReady}
-                    className="inline-flex items-center gap-2 rounded-lg bg-[#D4AF37] px-4 py-2.5 text-xs font-semibold text-zinc-950 hover:bg-[#E5C158] disabled:opacity-50 cursor-pointer"
+                    className="inline-flex items-center gap-2 rounded-sm bg-[#181615] px-4 py-2.5 text-xs font-semibold text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-50 cursor-pointer"
                   >
                     <Send className="h-3.5 w-3.5" />
                     {edgeBusy === 'test' ? 'Disparando...' : 'Testar Disparo Agora'}
@@ -674,21 +683,21 @@ export const FansManager: React.FC<FansManagerProps> = ({
               </div>
 
               {welcomeInfo && (
-                <div className="border-t border-[#453F3B] pt-4 flex flex-wrap items-center gap-2">
+                <div className="border-t border-[#181615]/15 pt-4 flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => handleCopyText(welcomeInfo.edgeFunctionCode, 'code')}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-[#453F3B] bg-[#1C1918] px-3 py-1.5 text-[11px] text-zinc-300 hover:border-zinc-500 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-sm border border-[#181615]/30 bg-white px-3 py-1.5 text-[11px] font-semibold text-[#181615] hover:border-[#181615] cursor-pointer"
                   >
-                    {copiedBlock === 'code' ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    {copiedBlock === 'code' ? <Check className="h-3 w-3 text-emerald-700" /> : <Copy className="h-3 w-3" />}
                     Copiar Código Edge (.ts)
                   </button>
                   <button
                     type="button"
                     onClick={() => handleCopyText(welcomeInfo.migrationSql, 'sql')}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-[#453F3B] bg-[#1C1918] px-3 py-1.5 text-[11px] text-zinc-300 hover:border-zinc-500 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 rounded-sm border border-[#181615]/30 bg-white px-3 py-1.5 text-[11px] font-semibold text-[#181615] hover:border-[#181615] cursor-pointer"
                   >
-                    {copiedBlock === 'sql' ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                    {copiedBlock === 'sql' ? <Check className="h-3 w-3 text-emerald-700" /> : <Copy className="h-3 w-3" />}
                     Copiar SQL da Tabela de Logs
                   </button>
                 </div>
@@ -697,20 +706,20 @@ export const FansManager: React.FC<FansManagerProps> = ({
           </div>
 
           {/* Dispatch History Ledger */}
-          <div className="rounded-xl border border-[#453F3B] bg-[#23201E] overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#453F3B]">
+          <div className="rounded-sm border border-[#181615]/20 bg-white overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#181615]/20 bg-[#F3EFEA]">
               <div>
-                <h3 className="font-display text-base font-semibold text-zinc-100">
+                <h3 className="font-display text-lg font-bold uppercase tracking-tight text-[#181615]">
                   Histórico de Disparos Automáticos
                 </h3>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-[#524B45]">
                   Registros de novos fãs e primeiras compras processados pela orquestração Edge.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={loadWelcomeOverview}
-                className="inline-flex items-center gap-1.5 rounded-md border border-[#453F3B] bg-[#1C1918] px-3 py-1.5 text-xs text-zinc-300 hover:border-[#D4AF37] cursor-pointer"
+                className="inline-flex items-center gap-1.5 rounded-sm border border-[#181615]/30 bg-white px-3 py-1.5 text-xs font-semibold text-[#181615] hover:border-[#181615] cursor-pointer"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${loadingWelcome ? 'animate-spin' : ''}`} />
                 Atualizar
@@ -718,47 +727,47 @@ export const FansManager: React.FC<FansManagerProps> = ({
             </div>
 
             {welcomeInfo?.schemaNeedsMigration ? (
-              <div className="p-6 text-xs text-amber-200">
-                A tabela <span className="font-mono">welcome_email_logs</span> ainda não foi criada no seu Supabase. Use o botão "Publicar Edge Function no Supabase" acima ou execute o SQL copiado no SQL Editor do Supabase.
+              <div className="p-6 text-xs text-amber-900 bg-amber-50">
+                A tabela <span className="font-mono font-semibold">welcome_email_logs</span> ainda não foi criada no seu Supabase. Use o botão "Publicar Edge Function no Supabase" acima ou execute o SQL copiado no SQL Editor do Supabase.
               </div>
             ) : !welcomeInfo || welcomeInfo.logs.length === 0 ? (
-              <div className="p-8 text-center text-xs text-zinc-500">
+              <div className="p-8 text-center text-xs text-[#524B45]">
                 Nenhum disparo registrado ainda. Quando um novo fã se cadastrar ou fizer a 1ª compra, o registro aparecerá aqui.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="border-b border-[#453F3B] text-zinc-400">
+                  <thead className="border-b border-[#181615]/20 bg-[#FAF8F5] text-[11px] uppercase tracking-wider text-[#524B45]">
                     <tr>
-                      <th className="px-4 py-3 font-medium">E-mail do Fã</th>
-                      <th className="px-4 py-3 font-medium">Gatilho</th>
-                      <th className="px-4 py-3 font-medium">Provedor</th>
-                      <th className="px-4 py-3 font-medium">Status</th>
-                      <th className="px-4 py-3 font-medium text-right">Data</th>
+                      <th className="px-4 py-3 font-semibold">E-mail do Fã</th>
+                      <th className="px-4 py-3 font-semibold">Gatilho</th>
+                      <th className="px-4 py-3 font-semibold">Provedor</th>
+                      <th className="px-4 py-3 font-semibold">Status</th>
+                      <th className="px-4 py-3 font-semibold text-right">Data</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#453F3B]/70">
+                  <tbody className="divide-y divide-[#181615]/10">
                     {welcomeInfo.logs.map((log) => (
-                      <tr key={log.id} className="hover:bg-[#1C1918]/50">
-                        <td className="px-4 py-3 font-medium text-zinc-100">{log.fan_email}</td>
-                        <td className="px-4 py-3 text-zinc-300">
+                      <tr key={log.id} className="hover:bg-[#FAF8F5]">
+                        <td className="px-4 py-3 font-semibold text-[#181615]">{log.fan_email}</td>
+                        <td className="px-4 py-3 text-[#524B45]">
                           {log.trigger_source === 'first_purchase'
                             ? '1ª Compra'
                             : log.trigger_source === 'signup'
                             ? 'Novo Cadastro'
                             : 'Teste Manual'}
                         </td>
-                        <td className="px-4 py-3 font-mono text-zinc-400">{log.provider}</td>
+                        <td className="px-4 py-3 font-mono text-[#524B45]">{log.provider}</td>
                         <td className="px-4 py-3">
                           <span
                             className={
                               log.status === 'sent'
-                                ? 'text-emerald-300 font-medium'
+                                ? 'text-emerald-800 font-semibold'
                                 : log.status === 'pending_config'
-                                ? 'text-amber-300'
+                                ? 'text-amber-800 font-semibold'
                                 : log.status === 'failed'
-                                ? 'text-rose-300'
-                                : 'text-zinc-400'
+                                ? 'text-rose-800 font-semibold'
+                                : 'text-[#524B45]'
                             }
                           >
                             {log.status === 'sent'
@@ -770,12 +779,12 @@ export const FansManager: React.FC<FansManagerProps> = ({
                               : 'Ignorado'}
                           </span>
                           {log.error_message && (
-                            <p className="text-[11px] text-zinc-500 mt-0.5 max-w-xs truncate" title={log.error_message}>
+                            <p className="text-[11px] text-[#524B45] mt-0.5 max-w-xs truncate" title={log.error_message}>
                               {log.error_message}
                             </p>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-right font-mono text-zinc-400 tabular-nums">
+                        <td className="px-4 py-3 text-right font-mono text-[#524B45] tabular-nums">
                           {formatDateShort(log.created_at)}
                         </td>
                       </tr>

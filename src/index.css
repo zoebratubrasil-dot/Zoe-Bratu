@@ -30,3 +30,28 @@
   -webkit-touch-callout: none;
   -webkit-user-drag: none;
 }
+
+.film-perforations-light {
+  background-color: #181615;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='18' viewBox='0 0 22 18'%3E%3Crect x='5' y='4' width='12' height='10' rx='2' fill='%23EAE6E2'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: left center;
+  background-size: 22px 18px;
+}
+
+.film-perforations-dark {
+  background-color: #141211;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='18' viewBox='0 0 22 18'%3E%3Crect x='5' y='4' width='12' height='10' rx='2' fill='%233A3431'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-position: left center;
+  background-size: 22px 18px;
+}
+
+.film-perforations-vertical {
+  background-color: #181615;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='20' viewBox='0 0 14 20'%3E%3Crect x='3' y='5' width='8' height='10' rx='1.5' fill='%23342F2C'/%3E%3C/svg%3E");
+  background-repeat: repeat-y;
+  background-position: center top;
+  background-size: 14px 20px;
+}
+

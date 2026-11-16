@@ -78,13 +78,16 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#453F3B] pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#181615]/20 pb-5">
         <div>
-          <h2 className="font-display text-2xl font-semibold text-zinc-50">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#524B45]">
+            Livro Financeiro
+          </p>
+          <h2 className="font-display text-3xl sm:text-4xl font-bold uppercase tracking-tight text-[#181615] mt-1">
             Banco de Vendas & Financeiro
           </h2>
-          <p className="text-sm text-zinc-400 mt-1">
-            Acompanhe receitas de assinaturas VIP, desbloqueios avulsos (PPV) e mimos em tempo real.
+          <p className="text-sm text-[#524B45] mt-1">
+            Acompanhe receitas de assinaturas VIP, vídeo chamadas, desbloqueios avulsos (PPV) e mimos em tempo real.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -92,7 +95,7 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
             <button
               type="button"
               onClick={onOpenPix}
-              className="inline-flex items-center gap-2 rounded-lg border border-[#D4AF37]/50 bg-[#D4AF37]/10 px-4 py-2 text-xs font-medium text-[#E5C158] hover:bg-[#D4AF37]/20 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-4 py-2 text-xs font-semibold text-[#181615] hover:border-[#181615] transition-colors cursor-pointer"
             >
               <QrCode className="h-3.5 w-3.5" />
               Chave PIX & QR Code
@@ -102,7 +105,7 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
             type="button"
             onClick={handleExportCsv}
             disabled={filteredSales.length === 0}
-            className="inline-flex items-center gap-2 rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-40 cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-sm bg-[#181615] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-40 cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" />
             Exportar CSV
@@ -111,28 +114,36 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
       </div>
 
       {/* Metrics Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#453F3B] rounded-xl border border-[#453F3B] bg-[#23201E]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#181615]/15 rounded-sm border border-[#181615]/20 bg-[#F3EFEA]">
         <div className="p-5">
-          <p className="text-xs text-zinc-400 mb-1">Receita Total Confirmada</p>
-          <p className="font-mono text-2xl font-semibold text-[#E5C158] tabular-nums">
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+            Receita Total Confirmada
+          </p>
+          <p className="font-mono text-2xl font-bold text-[#8A5A00] tabular-nums">
             {formatBrl(dashboard.metrics.totalRevenueBrl)}
           </p>
         </div>
         <div className="p-5">
-          <p className="text-xs text-zinc-400 mb-1">Assinaturas Clube VIP</p>
-          <p className="font-mono text-2xl font-semibold text-zinc-50 tabular-nums">
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+            Assinaturas Clube VIP
+          </p>
+          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
             {formatBrl(dashboard.metrics.vipRevenueBrl)}
           </p>
         </div>
         <div className="p-5">
-          <p className="text-xs text-zinc-400 mb-1">Vendas Avulsas (PPV)</p>
-          <p className="font-mono text-2xl font-semibold text-zinc-50 tabular-nums">
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+            Vendas Avulsas (PPV)
+          </p>
+          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
             {formatBrl(dashboard.metrics.ppvRevenueBrl)}
           </p>
         </div>
         <div className="p-5">
-          <p className="text-xs text-zinc-400 mb-1">Assinantes VIP Ativos</p>
-          <p className="font-mono text-2xl font-semibold text-zinc-50 tabular-nums">
+          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+            Assinantes VIP Ativos
+          </p>
+          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
             {dashboard.metrics.activeVipFans}
           </p>
         </div>
@@ -140,7 +151,7 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
 
       {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-[#23201E] border border-[#453F3B] w-fit">
+        <div className="flex flex-wrap items-center gap-1 p-1 rounded-sm bg-[#EFEBE5] border border-[#181615]/20 w-fit">
           {(
             [
               { id: 'all', label: 'Todas' },
@@ -154,8 +165,10 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
               key={opt.id}
               type="button"
               onClick={() => setTypeFilter(opt.id)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
-                typeFilter === opt.id ? 'bg-[#E5C158] text-[#1C1918] font-semibold' : 'text-zinc-400 hover:text-zinc-100'
+              className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-colors cursor-pointer ${
+                typeFilter === opt.id
+                  ? 'bg-[#181615] text-[#FAF8F5] font-semibold'
+                  : 'text-[#524B45] hover:text-[#181615]'
               }`}
             >
               {opt.label}
@@ -164,53 +177,53 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
         </div>
 
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#524B45]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filtrar por e-mail ou referência..."
-            className="w-64 rounded-lg border border-[#453F3B] bg-[#23201E] pl-9 pr-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+            className="w-64 rounded-sm border border-[#181615]/25 bg-white pl-9 pr-3 py-2 text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
           />
         </div>
       </div>
 
       {/* Ledger Table */}
       {filteredSales.length === 0 ? (
-        <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-12 text-center space-y-2">
-          <p className="font-display text-lg text-zinc-200">Nenhuma venda registrada ainda</p>
-          <p className="text-xs text-zinc-400">
-            Todas as assinaturas VIP, desbloqueios de fotos/vídeos e mimos aparecerão aqui automaticamente.
+        <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-12 text-center space-y-2">
+          <p className="font-display text-lg font-bold text-[#181615]">Nenhuma venda registrada ainda</p>
+          <p className="text-xs text-[#524B45]">
+            Todas as assinaturas VIP, vídeo chamadas, desbloqueios e mimos aparecerão aqui automaticamente.
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-[#453F3B] bg-[#23201E]">
+        <div className="overflow-x-auto rounded-sm border border-[#181615]/20 bg-white">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-[#453F3B] text-zinc-400">
+            <thead className="border-b border-[#181615]/15 bg-[#F3EFEA] text-[#524B45] uppercase tracking-wider text-[11px]">
               <tr>
-                <th className="px-4 py-3 font-medium">Data / Hora</th>
-                <th className="px-4 py-3 font-medium">Ref</th>
-                <th className="px-4 py-3 font-medium">Comprador</th>
-                <th className="px-4 py-3 font-medium">Produto</th>
-                <th className="px-4 py-3 font-medium">Método</th>
-                <th className="px-4 py-3 font-medium text-right">Valor</th>
-                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-semibold">Data / Hora</th>
+                <th className="px-4 py-3 font-semibold">Ref</th>
+                <th className="px-4 py-3 font-semibold">Comprador</th>
+                <th className="px-4 py-3 font-semibold">Produto</th>
+                <th className="px-4 py-3 font-semibold">Método</th>
+                <th className="px-4 py-3 font-semibold text-right">Valor</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#453F3B]/70">
+            <tbody className="divide-y divide-[#181615]/10">
               {filteredSales.map((sale) => (
-                <tr key={sale.id} className="hover:bg-[#1C1918]/50 transition-colors">
-                  <td className="px-4 py-3 font-mono text-zinc-400 tabular-nums whitespace-nowrap">
+                <tr key={sale.id} className="hover:bg-[#FAF8F5] transition-colors">
+                  <td className="px-4 py-3 font-mono text-[#524B45] tabular-nums whitespace-nowrap">
                     {formatDateTime(sale.created_at)}
                   </td>
-                  <td className="px-4 py-3 font-mono text-zinc-300 whitespace-nowrap">
+                  <td className="px-4 py-3 font-mono text-[#181615] whitespace-nowrap">
                     {sale.external_ref || sale.id.slice(0, 8)}
                   </td>
                   <td className="px-4 py-3">
-                    <p className="text-zinc-100 font-medium">{sale.buyer_email}</p>
-                    {sale.buyer_name && <p className="text-zinc-500">{sale.buyer_name}</p>}
+                    <p className="text-[#181615] font-semibold">{sale.buyer_email}</p>
+                    {sale.buyer_name && <p className="text-[#524B45]">{sale.buyer_name}</p>}
                   </td>
-                  <td className="px-4 py-3 text-zinc-300">
+                  <td className="px-4 py-3 text-[#181615]">
                     {sale.sale_type === 'vip_subscription'
                       ? 'Assinatura Mensal VIP'
                       : sale.sale_type === 'video_call'
@@ -219,10 +232,10 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
                       ? 'Mimo Direto'
                       : sale.media_title || 'Conteúdo Avulso'}
                   </td>
-                  <td className="px-4 py-3 text-zinc-400">
+                  <td className="px-4 py-3 text-[#524B45]">
                     {sale.payment_method === 'pix' ? 'Pix' : 'Cartão'}
                   </td>
-                  <td className="px-4 py-3 text-right font-mono font-semibold text-zinc-100 tabular-nums">
+                  <td className="px-4 py-3 text-right font-mono font-bold text-[#181615] tabular-nums">
                     {formatBrl(sale.amount_brl)}
                   </td>
                   <td className="px-4 py-3">
@@ -230,12 +243,12 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
                       value={sale.status}
                       disabled={updatingId === sale.id}
                       onChange={(e) => handleStatusChange(sale.id, e.target.value as SaleStatus)}
-                      className={`rounded-md border border-[#453F3B] bg-[#1C1918] px-2 py-1 text-xs font-medium focus:outline-none ${
+                      className={`rounded-sm border border-[#181615]/25 bg-white px-2 py-1 text-xs font-semibold focus:outline-none ${
                         sale.status === 'paid'
-                          ? 'text-emerald-300'
+                          ? 'text-emerald-800'
                           : sale.status === 'pending'
-                          ? 'text-amber-300'
-                          : 'text-rose-300'
+                          ? 'text-amber-800'
+                          : 'text-rose-800'
                       }`}
                     >
                       <option value="paid">Pago</option>

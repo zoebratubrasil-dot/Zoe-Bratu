@@ -9,6 +9,8 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import JSZip from 'jszip';
 import { createServer as createViteServer } from 'vite';
+import { DEFAULT_CREATOR_ABOUT, sanitizeCreatorAboutContent } from './src/lib/creatorAbout';
+import type { CreatorAboutContent } from './src/types';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
@@ -18,6 +20,8 @@ const ENV_LOCAL_PATH = path.resolve(process.cwd(), '.env.local');
 const SCHEMA_SQL_PATH = path.resolve(process.cwd(), 'supabase/schema.sql');
 const EDGE_WELCOME_FN_PATH = path.resolve(process.cwd(), 'supabase/functions/welcome-fan-email/index.ts');
 const VIDEO_CALL_PLANS_PATH = path.resolve(process.cwd(), '.video-call-plans.json');
+const CREATOR_CONTACT_PATH = path.resolve(process.cwd(), '.creator-contact.json');
+const CREATOR_ABOUT_PATH = path.resolve(process.cwd(), '.creator-about.json');
 
 export interface VideoCallPlanConfig {
   id: string;
@@ -108,6 +112,65 @@ function resolveProfileVideoCallPlans(profileRow: Record<string, unknown> | null
   return readVideoCallPlansFallback();
 }
 
+function sanitizeWhatsappNumber(raw: unknown): string {
+  const digits = String(raw || '').replace(/\D/g, '').slice(0, 18);
+  if (!digits) return '';
+  if ((digits.length === 10 || digits.length === 11) && !digits.startsWith('55')) {
+    return `55${digits}`;
+  }
+  return digits;
+}
+
+function readWhatsappFallback(): string {
+  try {
+    if (fs.existsSync(CREATOR_CONTACT_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(CREATOR_CONTACT_PATH, 'utf8'));
+      return sanitizeWhatsappNumber(parsed?.whatsapp_number);
+    }
+  } catch {
+    // ignore corrupt fallback
+  }
+  return '';
+}
+
+function saveWhatsappFallback(whatsappNumber: string): void {
+  fs.writeFileSync(
+    CREATOR_CONTACT_PATH,
+    JSON.stringify({ whatsapp_number: sanitizeWhatsappNumber(whatsappNumber) }, null, 2) + '\n',
+    'utf8'
+  );
+}
+
+function resolveProfileWhatsapp(profileRow: Record<string, unknown> | null | undefined): string {
+  if (profileRow && typeof profileRow.whatsapp_number === 'string' && profileRow.whatsapp_number.trim()) {
+    return sanitizeWhatsappNumber(profileRow.whatsapp_number);
+  }
+  return readWhatsappFallback();
+}
+
+function readAboutSectionFallback(): CreatorAboutContent {
+  try {
+    if (fs.existsSync(CREATOR_ABOUT_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(CREATOR_ABOUT_PATH, 'utf8'));
+      return sanitizeCreatorAboutContent(parsed);
+    }
+  } catch {
+    // ignore corrupt fallback
+  }
+  return sanitizeCreatorAboutContent(DEFAULT_CREATOR_ABOUT);
+}
+
+function saveAboutSectionFallback(about: CreatorAboutContent): void {
+  fs.writeFileSync(CREATOR_ABOUT_PATH, JSON.stringify(about, null, 2) + '\n', 'utf8');
+}
+
+function resolveProfileAboutSection(profileRow: Record<string, unknown> | null | undefined): CreatorAboutContent {
+  if (profileRow && profileRow.about_section && typeof profileRow.about_section === 'object') {
+    return sanitizeCreatorAboutContent(profileRow.about_section);
+  }
+  return readAboutSectionFallback();
+}
+
 function normalizeSaleRecord<T extends { sale_type: string; media_id?: string | null; external_ref?: string | null; amount_brl?: unknown }>(
   sale: T,
   mediaTitleMap: Map<string, string>
@@ -129,10 +192,10 @@ function normalizeSaleRecord<T extends { sale_type: string; media_id?: string | 
   };
 }
 
-const DEFAULT_AVATAR_ASSET = '/src/assets/images/creator_avatar_portrait_1794805425733.jpg';
-const DEFAULT_HERO_ASSET = '/src/assets/images/creator_hero_editorial_1794805426073.jpg';
-const FALLBACK_PHOTO_ASSET = '/src/assets/images/collection_silk_cover_1794805427019.jpg';
-const FALLBACK_VIDEO_ASSET = '/src/assets/images/collection_noir_video_1794805427080.jpg';
+const DEFAULT_AVATAR_ASSET = '/public/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG';
+const DEFAULT_HERO_ASSET = '/public/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG';
+const FALLBACK_PHOTO_ASSET = '/public/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG';
+const FALLBACK_VIDEO_ASSET = '/src/assets/images/video_call_camera_hero_1794853603138.jpg';
 
 const DEFAULT_CREATOR_PROFILE = {
   id: 'default-solo-creator',
@@ -140,14 +203,16 @@ const DEFAULT_CREATOR_PROFILE = {
   display_name: 'Valentina Noir',
   handle: '@valentinanoir',
   bio: 'Ensaios autorais, bastidores íntimos e vídeos exclusivos em 4K. Conteúdo estritamente para maiores de 18 anos.',
-  location: 'São Paulo, Brasil',
+  location: 'Rio de Janeiro, Brasil',
   avatar_url: DEFAULT_AVATAR_ASSET,
   hero_url: DEFAULT_HERO_ASSET,
   vip_monthly_price_brl: 49.9,
   vip_description:
     'Acesso ilimitado a todos os ensaios e vídeos marcados como VIP, atualizações semanais e prioridade em pedidos.',
   pix_key: '',
+  whatsapp_number: '',
   video_call_plans: DEFAULT_VIDEO_CALL_PLANS,
+  about_section: DEFAULT_CREATOR_ABOUT,
   age_verified_18: true,
   updated_at: new Date().toISOString(),
 };
@@ -1852,7 +1917,9 @@ async function startServer() {
         supabaseConnected: false,
         profile: maskProfileForClient({
           ...DEFAULT_CREATOR_PROFILE,
+          whatsapp_number: readWhatsappFallback(),
           video_call_plans: readVideoCallPlansFallback(),
+          about_section: readAboutSectionFallback(),
         }),
         mediaItems: [],
         fan: null,
@@ -1875,6 +1942,8 @@ async function startServer() {
         .maybeSingle();
 
       const resolvedPlans = resolveProfileVideoCallPlans(profileRow as Record<string, unknown> | null);
+      const resolvedWhatsapp = resolveProfileWhatsapp(profileRow as Record<string, unknown> | null);
+      const resolvedAbout = resolveProfileAboutSection(profileRow as Record<string, unknown> | null);
       const rawProfile = profileRow
         ? {
             ...DEFAULT_CREATOR_PROFILE,
@@ -1882,11 +1951,15 @@ async function startServer() {
             vip_monthly_price_brl: Number(profileRow.vip_monthly_price_brl || 49.9),
             avatar_url: profileRow.avatar_url || DEFAULT_CREATOR_PROFILE.avatar_url,
             hero_url: profileRow.hero_url || DEFAULT_CREATOR_PROFILE.hero_url,
+            whatsapp_number: resolvedWhatsapp,
             video_call_plans: resolvedPlans,
+            about_section: resolvedAbout,
           }
         : {
             ...DEFAULT_CREATOR_PROFILE,
+            whatsapp_number: resolvedWhatsapp,
             video_call_plans: resolvedPlans,
+            about_section: resolvedAbout,
           };
 
       const profile = maskProfileForClient(rawProfile);
@@ -2274,7 +2347,9 @@ async function startServer() {
         supabaseConnected: false,
         profile: maskProfileForClient({
           ...DEFAULT_CREATOR_PROFILE,
+          whatsapp_number: readWhatsappFallback(),
           video_call_plans: readVideoCallPlansFallback(),
+          about_section: readAboutSectionFallback(),
         }),
         dashboard: {
           mediaItems: [],
@@ -2304,6 +2379,8 @@ async function startServer() {
       ]);
 
       const resolvedPlans = resolveProfileVideoCallPlans(profileRes.data as Record<string, unknown> | null);
+      const resolvedWhatsapp = resolveProfileWhatsapp(profileRes.data as Record<string, unknown> | null);
+      const resolvedAbout = resolveProfileAboutSection(profileRes.data as Record<string, unknown> | null);
       const rawProfile = profileRes.data
         ? {
             ...DEFAULT_CREATOR_PROFILE,
@@ -2311,11 +2388,15 @@ async function startServer() {
             vip_monthly_price_brl: Number(profileRes.data.vip_monthly_price_brl || 49.9),
             avatar_url: profileRes.data.avatar_url || DEFAULT_CREATOR_PROFILE.avatar_url,
             hero_url: profileRes.data.hero_url || DEFAULT_CREATOR_PROFILE.hero_url,
+            whatsapp_number: resolvedWhatsapp,
             video_call_plans: resolvedPlans,
+            about_section: resolvedAbout,
           }
         : {
             ...DEFAULT_CREATOR_PROFILE,
+            whatsapp_number: resolvedWhatsapp,
             video_call_plans: resolvedPlans,
+            about_section: resolvedAbout,
           };
 
       const profile = maskProfileForClient(rawProfile);
@@ -2774,6 +2855,7 @@ async function startServer() {
         vip_monthly_price_brl,
         vip_description,
         pix_key,
+        whatsapp_number,
         avatar_url,
         hero_url,
         newAdminEmail,
@@ -2852,6 +2934,16 @@ async function startServer() {
         return;
       }
 
+      if (whatsapp_number !== undefined) {
+        const cleanWhatsapp = sanitizeWhatsappNumber(whatsapp_number);
+        saveWhatsappFallback(cleanWhatsapp);
+        await client
+          .from('creator_profile')
+          .update({ whatsapp_number: cleanWhatsapp })
+          .eq('slug', 'solo')
+          .then(() => {}, () => {});
+      }
+
       if (newAdminEmail && String(newAdminEmail).includes('@')) {
         await client
           .from('creator_profile')
@@ -2870,8 +2962,31 @@ async function startServer() {
           .then(() => {}, () => {});
       }
 
+      let updatedAbout: CreatorAboutContent | null = null;
+      if (req.body?.about_section && typeof req.body.about_section === 'object') {
+        updatedAbout = sanitizeCreatorAboutContent(req.body.about_section);
+        saveAboutSectionFallback(updatedAbout);
+        await client
+          .from('creator_profile')
+          .update({ about_section: updatedAbout })
+          .eq('slug', 'solo')
+          .then(() => {}, () => {});
+      }
+
       const resolvedPlans = resolveProfileVideoCallPlans(data as Record<string, unknown>);
-      res.json({ profile: maskProfileForClient({ ...data, video_call_plans: resolvedPlans }) });
+      const resolvedWhatsapp =
+        whatsapp_number !== undefined
+          ? sanitizeWhatsappNumber(whatsapp_number)
+          : resolveProfileWhatsapp(data as Record<string, unknown>);
+      const resolvedAbout = updatedAbout || resolveProfileAboutSection(data as Record<string, unknown>);
+      res.json({
+        profile: maskProfileForClient({
+          ...data,
+          whatsapp_number: resolvedWhatsapp,
+          video_call_plans: resolvedPlans,
+          about_section: resolvedAbout,
+        }),
+      });
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao atualizar perfil.' });
     }
@@ -2899,6 +3014,31 @@ async function startServer() {
       res.json({ ok: true, video_call_plans: sanitized });
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao salvar planos de Vídeo Chamada.' });
+    }
+  });
+
+  app.patch('/api/creator/about', requireCreatorAuth, async (req: Request, res: Response) => {
+    try {
+      const incoming = req.body?.about_section;
+      if (!incoming || typeof incoming !== 'object') {
+        res.status(400).json({ error: 'Dados da seção Sobre a Criadora inválidos.' });
+        return;
+      }
+      const sanitized = sanitizeCreatorAboutContent(incoming);
+      saveAboutSectionFallback(sanitized);
+
+      const client = getAdminClient();
+      if (client) {
+        await client
+          .from('creator_profile')
+          .update({ about_section: sanitized, updated_at: new Date().toISOString() })
+          .eq('slug', 'solo')
+          .then(() => {}, () => {});
+      }
+
+      res.json({ ok: true, about_section: sanitized });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao salvar seção Sobre a Criadora.' });
     }
   });
 
