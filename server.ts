@@ -15,7 +15,7 @@ import type { CreatorAboutContent } from './src/types';
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const ENV_LOCAL_PATH = path.resolve(process.cwd(), '.env.local');
 const SCHEMA_SQL_PATH = path.resolve(process.cwd(), 'supabase/schema.sql');
 const EDGE_WELCOME_FN_PATH = path.resolve(process.cwd(), 'supabase/functions/welcome-fan-email/index.ts');
