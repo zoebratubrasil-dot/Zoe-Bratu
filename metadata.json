@@ -1,0 +1,6 @@
+{
+  "name": "Maison Privé",
+  "description": "Plataforma editorial de conteúdo exclusivo +18 para criadora solo com upload de fotos e vídeos, vitrine VIP e banco de vendas integrado ao Supabase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
