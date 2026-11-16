@@ -14,10 +14,13 @@ import {
   CheckCircle2,
   AlertTriangle,
   QrCode,
+  Video,
 } from 'lucide-react';
 import type { CreatorDashboardData, CreatorProfile, SupabaseStatus } from '../../types';
 import { formatBrl, formatDateShort } from '../../lib/format';
+import { resolveVideoCallPlans } from '../../lib/videoCalls';
 import type { StudioTab } from '../CreatorStudio';
+import { ProtectedImage } from '../ProtectedMedia';
 
 interface AdminOverviewProps {
   profile: CreatorProfile;
@@ -61,6 +64,13 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       icon: <Upload className="h-5 w-5 text-[#D4AF37]" />,
     },
     {
+      tab: 'video_calls',
+      title: 'Vídeo Chamadas (4 Planos)',
+      desc: 'Edite os valores, durações em minutos e descrições dos 4 planos em destaque na vitrine.',
+      badge: `${resolveVideoCallPlans(profile.video_call_plans).filter((p) => p.active).length} ativos`,
+      icon: <Video className="h-5 w-5 text-[#D4AF37]" />,
+    },
+    {
       tab: 'profile',
       title: 'Informações & Visual do Site',
       desc: 'Edite nome, arroba, bio, avatar, capa hero, valor da assinatura VIP e chave Pix.',
@@ -69,8 +79,8 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
     },
     {
       tab: 'fans',
-      title: 'Assinantes & Acessos VIP',
-      desc: 'Consulte clientes, libere ou estenda acessos VIP manualmente após Pix direto.',
+      title: 'Assinantes, VIPs & Boas-Vindas',
+      desc: 'Gerencie clientes, libere VIP e configure o e-mail automático via Supabase Edge Function.',
       badge: `${dashboard.metrics.activeVipFans} VIPs ativos`,
       icon: <Users className="h-5 w-5 text-[#D4AF37]" />,
     },
@@ -100,7 +110,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#453F3B] pb-5">
         <div>
           <h2 className="font-display text-2xl font-semibold text-zinc-50">
             Administração Completa do Site
@@ -112,7 +122,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
         <button
           type="button"
           onClick={onOpenStorefront}
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] transition-colors shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-2 rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] transition-colors shrink-0 cursor-pointer"
         >
           <ExternalLink className="h-3.5 w-3.5 text-[#D4AF37]" />
           Visualizar Vitrine Pública
@@ -120,7 +130,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       </div>
 
       {/* KPI Summary Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800 rounded-xl border border-zinc-800 bg-[#121215]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#453F3B] rounded-xl border border-[#453F3B] bg-[#23201E]">
         <div className="p-5">
           <p className="text-xs text-zinc-400 mb-1">Receita Confirmada</p>
           <p className="font-mono text-2xl font-semibold text-[#E5C158] tabular-nums">
@@ -161,14 +171,15 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       </div>
 
       {/* Site Identity Preview Card */}
-      <div className="rounded-xl border border-zinc-800 bg-[#121215] p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4 min-w-0">
-          <img
-            src={profile.avatar_url || '/src/assets/images/creator_avatar_portrait_1794805425733.jpg'}
-            alt={profile.display_name}
-            referrerPolicy="no-referrer"
-            className="h-16 w-16 rounded-full object-cover border border-zinc-700 shrink-0"
-          />
+          <div className="h-16 w-16 rounded-full overflow-hidden border border-[#453F3B] shrink-0 bg-[#1C1918]">
+            <ProtectedImage
+              src={profile.avatar_url || '/api/profile/asset/avatar'}
+              alt={profile.display_name}
+              className="h-full w-full object-cover"
+            />
+          </div>
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-display text-lg font-semibold text-zinc-50 truncate">
@@ -187,7 +198,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
         <button
           type="button"
           onClick={() => onNavigateTab('profile')}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#D4AF37] px-4 py-2.5 text-xs font-semibold text-zinc-950 hover:bg-[#E5C158] transition-colors shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#E5C158] px-4 py-2.5 text-xs font-semibold text-[#1C1918] hover:bg-[#f0cf6b] transition-colors shrink-0 cursor-pointer"
         >
           Editar Informações & Capa
           <ArrowRight className="h-3.5 w-3.5" />
@@ -201,11 +212,11 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             key={act.tab}
             type="button"
             onClick={() => onNavigateTab(act.tab)}
-            className="group text-left rounded-xl border border-zinc-800 bg-[#121215] p-5 hover:border-[#D4AF37]/70 transition-colors flex flex-col justify-between gap-4 cursor-pointer"
+            className="group text-left rounded-xl border border-[#453F3B] bg-[#23201E] p-5 hover:border-[#D4AF37]/70 transition-colors flex flex-col justify-between gap-4 cursor-pointer"
           >
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[#453F3B] bg-[#1C1918]">
                   {act.icon}
                 </div>
                 <span className="text-[11px] font-mono text-zinc-400">{act.badge}</span>
@@ -227,7 +238,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
 
       {/* Recent Media & Recent Sales Snapshot */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="rounded-xl border border-zinc-800 bg-[#121215] p-5 space-y-4">
+        <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-display text-base font-semibold text-zinc-100">
               Últimas Fotos & Vídeos
@@ -245,16 +256,15 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
               Nenhuma mídia publicada ainda. Clique em "Enviar Novas Mídias" para começar.
             </p>
           ) : (
-            <div className="divide-y divide-zinc-800/70">
+            <div className="divide-y divide-[#453F3B]/70">
               {dashboard.mediaItems.slice(0, 4).map((m) => (
                 <div key={m.id} className="py-2.5 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-9 w-12 rounded bg-zinc-900 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                    <div className="h-9 w-12 rounded bg-[#1C1918] border border-[#453F3B] overflow-hidden shrink-0 flex items-center justify-center">
                       {m.preview_url || (m.media_type === 'photo' && m.media_url) ? (
-                        <img
+                        <ProtectedImage
                           src={m.preview_url || m.media_url || ''}
                           alt={m.title}
-                          referrerPolicy="no-referrer"
                           className="h-full w-full object-cover"
                         />
                       ) : m.media_type === 'video' ? (
@@ -283,7 +293,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
           )}
         </div>
 
-        <div className="rounded-xl border border-zinc-800 bg-[#121215] p-5 space-y-4">
+        <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-display text-base font-semibold text-zinc-100">
               Vendas & Assinaturas Recentes
@@ -301,7 +311,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
               Nenhuma venda registrada até o momento.
             </p>
           ) : (
-            <div className="divide-y divide-zinc-800/70">
+            <div className="divide-y divide-[#453F3B]/70">
               {dashboard.sales.slice(0, 4).map((s) => (
                 <div key={s.id} className="py-2.5 flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -311,6 +321,8 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
                       <span>
                         {s.sale_type === 'vip_subscription'
                           ? 'Assinatura VIP'
+                          : s.sale_type === 'video_call'
+                          ? s.media_title || 'Vídeo Chamada ao Vivo'
                           : s.sale_type === 'tip'
                           ? 'Mimo'
                           : s.media_title || 'Avulso PPV'}

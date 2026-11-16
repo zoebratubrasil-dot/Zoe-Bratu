@@ -17,7 +17,7 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
   onOpenPix,
 }) => {
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'vip_subscription' | 'ppv' | 'tip'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'vip_subscription' | 'video_call' | 'ppv' | 'tip'>('all');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const filteredSales = useMemo(() => {
@@ -56,7 +56,12 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
       s.external_ref || s.id,
       s.buyer_email,
       s.sale_type,
-      s.media_title || (s.sale_type === 'vip_subscription' ? 'Assinatura Clube VIP' : 'Mimo'),
+      s.media_title ||
+        (s.sale_type === 'vip_subscription'
+          ? 'Assinatura Clube VIP'
+          : s.sale_type === 'video_call'
+          ? 'Vídeo Chamada ao Vivo'
+          : 'Mimo'),
       s.payment_method,
       s.amount_brl.toFixed(2),
       s.status,
@@ -73,7 +78,7 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#453F3B] pb-5">
         <div>
           <h2 className="font-display text-2xl font-semibold text-zinc-50">
             Banco de Vendas & Financeiro
@@ -97,7 +102,7 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
             type="button"
             onClick={handleExportCsv}
             disabled={filteredSales.length === 0}
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-40 cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-40 cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" />
             Exportar CSV
@@ -106,7 +111,7 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
       </div>
 
       {/* Metrics Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800 rounded-xl border border-zinc-800 bg-[#121215]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#453F3B] rounded-xl border border-[#453F3B] bg-[#23201E]">
         <div className="p-5">
           <p className="text-xs text-zinc-400 mb-1">Receita Total Confirmada</p>
           <p className="font-mono text-2xl font-semibold text-[#E5C158] tabular-nums">
@@ -135,11 +140,12 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
 
       {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-[#121215] border border-zinc-800 w-fit">
+        <div className="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-[#23201E] border border-[#453F3B] w-fit">
           {(
             [
               { id: 'all', label: 'Todas' },
               { id: 'vip_subscription', label: 'Clube VIP' },
+              { id: 'video_call', label: 'Vídeo Chamadas' },
               { id: 'ppv', label: 'Avulsas (PPV)' },
               { id: 'tip', label: 'Mimos' },
             ] as const
@@ -149,7 +155,7 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
               type="button"
               onClick={() => setTypeFilter(opt.id)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
-                typeFilter === opt.id ? 'bg-[#D4AF37] text-zinc-950 font-semibold' : 'text-zinc-400 hover:text-zinc-100'
+                typeFilter === opt.id ? 'bg-[#E5C158] text-[#1C1918] font-semibold' : 'text-zinc-400 hover:text-zinc-100'
               }`}
             >
               {opt.label}
@@ -164,23 +170,23 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filtrar por e-mail ou referência..."
-            className="w-64 rounded-lg border border-zinc-800 bg-[#121215] pl-9 pr-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+            className="w-64 rounded-lg border border-[#453F3B] bg-[#23201E] pl-9 pr-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
           />
         </div>
       </div>
 
       {/* Ledger Table */}
       {filteredSales.length === 0 ? (
-        <div className="rounded-xl border border-zinc-800 bg-[#121215] p-12 text-center space-y-2">
+        <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-12 text-center space-y-2">
           <p className="font-display text-lg text-zinc-200">Nenhuma venda registrada ainda</p>
           <p className="text-xs text-zinc-400">
             Todas as assinaturas VIP, desbloqueios de fotos/vídeos e mimos aparecerão aqui automaticamente.
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-[#121215]">
+        <div className="overflow-x-auto rounded-xl border border-[#453F3B] bg-[#23201E]">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-zinc-800 text-zinc-400">
+            <thead className="border-b border-[#453F3B] text-zinc-400">
               <tr>
                 <th className="px-4 py-3 font-medium">Data / Hora</th>
                 <th className="px-4 py-3 font-medium">Ref</th>
@@ -191,9 +197,9 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
                 <th className="px-4 py-3 font-medium">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/70">
+            <tbody className="divide-y divide-[#453F3B]/70">
               {filteredSales.map((sale) => (
-                <tr key={sale.id} className="hover:bg-zinc-900/50 transition-colors">
+                <tr key={sale.id} className="hover:bg-[#1C1918]/50 transition-colors">
                   <td className="px-4 py-3 font-mono text-zinc-400 tabular-nums whitespace-nowrap">
                     {formatDateTime(sale.created_at)}
                   </td>
@@ -207,6 +213,8 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
                   <td className="px-4 py-3 text-zinc-300">
                     {sale.sale_type === 'vip_subscription'
                       ? 'Assinatura Mensal VIP'
+                      : sale.sale_type === 'video_call'
+                      ? sale.media_title || 'Vídeo Chamada ao Vivo'
                       : sale.sale_type === 'tip'
                       ? 'Mimo Direto'
                       : sale.media_title || 'Conteúdo Avulso'}
@@ -222,7 +230,7 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
                       value={sale.status}
                       disabled={updatingId === sale.id}
                       onChange={(e) => handleStatusChange(sale.id, e.target.value as SaleStatus)}
-                      className={`rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs font-medium focus:outline-none ${
+                      className={`rounded-md border border-[#453F3B] bg-[#1C1918] px-2 py-1 text-xs font-medium focus:outline-none ${
                         sale.status === 'paid'
                           ? 'text-emerald-300'
                           : sale.status === 'pending'

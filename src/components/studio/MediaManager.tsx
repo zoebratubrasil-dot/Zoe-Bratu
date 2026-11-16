@@ -17,6 +17,7 @@ import {
 import type { AccessTier, MediaItem } from '../../types';
 import { formatBrl, formatBytes, formatDateShort, formatDuration } from '../../lib/format';
 import { inferMediaKind, inferMimeType, uploadFileToSupabaseBucket } from '../../lib/uploadMedia';
+import { ProtectedImage, ProtectedVideo } from '../ProtectedMedia';
 
 interface MediaManagerProps {
   creatorToken: string;
@@ -197,7 +198,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#453F3B] pb-5">
         <div>
           <h2 className="font-display text-2xl font-semibold text-zinc-50">
             Editar Fotos & Vídeos ({mediaItems.length})
@@ -220,14 +221,14 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
       {/* Filters & Search */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-[#121215] border border-zinc-800">
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-[#23201E] border border-[#453F3B]">
             {(['all', 'photo', 'video'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setFilterType(t)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer ${
-                  filterType === t ? 'bg-[#D4AF37] text-zinc-950 font-semibold' : 'text-zinc-400 hover:text-zinc-100'
+                  filterType === t ? 'bg-[#E5C158] text-[#1C1918] font-semibold' : 'text-zinc-400 hover:text-zinc-100'
                 }`}
               >
                 {t === 'all' ? 'Todos' : t === 'photo' ? 'Fotos' : 'Vídeos'}
@@ -239,7 +240,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
             value={filterTier}
             onChange={(e) => setFilterTier(e.target.value as 'all' | 'vip' | 'ppv' | 'free')}
             aria-label="Filtrar por nível de acesso"
-            className="rounded-lg border border-zinc-800 bg-[#121215] px-3 py-2 text-xs text-zinc-200 focus:border-[#D4AF37] focus:outline-none"
+            className="rounded-lg border border-[#453F3B] bg-[#23201E] px-3 py-2 text-xs text-zinc-200 focus:border-[#D4AF37] focus:outline-none"
           >
             <option value="all">Todos os acessos</option>
             <option value="vip">Clube VIP</option>
@@ -256,11 +257,11 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar título ou coleção..."
-              className="w-full sm:w-56 rounded-lg border border-zinc-800 bg-[#121215] pl-9 pr-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+              className="w-full sm:w-56 rounded-lg border border-[#453F3B] bg-[#23201E] pl-9 pr-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
 
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-[#121215] border border-zinc-800">
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-[#23201E] border border-[#453F3B]">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
@@ -286,7 +287,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-zinc-800 bg-[#121215] p-12 text-center space-y-3">
+        <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-12 text-center space-y-3">
           <p className="font-display text-lg text-zinc-200">Nenhuma mídia encontrada</p>
           <p className="text-xs text-zinc-400">
             {mediaItems.length === 0
@@ -301,26 +302,26 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
             return (
               <div
                 key={item.id}
-                className="rounded-xl border border-zinc-800 bg-[#121215] overflow-hidden flex flex-col justify-between"
+                className="rounded-xl border border-[#453F3B] bg-[#23201E] overflow-hidden flex flex-col justify-between"
               >
                 <div>
                   <div
                     onClick={() => setPreviewItem(item)}
-                    className="relative aspect-[4/3] bg-zinc-950 overflow-hidden cursor-pointer group"
+                    onContextMenu={(e) => e.preventDefault()}
+                    className="relative aspect-[4/3] bg-zinc-950 overflow-hidden cursor-pointer group media-shield"
                   >
-                    {item.media_type === 'video' && item.media_url && !item.preview_url ? (
-                      <video
+                    {item.media_type === 'video' && item.media_url && (!item.preview_url || item.preview_url.includes('/api/media/fallback/')) ? (
+                      <ProtectedVideo
                         src={item.media_url}
+                        title={item.title}
+                        controls={false}
                         muted
-                        playsInline
-                        preload="metadata"
                         className="h-full w-full object-cover"
                       />
                     ) : thumb ? (
-                      <img
+                      <ProtectedImage
                         src={thumb}
                         alt={item.title}
-                        referrerPolicy="no-referrer"
                         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                       />
                     ) : (
@@ -332,7 +333,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                         )}
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="pointer-events-none absolute inset-0 z-20 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <span className="inline-flex items-center gap-1.5 rounded-md bg-black/80 border border-zinc-600 px-3 py-1.5 text-xs font-medium text-zinc-100">
                         {item.media_type === 'video' ? (
                           <>
@@ -372,7 +373,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                   </div>
                 </div>
 
-                <div className="px-4 py-3 border-t border-zinc-800/80 flex items-center justify-between gap-2">
+                <div className="px-4 py-3 border-t border-[#453F3B]/80 flex items-center justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => handleTogglePublished(item)}
@@ -395,7 +396,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                     <button
                       type="button"
                       onClick={() => openEdit(item)}
-                      className="inline-flex items-center gap-1 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer"
+                      className="inline-flex items-center gap-1 rounded-md border border-[#453F3B] bg-[#1C1918] px-2.5 py-1.5 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                       Editar
@@ -413,7 +414,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                         <button
                           type="button"
                           onClick={() => setConfirmDeleteId(null)}
-                          className="rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-300 cursor-pointer"
+                          className="rounded-md border border-[#453F3B] px-2 py-1 text-xs text-zinc-300 cursor-pointer"
                         >
                           Não
                         </button>
@@ -423,7 +424,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                         type="button"
                         onClick={() => setConfirmDeleteId(item.id)}
                         aria-label="Excluir mídia"
-                        className="rounded-md border border-zinc-700 bg-zinc-900 p-1.5 text-zinc-400 hover:border-rose-500 hover:text-rose-300 cursor-pointer"
+                        className="rounded-md border border-[#453F3B] bg-[#1C1918] p-1.5 text-zinc-400 hover:border-rose-500 hover:text-rose-300 cursor-pointer"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -435,9 +436,9 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
           })}
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-[#121215]">
+        <div className="overflow-x-auto rounded-xl border border-[#453F3B] bg-[#23201E]">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-zinc-800 text-zinc-400">
+            <thead className="border-b border-[#453F3B] text-zinc-400">
               <tr>
                 <th className="px-4 py-3 font-medium">Mídia</th>
                 <th className="px-4 py-3 font-medium">Coleção</th>
@@ -448,28 +449,26 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                 <th className="px-4 py-3 font-medium text-right">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-zinc-800/70">
+            <tbody className="divide-y divide-[#453F3B]/70">
               {filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-zinc-900/50 transition-colors">
+                <tr key={item.id} className="hover:bg-[#1C1918]/50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <button
                         type="button"
                         onClick={() => setPreviewItem(item)}
-                        className="h-11 w-14 overflow-hidden rounded-md border border-zinc-800 bg-zinc-950 shrink-0 flex items-center justify-center cursor-pointer"
+                        className="h-11 w-14 overflow-hidden rounded-md border border-[#453F3B] bg-zinc-950 shrink-0 flex items-center justify-center cursor-pointer"
                       >
                         {item.media_type === 'photo' && (item.media_url || item.preview_url) ? (
-                          <img
+                          <ProtectedImage
                             src={item.media_url || item.preview_url || ''}
                             alt={item.title}
-                            referrerPolicy="no-referrer"
                             className="h-full w-full object-cover"
                           />
                         ) : item.preview_url ? (
-                          <img
+                          <ProtectedImage
                             src={item.preview_url}
                             alt={item.title}
-                            referrerPolicy="no-referrer"
                             className="h-full w-full object-cover"
                           />
                         ) : item.media_type === 'video' ? (
@@ -533,7 +532,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                         type="button"
                         onClick={() => openEdit(item)}
                         aria-label="Editar mídia"
-                        className="rounded-md border border-zinc-700 bg-zinc-900 p-1.5 text-zinc-300 hover:border-zinc-500 hover:text-white cursor-pointer"
+                        className="rounded-md border border-[#453F3B] bg-[#1C1918] p-1.5 text-zinc-300 hover:border-zinc-500 hover:text-white cursor-pointer"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -550,7 +549,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                           <button
                             type="button"
                             onClick={() => setConfirmDeleteId(null)}
-                            className="rounded-md border border-zinc-700 px-2 py-1 text-xs text-zinc-300 cursor-pointer"
+                            className="rounded-md border border-[#453F3B] px-2 py-1 text-xs text-zinc-300 cursor-pointer"
                           >
                             Cancelar
                           </button>
@@ -560,7 +559,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                           type="button"
                           onClick={() => setConfirmDeleteId(item.id)}
                           aria-label="Excluir mídia"
-                          className="rounded-md border border-zinc-700 bg-zinc-900 p-1.5 text-zinc-400 hover:border-rose-500 hover:text-rose-300 cursor-pointer"
+                          className="rounded-md border border-[#453F3B] bg-[#1C1918] p-1.5 text-zinc-400 hover:border-rose-500 hover:text-rose-300 cursor-pointer"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -582,9 +581,9 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-3xl rounded-xl border border-zinc-800 bg-[#121215] overflow-hidden shadow-2xl"
+            className="w-full max-w-3xl rounded-xl border border-[#453F3B] bg-[#23201E] overflow-hidden shadow-2xl"
           >
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-800">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#453F3B]">
               <div className="min-w-0">
                 <p className="font-display text-base font-semibold text-zinc-50 truncate">
                   {previewItem.title}
@@ -609,26 +608,30 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                 <button
                   type="button"
                   onClick={() => setPreviewItem(null)}
-                  className="rounded-md border border-zinc-700 p-1.5 text-zinc-300 hover:text-white cursor-pointer"
+                  className="rounded-md border border-[#453F3B] p-1.5 text-zinc-300 hover:text-white cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
             </div>
-            <div className="bg-black flex items-center justify-center max-h-[75vh]">
+            <div
+              onContextMenu={(e) => e.preventDefault()}
+              className="bg-black flex items-center justify-center max-h-[75vh] media-shield"
+            >
               {previewItem.media_type === 'video' && previewItem.media_url ? (
-                <video
+                <ProtectedVideo
                   src={previewItem.media_url}
+                  title={previewItem.title}
                   controls
                   autoPlay
-                  playsInline
+                  containerClassName="relative w-full h-[65vh] bg-black"
                   className="max-h-[75vh] w-full object-contain"
                 />
               ) : previewItem.media_url || previewItem.preview_url ? (
-                <img
+                <ProtectedImage
                   src={previewItem.media_url || previewItem.preview_url || ''}
                   alt={previewItem.title}
-                  referrerPolicy="no-referrer"
+                  containerClassName="relative w-full h-[65vh] flex items-center justify-center bg-black"
                   className="max-h-[75vh] w-full object-contain"
                 />
               ) : (
@@ -644,7 +647,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 overflow-y-auto">
           <form
             onSubmit={handleSaveEdit}
-            className="w-full max-w-lg rounded-xl border border-zinc-800 bg-[#121215] p-6 space-y-4 shadow-2xl my-auto"
+            className="w-full max-w-lg rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-4 shadow-2xl my-auto"
           >
             <div className="flex items-center justify-between">
               <h3 className="font-display text-xl font-semibold text-zinc-50">
@@ -666,7 +669,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                 required
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
 
@@ -676,7 +679,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                 rows={3}
                 value={editDesc}
                 onChange={(e) => setEditDesc(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
 
@@ -687,7 +690,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                   type="text"
                   value={editCollection}
                   onChange={(e) => setEditCollection(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
               <div>
@@ -695,7 +698,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                 <select
                   value={editTier}
                   onChange={(e) => setEditTier(e.target.value as AccessTier)}
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
                 >
                   <option value="vip">Clube VIP</option>
                   <option value="ppv">Avulso (PPV)</option>
@@ -713,13 +716,13 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                   min="5"
                   value={editPrice}
                   onChange={(e) => setEditPrice(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3 py-2 font-mono text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
             )}
 
             {/* Replace primary photo/video */}
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3.5 space-y-2">
+            <div className="rounded-lg border border-[#453F3B] bg-[#1C1918]/60 p-3.5 space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-medium text-zinc-200">Substituir Arquivo (Foto ou Vídeo)</p>
@@ -727,7 +730,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                     {newMediaFile ? newMediaFile.name : 'Mantendo o arquivo atual no Supabase'}
                   </p>
                 </div>
-                <label className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer shrink-0">
+                <label className="inline-flex items-center gap-1.5 rounded-md border border-[#453F3B] bg-[#1C1918] px-3 py-1.5 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer shrink-0">
                   <Upload className="h-3.5 w-3.5" />
                   Trocar Mídia
                   <input
@@ -746,16 +749,17 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
             </div>
 
             {/* Replace or remove cover preview */}
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3.5 space-y-2">
+            <div className="rounded-lg border border-[#453F3B] bg-[#1C1918]/60 p-3.5 space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   {(newCoverPreviewUrl || (!removeCover && editing.preview_url)) && (
-                    <img
-                      src={newCoverPreviewUrl || editing.preview_url || ''}
-                      alt="Capa"
-                      referrerPolicy="no-referrer"
-                      className="h-10 w-14 rounded object-cover border border-zinc-700 shrink-0"
-                    />
+                    <div className="h-10 w-14 rounded overflow-hidden border border-[#453F3B] shrink-0">
+                      <ProtectedImage
+                        src={newCoverPreviewUrl || editing.preview_url || ''}
+                        alt="Capa"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
                   )}
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-zinc-200">Capa de Prévia / Teaser</p>
@@ -771,7 +775,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <label className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 rounded-md border border-[#453F3B] bg-[#1C1918] px-2.5 py-1.5 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer">
                     <Upload className="h-3.5 w-3.5" />
                     Capa
                     <input
@@ -818,7 +822,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
               <button
                 type="button"
                 onClick={() => setEditing(null)}
-                className="rounded-lg border border-zinc-700 px-4 py-2 text-xs text-zinc-300 hover:text-white cursor-pointer"
+                className="rounded-lg border border-[#453F3B] px-4 py-2 text-xs text-zinc-300 hover:text-white cursor-pointer"
               >
                 Cancelar
               </button>

@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   Users,
   QrCode,
+  Video,
 } from 'lucide-react';
 import type { CreatorDashboardData, CreatorProfile, SupabaseStatus } from '../types';
 import { getBrowserSupabaseClient } from '../lib/supabaseBrowser';
@@ -24,12 +25,22 @@ import { AdminOverview } from './studio/AdminOverview';
 import { MediaUploader } from './studio/MediaUploader';
 import { MediaManager } from './studio/MediaManager';
 import { FansManager } from './studio/FansManager';
-import { SalesLedger } from './studio/SalesLedger';
 import { PixManager } from './studio/PixManager';
+import { SalesLedger } from './studio/SalesLedger';
 import { CreatorProfileSettings } from './studio/CreatorProfileSettings';
+import { VideoCallSettings } from './studio/VideoCallSettings';
 import { SupabaseSetup } from './studio/SupabaseSetup';
 
-export type StudioTab = 'overview' | 'upload' | 'manage' | 'fans' | 'pix' | 'sales' | 'profile' | 'supabase';
+export type StudioTab =
+  | 'overview'
+  | 'upload'
+  | 'manage'
+  | 'video_calls'
+  | 'fans'
+  | 'pix'
+  | 'sales'
+  | 'profile'
+  | 'supabase';
 
 interface CreatorStudioProps {
   initialTab?: StudioTab;
@@ -61,6 +72,7 @@ const EMPTY_DASHBOARD: CreatorDashboardData = {
     vipRevenueBrl: 0,
     ppvRevenueBrl: 0,
     tipsRevenueBrl: 0,
+    videoCallRevenueBrl: 0,
     totalSalesCount: 0,
     activeVipFans: 0,
     totalMediaCount: 0,
@@ -504,9 +516,9 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
   if (!creatorToken) {
     return (
       <main className="mx-auto max-w-[1440px] px-6 py-14 lg:px-10">
-        <div className="mx-auto max-w-md rounded-xl border border-zinc-800 bg-[#121215] p-8 space-y-6">
+        <div className="mx-auto max-w-md rounded-xl border border-[#453F3B] bg-[#23201E] p-8 space-y-6">
           <div className="flex items-center gap-3.5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 text-[#D4AF37] shrink-0">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#453F3B] bg-[#1C1918] text-[#D4AF37] shrink-0">
               <Lock className="h-5 w-5" />
             </div>
             <div>
@@ -530,7 +542,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
             type="button"
             onClick={handleGmailLogin}
             disabled={authLoading}
-            className="w-full flex items-center justify-center gap-3 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-100 hover:border-[#D4AF37] hover:bg-zinc-800/80 disabled:opacity-50 transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-3 rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2.5 text-sm font-medium text-zinc-100 hover:border-[#D4AF37] hover:bg-zinc-800/80 disabled:opacity-50 transition-colors cursor-pointer"
           >
             <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
               <path
@@ -554,7 +566,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
           </button>
 
           {authConfig && !authConfig.googleProviderEnabled && authConfig.supabaseProjectRef && (
-            <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-3.5 text-xs text-zinc-300 space-y-2">
+            <div className="rounded-lg border border-[#453F3B] bg-[#1C1918]/70 p-3.5 text-xs text-zinc-300 space-y-2">
               <p className="text-zinc-300 leading-relaxed">
                 O provedor Google ainda está desativado no seu Supabase. Para ativar o botão Google acima, habilite-o no painel e adicione esta URL em <span className="text-zinc-100 font-medium">Redirect URLs</span>:
               </p>
@@ -617,7 +629,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
                     placeholder="zoebratubrasil@gmail.com"
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-900 pl-10 pr-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] pl-10 pr-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                   />
                 </div>
               </div>
@@ -649,7 +661,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                     value={passwordInput}
                     onChange={(e) => setPasswordInput(e.target.value)}
                     placeholder={isFirstPasswordCreation ? 'Digite a senha que deseja usar' : 'Sua senha de acesso'}
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-900 pl-3.5 pr-10 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] pl-3.5 pr-10 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                   />
                   <button
                     type="button"
@@ -677,7 +689,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full rounded-lg bg-[#D4AF37] px-5 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-[#E5C158] disabled:opacity-50 transition-colors cursor-pointer"
+                className="w-full rounded-lg bg-[#E5C158] px-5 py-2.5 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {authLoading
                   ? 'Autenticando...'
@@ -693,7 +705,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                   setAuthInfo(null);
                   setAuthMode('otp');
                 }}
-                className="w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-2 text-xs text-zinc-300 hover:border-zinc-700 hover:text-zinc-100 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 rounded-lg border border-[#453F3B] bg-[#1C1918]/50 px-4 py-2 text-xs text-zinc-300 hover:border-[#453F3B] hover:text-zinc-100 transition-colors cursor-pointer"
               >
                 <KeyRound className="h-3.5 w-3.5 text-[#D4AF37]" />
                 Esqueci a senha / Entrar com código ou chave Supabase
@@ -713,7 +725,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
                     placeholder="zoebratubrasil@gmail.com"
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-900 pl-10 pr-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] pl-10 pr-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                   />
                 </div>
               </div>
@@ -731,7 +743,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                       value={otpCodeInput}
                       onChange={(e) => setOtpCodeInput(e.target.value)}
                       placeholder="Ex: 123456"
-                      className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-sm tracking-widest text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                      className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm tracking-widest text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                     />
                   </div>
 
@@ -745,7 +757,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                       value={newPasswordInput}
                       onChange={(e) => setNewPasswordInput(e.target.value)}
                       placeholder="Deixe vazio ou crie uma nova senha"
-                      className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                      className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                     />
                   </div>
                 </>
@@ -766,7 +778,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full rounded-lg bg-[#D4AF37] px-5 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-[#E5C158] disabled:opacity-50 transition-colors cursor-pointer"
+                className="w-full rounded-lg bg-[#E5C158] px-5 py-2.5 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {authLoading
                   ? 'Processando...'
@@ -793,7 +805,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                   setAuthInfo(null);
                   setAuthMode('service_key');
                 }}
-                className="w-full rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-2 text-xs text-[#E5C158] hover:border-[#D4AF37]/60 transition-colors cursor-pointer"
+                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918]/50 px-4 py-2 text-xs text-[#E5C158] hover:border-[#D4AF37]/60 transition-colors cursor-pointer"
               >
                 Código não chegou? Redefinir com a Service Role Key do Supabase
               </button>
@@ -828,7 +840,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   placeholder="zoebratubrasil@gmail.com"
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
 
@@ -842,7 +854,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                   value={serviceKeyInput}
                   onChange={(e) => setServiceKeyInput(e.target.value)}
                   placeholder="eyJhbGciOi... ou sb_secret_..."
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
 
@@ -857,7 +869,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                   value={newPasswordInput}
                   onChange={(e) => setNewPasswordInput(e.target.value)}
                   placeholder="Digite sua nova senha"
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
 
@@ -870,7 +882,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full rounded-lg bg-[#D4AF37] px-5 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-[#E5C158] disabled:opacity-50 transition-colors cursor-pointer"
+                className="w-full rounded-lg bg-[#E5C158] px-5 py-2.5 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {authLoading ? 'Validando...' : 'Redefinir Senha e Entrar'}
               </button>
@@ -898,6 +910,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
     { id: 'overview', label: 'Visão Geral', icon: <LayoutDashboard className="h-4 w-4" /> },
     { id: 'manage', label: 'Editar Fotos & Vídeos', icon: <FolderKanban className="h-4 w-4" /> },
     { id: 'upload', label: 'Enviar Fotos & Vídeos', icon: <Upload className="h-4 w-4" /> },
+    { id: 'video_calls', label: 'Vídeo Chamadas', icon: <Video className="h-4 w-4" /> },
     { id: 'profile', label: 'Informações & Capa', icon: <UserCog className="h-4 w-4" /> },
     { id: 'fans', label: 'Assinantes & VIPs', icon: <Users className="h-4 w-4" /> },
     { id: 'pix', label: 'Pix & QR Code', icon: <QrCode className="h-4 w-4" /> },
@@ -908,14 +921,14 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
   return (
     <main className="mx-auto max-w-[1440px] px-6 py-8 lg:px-10">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <aside className="lg:col-span-3 rounded-xl border border-zinc-800/80 bg-[#121215] p-4 space-y-6">
+        <aside className="lg:col-span-3 rounded-sm border border-[#453F3B]/80 bg-[#23201E] p-4 space-y-6">
           <div className="px-2 pt-1">
-            <p className="text-xs text-[#D4AF37] font-medium">Administração do Site</p>
-            <p className="font-display text-lg font-semibold text-zinc-50 truncate">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-[#E5C158] font-semibold">Administração do Site</p>
+            <p className="font-display text-2xl font-bold uppercase tracking-tight text-[#F4F1ED] truncate mt-1">
               {studioProfile.display_name}
             </p>
-            <p className="text-xs text-zinc-400 truncate mt-0.5">{adminEmail}</p>
-            <p className="text-xs text-zinc-500 mt-0.5">
+            <p className="text-xs text-[#DED9D3]/80 truncate mt-0.5">{adminEmail}</p>
+            <p className="text-xs text-zinc-400 mt-0.5">
               {supabaseReady ? 'Supabase conectado e ativo' : 'Supabase pendente de conexão'}
             </p>
           </div>
@@ -928,17 +941,17 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`relative w-full flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`relative w-full flex items-center gap-2.5 rounded-sm px-3 py-2.5 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                     isActive
-                      ? 'text-zinc-950 font-semibold'
-                      : 'text-zinc-300 hover:bg-zinc-900 hover:text-zinc-50'
+                      ? 'text-[#1C1918] font-semibold'
+                      : 'text-[#DED9D3] hover:bg-[#1C1918] hover:text-[#F4F1ED]'
                   }`}
                 >
                   {isActive && (
                     <motion.span
                       layoutId="studio-sidebar-pill"
                       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-                      className="absolute inset-0 rounded-lg bg-[#D4AF37]"
+                      className="absolute inset-0 rounded-sm bg-[#E5C158]"
                     />
                   )}
                   <span className="relative z-10 flex items-center gap-2.5 min-w-0">
@@ -950,11 +963,11 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
             })}
           </nav>
 
-          <div className="border-t border-zinc-800 pt-4">
+          <div className="border-t border-[#453F3B] pt-4">
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 transition-colors cursor-pointer"
+              className="w-full flex items-center gap-2.5 rounded-sm px-3 py-2 text-xs text-zinc-400 hover:text-[#F4F1ED] hover:bg-[#1C1918] transition-colors cursor-pointer"
             >
               <LogOut className="h-4 w-4" />
               Sair da Conta Adm
@@ -964,7 +977,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
 
         <section className="lg:col-span-9 min-w-0">
           {loadingDash && dashboard.mediaItems.length === 0 && activeTab !== 'supabase' ? (
-            <div className="rounded-xl border border-zinc-800 bg-[#121215] p-12 text-center text-xs text-zinc-400">
+            <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-12 text-center text-xs text-zinc-400">
               Sincronizando dados do Supabase...
             </div>
           ) : null}
@@ -1043,12 +1056,25 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                 />
               )}
 
+              {activeTab === 'video_calls' && (
+                <VideoCallSettings
+                  creatorToken={creatorToken}
+                  profile={studioProfile}
+                  dashboard={dashboard}
+                  onUpdated={async () => {
+                    await fetchDashboard(creatorToken);
+                    await onRefreshStorefront();
+                  }}
+                />
+              )}
+
               {activeTab === 'profile' && (
                 <CreatorProfileSettings
                   creatorToken={creatorToken}
                   adminEmail={adminEmail}
                   profile={studioProfile}
                   supabaseReady={supabaseReady}
+                  onOpenVideoCalls={() => setActiveTab('video_calls')}
                   onUpdated={async () => {
                     await fetchDashboard(creatorToken);
                     await onRefreshStorefront();

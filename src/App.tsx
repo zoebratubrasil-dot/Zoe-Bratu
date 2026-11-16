@@ -9,7 +9,8 @@ import { Navbar, type AppView } from './components/Navbar';
 import { Storefront } from './components/Storefront';
 import { CreatorStudio, type StudioTab } from './components/CreatorStudio';
 import { MediaModal } from './components/MediaModal';
-import type { CreatorProfile, FanAccount, MediaItem, StorefrontStats, SupabaseStatus } from './types';
+import type { CreatorProfile, FanAccount, MediaItem, StorefrontStats, SupabaseStatus, VideoCallPlan } from './types';
+import { DEFAULT_VIDEO_CALL_PLANS } from './lib/videoCalls';
 
 const INITIAL_PROFILE: CreatorProfile = {
   id: 'default-solo-creator',
@@ -18,12 +19,13 @@ const INITIAL_PROFILE: CreatorProfile = {
   handle: '@valentinanoir',
   bio: 'Ensaios autorais, bastidores íntimos e vídeos exclusivos em 4K. Conteúdo estritamente para maiores de 18 anos.',
   location: 'São Paulo, Brasil',
-  avatar_url: '/src/assets/images/creator_avatar_portrait_1794805425733.jpg',
-  hero_url: '/src/assets/images/creator_hero_editorial_1794805426073.jpg',
+  avatar_url: '/api/profile/asset/avatar',
+  hero_url: '/api/profile/asset/hero',
   vip_monthly_price_brl: 49.9,
   vip_description:
     'Acesso ilimitado a todos os ensaios e vídeos marcados como VIP, atualizações semanais e prioridade em pedidos.',
   pix_key: '',
+  video_call_plans: DEFAULT_VIDEO_CALL_PLANS,
   age_verified_18: true,
   updated_at: new Date().toISOString(),
 };
@@ -68,12 +70,14 @@ export default function App() {
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
-    mode: 'media' | 'vip' | 'tip' | 'fan_login';
+    mode: 'media' | 'vip' | 'tip' | 'fan_login' | 'video_call';
     mediaItem: MediaItem | null;
+    videoCallPlan: VideoCallPlan | null;
   }>({
     isOpen: false,
     mode: 'media',
     mediaItem: null,
+    videoCallPlan: null,
   });
 
   const refreshSupabaseStatus = useCallback(async () => {
@@ -144,7 +148,13 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="min-h-screen flex flex-col bg-[#09090B] text-zinc-100">
+      <div
+        className={`min-h-screen flex flex-col ${
+          activeView === 'studio'
+            ? 'bg-[#1C1918] text-[#F4F1ED]'
+            : 'bg-[#D8D4CF] text-[#1C1918]'
+        }`}
+      >
         <Navbar
           brandName={profile.display_name}
           activeView={activeView}
@@ -154,7 +164,9 @@ export default function App() {
           }}
           onNavigateStudioTab={(tab) => handleNavigateToStudio(tab)}
           onJumpToSection={handleJumpToSection}
-          onOpenVipModal={() => setModalState({ isOpen: true, mode: 'vip', mediaItem: null })}
+          onOpenVipModal={() =>
+            setModalState({ isOpen: true, mode: 'vip', mediaItem: null, videoCallPlan: null })
+          }
         />
 
         <div className="flex-1">
@@ -175,10 +187,21 @@ export default function App() {
                   mediaItems={mediaItems}
                   fan={fan}
                   stats={stats}
-                  onSelectMedia={(item) => setModalState({ isOpen: true, mode: 'media', mediaItem: item })}
-                  onOpenVipModal={() => setModalState({ isOpen: true, mode: 'vip', mediaItem: null })}
-                  onOpenTipModal={() => setModalState({ isOpen: true, mode: 'tip', mediaItem: null })}
-                  onOpenFanLogin={() => setModalState({ isOpen: true, mode: 'fan_login', mediaItem: null })}
+                  onSelectMedia={(item) =>
+                    setModalState({ isOpen: true, mode: 'media', mediaItem: item, videoCallPlan: null })
+                  }
+                  onSelectVideoCallPlan={(plan) =>
+                    setModalState({ isOpen: true, mode: 'video_call', mediaItem: null, videoCallPlan: plan })
+                  }
+                  onOpenVipModal={() =>
+                    setModalState({ isOpen: true, mode: 'vip', mediaItem: null, videoCallPlan: null })
+                  }
+                  onOpenTipModal={() =>
+                    setModalState({ isOpen: true, mode: 'tip', mediaItem: null, videoCallPlan: null })
+                  }
+                  onOpenFanLogin={() =>
+                    setModalState({ isOpen: true, mode: 'fan_login', mediaItem: null, videoCallPlan: null })
+                  }
                   onLogoutFan={handleLogoutFan}
                   onNavigateToStudio={(tab) => handleNavigateToStudio(tab || 'overview')}
                 />
@@ -207,8 +230,8 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-      <footer className="border-t border-zinc-800/80 bg-[#09090B] py-8 px-6 lg:px-10 mt-12">
-        <div className="mx-auto max-w-[1440px] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-500">
+      <footer className="border-t border-[#453F3B] bg-[#23201E] py-8 px-6 lg:px-10">
+        <div className="mx-auto max-w-[1440px] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#C7C1BA]">
           <p>
             © {new Date().getFullYear()} {profile.display_name} · Conteúdo exclusivo para maiores de 18 anos (+18).
           </p>
@@ -216,14 +239,14 @@ export default function App() {
             <button
               type="button"
               onClick={() => handleNavigateToStudio('supabase')}
-              className="hover:text-zinc-300 transition-colors cursor-pointer"
+              className="hover:text-[#F4F1ED] transition-colors cursor-pointer"
             >
               Conexão Supabase
             </button>
             <button
               type="button"
               onClick={() => handleNavigateToStudio('overview')}
-              className="hover:text-zinc-300 transition-colors cursor-pointer"
+              className="hover:text-[#F4F1ED] transition-colors cursor-pointer"
             >
               Administração do Site
             </button>
@@ -235,6 +258,7 @@ export default function App() {
         isOpen={modalState.isOpen}
         mode={modalState.mode}
         mediaItem={modalState.mediaItem}
+        videoCallPlan={modalState.videoCallPlan}
         profile={profile}
         fan={fan}
         supabaseConnected={Boolean(supabaseStatus?.connected && supabaseStatus?.schemaReady)}

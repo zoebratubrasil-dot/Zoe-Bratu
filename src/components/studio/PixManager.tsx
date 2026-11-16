@@ -3,6 +3,7 @@ import { QrCode, CheckCircle2, AlertCircle, KeyRound, Receipt, ArrowRight } from
 import type { CreatorDashboardData, CreatorProfile, SaleRecord, SaleStatus, SaleType } from '../../types';
 import { detectPixKeyType } from '../../lib/pixBrCode';
 import { formatBrl, formatDateTime } from '../../lib/format';
+import { resolveVideoCallPlans } from '../../lib/videoCalls';
 import { PixQrCard } from '../PixQrCard';
 
 interface PixManagerProps {
@@ -32,6 +33,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
 
   const [saleType, setSaleType] = useState<SaleType>('vip_subscription');
   const [selectedMediaId, setSelectedMediaId] = useState<string>('');
+  const [selectedCallPlanId, setSelectedCallPlanId] = useState<string>('vc-1');
   const [amountInput, setAmountInput] = useState<string>(String(profile.vip_monthly_price_brl || 49.9));
   const [buyerEmail, setBuyerEmail] = useState('');
   const [buyerName, setBuyerName] = useState('');
@@ -44,6 +46,11 @@ export const PixManager: React.FC<PixManagerProps> = ({
   useEffect(() => {
     setPixKeyInput(profile.pix_key || '');
   }, [profile.pix_key]);
+
+  const videoCallPlans = useMemo(
+    () => resolveVideoCallPlans(profile.video_call_plans),
+    [profile.video_call_plans]
+  );
 
   const ppvOrAllMedia = useMemo(() => {
     const ppv = dashboard.mediaItems.filter((m) => m.access_tier === 'ppv');
@@ -59,8 +66,13 @@ export const PixManager: React.FC<PixManagerProps> = ({
         if (!selectedMediaId) setSelectedMediaId(target.id);
         setAmountInput(String(target.price_brl > 0 ? target.price_brl : 29.9));
       }
+    } else if (saleType === 'video_call') {
+      const plan = videoCallPlans.find((p) => p.id === selectedCallPlanId) || videoCallPlans[0];
+      if (plan) {
+        setAmountInput(String(plan.price_brl));
+      }
     }
-  }, [saleType, selectedMediaId, ppvOrAllMedia, profile.vip_monthly_price_brl]);
+  }, [saleType, selectedMediaId, selectedCallPlanId, ppvOrAllMedia, videoCallPlans, profile.vip_monthly_price_brl]);
 
   const pixSales = useMemo(() => {
     return dashboard.sales.filter((s) => s.payment_method === 'pix');
@@ -154,6 +166,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
           buyerName: buyerName.trim(),
           saleType,
           mediaId: saleType === 'ppv' ? selectedMediaId : undefined,
+          videoCallPlanId: saleType === 'video_call' ? selectedCallPlanId : undefined,
           amountBrl: parsedAmount,
           paymentMethod: 'pix',
           status,
@@ -217,7 +230,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#453F3B] pb-5">
         <div>
           <h2 className="font-display text-2xl font-semibold text-zinc-50">
             Chave PIX & QR Code de Pagamentos
@@ -230,7 +243,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
         <button
           type="button"
           onClick={onGoToSales}
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-2 rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
         >
           <Receipt className="h-3.5 w-3.5 text-[#D4AF37]" />
           Abrir Banco de Vendas
@@ -239,7 +252,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
       </div>
 
       {/* KPI Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-zinc-800 rounded-xl border border-zinc-800 bg-[#121215]">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#453F3B] rounded-xl border border-[#453F3B] bg-[#23201E]">
         <div className="p-5">
           <p className="text-xs text-zinc-400 mb-1">Chave PIX Ativa</p>
           <p className="font-mono text-sm font-medium text-zinc-100 truncate">
@@ -275,7 +288,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
           {/* Form 1: Cadastrar Chave PIX */}
           <form
             onSubmit={handleSavePixKey}
-            className="rounded-xl border border-zinc-800 bg-[#121215] p-6 space-y-4"
+            className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-4"
           >
             <div className="flex items-center gap-2.5">
               <KeyRound className="h-4 w-4 text-[#D4AF37]" />
@@ -300,7 +313,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                 value={pixKeyInput}
                 onChange={(e) => setPixKeyInput(e.target.value)}
                 placeholder="Ex: zoebratubrasil@gmail.com ou CPF/CNPJ"
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
 
@@ -336,7 +349,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
           </form>
 
           {/* Form 2: Configurar Transação e Integrar ao Banco de Vendas */}
-          <div className="rounded-xl border border-zinc-800 bg-[#121215] p-6 space-y-4">
+          <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-4">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <QrCode className="h-4 w-4 text-[#D4AF37]" />
@@ -353,10 +366,11 @@ export const PixManager: React.FC<PixManagerProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-[#09090B] border border-zinc-800">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 rounded-lg bg-[#1C1918] border border-[#453F3B]">
               {(
                 [
                   { id: 'vip_subscription', label: 'Clube VIP' },
+                  { id: 'video_call', label: 'Vídeo Chamada' },
                   { id: 'ppv', label: 'Avulso (PPV)' },
                   { id: 'tip', label: 'Personalizado' },
                 ] as const
@@ -367,7 +381,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                   onClick={() => setSaleType(opt.id)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer whitespace-nowrap ${
                     saleType === opt.id
-                      ? 'bg-[#D4AF37] text-zinc-950 font-semibold'
+                      ? 'bg-[#E5C158] text-[#1C1918] font-semibold'
                       : 'text-zinc-400 hover:text-zinc-100'
                   }`}
                 >
@@ -375,6 +389,25 @@ export const PixManager: React.FC<PixManagerProps> = ({
                 </button>
               ))}
             </div>
+
+            {saleType === 'video_call' && (
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                  Selecionar Plano de Vídeo Chamada
+                </label>
+                <select
+                  value={selectedCallPlanId}
+                  onChange={(e) => setSelectedCallPlanId(e.target.value)}
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                >
+                  {videoCallPlans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.title} · {p.duration_minutes} min ({formatBrl(p.price_brl)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {saleType === 'ppv' && (
               <div>
@@ -389,7 +422,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                   <select
                     value={selectedMediaId}
                     onChange={(e) => setSelectedMediaId(e.target.value)}
-                    className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
                   >
                     {ppvOrAllMedia.map((m) => (
                       <option key={m.id} value={m.id}>
@@ -410,7 +443,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                   step="0.50"
                   value={amountInput}
                   onChange={(e) => setAmountInput(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 font-mono text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
               <div>
@@ -420,7 +453,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                   maxLength={25}
                   value={txid}
                   onChange={(e) => setTxid(e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase())}
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 font-mono text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
             </div>
@@ -433,7 +466,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                   value={buyerEmail}
                   onChange={(e) => setBuyerEmail(e.target.value)}
                   placeholder="cliente@email.com"
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
               <div>
@@ -443,7 +476,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                   value={buyerName}
                   onChange={(e) => setBuyerName(e.target.value)}
                   placeholder="Nome do cliente"
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
             </div>
@@ -478,7 +511,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                 type="button"
                 disabled={recordingSale}
                 onClick={() => handleRecordPixSale('pending')}
-                className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] disabled:opacity-50 transition-colors cursor-pointer"
+                className="flex-1 rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2.5 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 Registrar Cobrança Pendente
               </button>
@@ -487,7 +520,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
         </div>
 
         {/* Right Column: Live Scannable QR Code Preview */}
-        <div className="lg:col-span-6 rounded-xl border border-zinc-800 bg-[#121215] p-6 space-y-4">
+        <div className="lg:col-span-6 rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-4">
           <div className="flex items-center justify-between gap-2">
             <div>
               <h3 className="font-display text-lg font-semibold text-zinc-50">
@@ -508,6 +541,8 @@ export const PixManager: React.FC<PixManagerProps> = ({
             description={
               saleType === 'vip_subscription'
                 ? 'Assinatura Clube VIP'
+                : saleType === 'video_call'
+                ? 'Video Chamada'
                 : saleType === 'ppv'
                 ? 'Desbloqueio Midia'
                 : 'Maison Prive'
@@ -529,16 +564,16 @@ export const PixManager: React.FC<PixManagerProps> = ({
         </div>
 
         {pixSales.length === 0 ? (
-          <div className="rounded-xl border border-zinc-800 bg-[#121215] p-10 text-center space-y-2">
+          <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-10 text-center space-y-2">
             <p className="font-display text-base text-zinc-200">Nenhuma transação PIX registrada ainda</p>
             <p className="text-xs text-zinc-400">
               Compras feitas na vitrine via Pix ou cobranças registradas acima aparecerão aqui com atualização em tempo real.
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-[#121215]">
+          <div className="overflow-x-auto rounded-xl border border-[#453F3B] bg-[#23201E]">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-zinc-800 text-zinc-400">
+              <thead className="border-b border-[#453F3B] text-zinc-400">
                 <tr>
                   <th className="px-4 py-3 font-medium">Data / Hora</th>
                   <th className="px-4 py-3 font-medium">Ref</th>
@@ -549,9 +584,9 @@ export const PixManager: React.FC<PixManagerProps> = ({
                   <th className="px-4 py-3 font-medium text-right">QR Code</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-800/70">
+              <tbody className="divide-y divide-[#453F3B]/70">
                 {pixSales.map((sale) => (
-                  <tr key={sale.id} className="hover:bg-zinc-900/50 transition-colors">
+                  <tr key={sale.id} className="hover:bg-[#1C1918]/50 transition-colors">
                     <td className="px-4 py-3 font-mono text-zinc-400 tabular-nums whitespace-nowrap">
                       {formatDateTime(sale.created_at)}
                     </td>
@@ -565,6 +600,8 @@ export const PixManager: React.FC<PixManagerProps> = ({
                     <td className="px-4 py-3 text-zinc-300">
                       {sale.sale_type === 'vip_subscription'
                         ? 'Clube VIP'
+                        : sale.sale_type === 'video_call'
+                        ? sale.media_title || 'Vídeo Chamada ao Vivo'
                         : sale.sale_type === 'tip'
                         ? 'Personalizado / Mimo'
                         : sale.media_title || 'Mídia Avulsa'}
@@ -577,7 +614,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                         value={sale.status}
                         disabled={updatingSaleId === sale.id}
                         onChange={(e) => handleStatusChange(sale.id, e.target.value as SaleStatus)}
-                        className={`rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs font-medium focus:outline-none ${
+                        className={`rounded-md border border-[#453F3B] bg-[#1C1918] px-2 py-1 text-xs font-medium focus:outline-none ${
                           sale.status === 'paid'
                             ? 'text-emerald-300'
                             : sale.status === 'pending'
@@ -594,7 +631,7 @@ export const PixManager: React.FC<PixManagerProps> = ({
                       <button
                         type="button"
                         onClick={() => handleInspectSaleQr(sale)}
-                        className="inline-flex items-center gap-1 rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer"
+                        className="inline-flex items-center gap-1 rounded-md border border-[#453F3B] bg-[#1C1918] px-2.5 py-1 text-xs text-zinc-200 hover:border-[#D4AF37] cursor-pointer"
                       >
                         <QrCode className="h-3.5 w-3.5 text-[#D4AF37]" />
                         Ver QR

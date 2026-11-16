@@ -16,6 +16,123 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true 
 const PORT = 3000;
 const ENV_LOCAL_PATH = path.resolve(process.cwd(), '.env.local');
 const SCHEMA_SQL_PATH = path.resolve(process.cwd(), 'supabase/schema.sql');
+const EDGE_WELCOME_FN_PATH = path.resolve(process.cwd(), 'supabase/functions/welcome-fan-email/index.ts');
+const VIDEO_CALL_PLANS_PATH = path.resolve(process.cwd(), '.video-call-plans.json');
+
+export interface VideoCallPlanConfig {
+  id: string;
+  title: string;
+  duration_minutes: number;
+  price_brl: number;
+  description: string;
+  active: boolean;
+}
+
+const DEFAULT_VIDEO_CALL_PLANS: VideoCallPlanConfig[] = [
+  {
+    id: 'vc-1',
+    title: 'Chamada Express',
+    duration_minutes: 5,
+    price_brl: 20,
+    description: 'Bate-papo ao vivo em vídeo privado 1 a 1 em alta definição.',
+    active: true,
+  },
+  {
+    id: 'vc-2',
+    title: 'Chamada Privada',
+    duration_minutes: 15,
+    price_brl: 40,
+    description: 'Momento exclusivo ao vivo com interação dedicada em tempo real.',
+    active: true,
+  },
+  {
+    id: 'vc-3',
+    title: 'Chamada Especial',
+    duration_minutes: 30,
+    price_brl: 60,
+    description: 'Sessão completa ao vivo sem pressa com atenção exclusiva.',
+    active: true,
+  },
+  {
+    id: 'vc-4',
+    title: 'Sessão Estendida VIP',
+    duration_minutes: 60,
+    price_brl: 100,
+    description: 'Uma hora inteira em vídeo chamada particular personalizada.',
+    active: true,
+  },
+];
+
+function sanitizeVideoCallPlans(input: unknown): VideoCallPlanConfig[] {
+  const arr = Array.isArray(input) ? input : [];
+  return DEFAULT_VIDEO_CALL_PLANS.map((fallback, idx) => {
+    const item = (arr[idx] && typeof arr[idx] === 'object' ? arr[idx] : {}) as Record<string, unknown>;
+    const durationNum = Number(item.duration_minutes);
+    const priceNum = Number(item.price_brl);
+    const cleanTitle = typeof item.title === 'string' && item.title.trim() ? item.title.trim().slice(0, 60) : fallback.title;
+    const cleanDesc =
+      typeof item.description === 'string' && item.description.trim()
+        ? item.description.trim().slice(0, 220)
+        : fallback.description;
+    return {
+      id: typeof item.id === 'string' && item.id.trim() ? item.id.trim().slice(0, 24) : fallback.id,
+      title: cleanTitle,
+      duration_minutes: Number.isFinite(durationNum) && durationNum >= 1 ? Math.round(durationNum) : fallback.duration_minutes,
+      price_brl: Number.isFinite(priceNum) && priceNum >= 1 ? Number(priceNum.toFixed(2)) : fallback.price_brl,
+      description: cleanDesc,
+      active: typeof item.active === 'boolean' ? item.active : fallback.active,
+    };
+  });
+}
+
+function readVideoCallPlansFallback(): VideoCallPlanConfig[] {
+  try {
+    if (fs.existsSync(VIDEO_CALL_PLANS_PATH)) {
+      const raw = JSON.parse(fs.readFileSync(VIDEO_CALL_PLANS_PATH, 'utf8'));
+      return sanitizeVideoCallPlans(raw);
+    }
+  } catch {
+    // fallback to defaults
+  }
+  return DEFAULT_VIDEO_CALL_PLANS.map((p) => ({ ...p }));
+}
+
+function saveVideoCallPlansFallback(plans: VideoCallPlanConfig[]): void {
+  fs.writeFileSync(VIDEO_CALL_PLANS_PATH, JSON.stringify(plans, null, 2) + '\n', 'utf8');
+}
+
+function resolveProfileVideoCallPlans(profileRow: Record<string, unknown> | null | undefined): VideoCallPlanConfig[] {
+  if (profileRow && Array.isArray(profileRow.video_call_plans) && profileRow.video_call_plans.length > 0) {
+    return sanitizeVideoCallPlans(profileRow.video_call_plans);
+  }
+  return readVideoCallPlansFallback();
+}
+
+function normalizeSaleRecord<T extends { sale_type: string; media_id?: string | null; external_ref?: string | null; amount_brl?: unknown }>(
+  sale: T,
+  mediaTitleMap: Map<string, string>
+) {
+  const ref = String(sale.external_ref || '');
+  const vcMatch = /^VC-(\d+)MIN/i.exec(ref);
+  const isVideoCall = sale.sale_type === 'video_call' || Boolean(vcMatch);
+  return {
+    ...sale,
+    sale_type: isVideoCall ? 'video_call' : sale.sale_type,
+    amount_brl: Number(sale.amount_brl || 0),
+    media_title: isVideoCall
+      ? vcMatch
+        ? `Vídeo Chamada · ${vcMatch[1]} min`
+        : 'Vídeo Chamada ao Vivo'
+      : sale.media_id
+      ? mediaTitleMap.get(sale.media_id) || 'Mídia removida'
+      : null,
+  };
+}
+
+const DEFAULT_AVATAR_ASSET = '/src/assets/images/creator_avatar_portrait_1794805425733.jpg';
+const DEFAULT_HERO_ASSET = '/src/assets/images/creator_hero_editorial_1794805426073.jpg';
+const FALLBACK_PHOTO_ASSET = '/src/assets/images/collection_silk_cover_1794805427019.jpg';
+const FALLBACK_VIDEO_ASSET = '/src/assets/images/collection_noir_video_1794805427080.jpg';
 
 const DEFAULT_CREATOR_PROFILE = {
   id: 'default-solo-creator',
@@ -24,12 +141,13 @@ const DEFAULT_CREATOR_PROFILE = {
   handle: '@valentinanoir',
   bio: 'Ensaios autorais, bastidores íntimos e vídeos exclusivos em 4K. Conteúdo estritamente para maiores de 18 anos.',
   location: 'São Paulo, Brasil',
-  avatar_url: '/src/assets/images/creator_avatar_portrait_1794805425733.jpg',
-  hero_url: '/src/assets/images/creator_hero_editorial_1794805426073.jpg',
+  avatar_url: DEFAULT_AVATAR_ASSET,
+  hero_url: DEFAULT_HERO_ASSET,
   vip_monthly_price_brl: 49.9,
   vip_description:
     'Acesso ilimitado a todos os ensaios e vídeos marcados como VIP, atualizações semanais e prioridade em pedidos.',
   pix_key: '',
+  video_call_plans: DEFAULT_VIDEO_CALL_PLANS,
   age_verified_18: true,
   updated_at: new Date().toISOString(),
 };
@@ -41,6 +159,8 @@ interface RuntimeConfig {
   adminEmail: string;
   adminPasswordHash: string;
   authSecret: string;
+  resendApiKey: string;
+  resendFromEmail: string;
 }
 
 const runtimeConfig: RuntimeConfig = {
@@ -55,6 +175,8 @@ const runtimeConfig: RuntimeConfig = {
       .createHash('sha256')
       .update(process.cwd() + (process.env.SUPABASE_SERVICE_ROLE_KEY || 'maison-prive-session-secret'))
       .digest('hex'),
+  resendApiKey: (process.env.RESEND_API_KEY || '').trim(),
+  resendFromEmail: (process.env.RESEND_FROM_EMAIL || 'Maison Privé <onboarding@resend.dev>').trim(),
 };
 
 let cachedAdminClient: SupabaseClient | null = null;
@@ -306,31 +428,619 @@ function requireCreatorAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-async function resolveSignedMediaUrl(client: SupabaseClient, storagePath: string): Promise<string | null> {
-  if (!storagePath) return null;
-  if (storagePath.startsWith('http://') || storagePath.startsWith('https://') || storagePath.startsWith('/')) {
-    return storagePath;
-  }
-  const { data, error } = await client.storage.from('creator-media').createSignedUrl(storagePath, 3600);
-  if (error || !data?.signedUrl) {
-    return null;
-  }
-  return data.signedUrl;
+function getMediaCipherKey(): Buffer {
+  return crypto.createHash('sha256').update(`mp-media-key::${runtimeConfig.authSecret}`).digest();
 }
 
-async function resolvePreviewUrl(client: SupabaseClient, previewUrl: string | null, storagePath: string, mediaType: string): Promise<string | null> {
-  if (previewUrl) return previewUrl;
-  if (mediaType === 'photo' && storagePath) {
-    const { data } = await client.storage.from('creator-media').createSignedUrl(storagePath, 3600);
-    return data?.signedUrl || null;
+interface MediaTicketPayload {
+  kind: 'media' | 'preview' | 'local' | 'remote';
+  target: string;
+  mime?: string | null;
+  exp: number;
+}
+
+function issueMediaTicket(
+  kind: MediaTicketPayload['kind'],
+  target: string,
+  mime?: string | null
+): string {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', getMediaCipherKey(), iv);
+  const payload = JSON.stringify({
+    kind,
+    target,
+    mime: mime || undefined,
+    exp: Date.now() + 4 * 60 * 60 * 1000,
+  });
+  const encrypted = Buffer.concat([cipher.update(payload, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `${iv.toString('base64url')}.${encrypted.toString('base64url')}.${tag.toString('base64url')}`;
+}
+
+function verifyMediaTicket(ticket: string): MediaTicketPayload | null {
+  if (!ticket || typeof ticket !== 'string') return null;
+  const parts = ticket.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const iv = Buffer.from(parts[0], 'base64url');
+    const encrypted = Buffer.from(parts[1], 'base64url');
+    const tag = Buffer.from(parts[2], 'base64url');
+    const decipher = crypto.createDecipheriv('aes-256-gcm', getMediaCipherKey(), iv);
+    decipher.setAuthTag(tag);
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
+    const parsed = JSON.parse(decrypted) as MediaTicketPayload;
+    if (!parsed?.target || !parsed?.exp || Date.now() > Number(parsed.exp)) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
   }
-  return null;
+}
+
+function shortSourceTag(value: string): string {
+  return crypto.createHash('sha256').update(value || 'default').digest('hex').slice(0, 12);
+}
+
+function maskProfileForClient<T extends { avatar_url?: string | null; hero_url?: string | null }>(profile: T): T {
+  const rawAvatar = profile.avatar_url || DEFAULT_AVATAR_ASSET;
+  const rawHero = profile.hero_url || DEFAULT_HERO_ASSET;
+  return {
+    ...profile,
+    avatar_url: `/api/profile/asset/avatar?v=${shortSourceTag(rawAvatar)}`,
+    hero_url: `/api/profile/asset/hero?v=${shortSourceTag(rawHero)}`,
+  };
+}
+
+function buildMaskedMediaUrls(item: {
+  media_type: string;
+  storage_path: string;
+  preview_url?: string | null;
+  mime_type?: string | null;
+}, isUnlocked: boolean): { mediaUrl: string | null; previewUrl: string | null } {
+  const rawStorage = String(item.storage_path || '').trim();
+  const rawPreview = item.preview_url ? String(item.preview_url).trim() : '';
+
+  let maskedMediaUrl: string | null = null;
+  if (isUnlocked && rawStorage) {
+    const mediaKind: MediaTicketPayload['kind'] = rawStorage.startsWith('/')
+      ? 'local'
+      : rawStorage.startsWith('http://') || rawStorage.startsWith('https://')
+      ? 'remote'
+      : 'media';
+    const ticket = issueMediaTicket(mediaKind, rawStorage, item.mime_type);
+    maskedMediaUrl = `/api/media/stream/${ticket}`;
+  }
+
+  let maskedPreviewUrl: string | null = null;
+  if (rawPreview) {
+    const previewKind: MediaTicketPayload['kind'] = rawPreview.startsWith('/')
+      ? 'local'
+      : rawPreview.startsWith('http://') || rawPreview.startsWith('https://')
+      ? 'remote'
+      : 'preview';
+    const pTicket = issueMediaTicket(previewKind, rawPreview);
+    maskedPreviewUrl = `/api/media/preview/${pTicket}`;
+  } else if (isUnlocked && item.media_type === 'photo' && rawStorage) {
+    const mediaKind: MediaTicketPayload['kind'] = rawStorage.startsWith('/')
+      ? 'local'
+      : rawStorage.startsWith('http://') || rawStorage.startsWith('https://')
+      ? 'remote'
+      : 'media';
+    const pTicket = issueMediaTicket(mediaKind, rawStorage, item.mime_type);
+    maskedPreviewUrl = `/api/media/preview/${pTicket}`;
+  } else {
+    maskedPreviewUrl =
+      item.media_type === 'video' ? '/api/media/fallback/video' : '/api/media/fallback/photo';
+  }
+
+  return { mediaUrl: maskedMediaUrl, previewUrl: maskedPreviewUrl };
+}
+
+function inferContentTypeFromPath(filePath: string, fallback = 'application/octet-stream'): string {
+  const lower = filePath.toLowerCase();
+  if (/\.(jpe?g|jfif)$/i.test(lower)) return 'image/jpeg';
+  if (/\.png$/i.test(lower)) return 'image/png';
+  if (/\.webp$/i.test(lower)) return 'image/webp';
+  if (/\.gif$/i.test(lower)) return 'image/gif';
+  if (/\.avif$/i.test(lower)) return 'image/avif';
+  if (/\.(mp4|m4v)$/i.test(lower)) return 'video/mp4';
+  if (/\.webm$/i.test(lower)) return 'video/webm';
+  if (/\.mov$/i.test(lower)) return 'video/quicktime';
+  return fallback;
+}
+
+function streamLocalFile(req: Request, res: Response, assetPath: string, mimeHint?: string | null) {
+  const cleanRel = assetPath.replace(/^\/+/, '');
+  const rootDir = path.resolve(process.cwd());
+  const fullPath = path.resolve(rootDir, cleanRel);
+  if (!fullPath.startsWith(rootDir) || !fs.existsSync(fullPath)) {
+    res.status(404).end();
+    return;
+  }
+  const stat = fs.statSync(fullPath);
+  const contentType = mimeHint || inferContentTypeFromPath(fullPath, 'image/jpeg');
+  const range = req.headers.range;
+
+  res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Disposition', 'inline');
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  res.setHeader('Accept-Ranges', 'bytes');
+
+  if (range) {
+    const match = /bytes=(\d*)-(\d*)/.exec(range);
+    if (match) {
+      const start = match[1] ? Number(match[1]) : 0;
+      const end = match[2] ? Math.min(Number(match[2]), stat.size - 1) : stat.size - 1;
+      if (start < stat.size && start <= end) {
+        res.status(206);
+        res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
+        res.setHeader('Content-Length', String(end - start + 1));
+        res.setHeader('Content-Type', contentType);
+        fs.createReadStream(fullPath, { start, end }).pipe(res);
+        return;
+      }
+    }
+  }
+
+  res.status(200);
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Content-Length', String(stat.size));
+  fs.createReadStream(fullPath).pipe(res);
+}
+
+async function streamRemoteUrl(
+  req: Request,
+  res: Response,
+  url: string,
+  mimeHint?: string | null
+) {
+  const headers: Record<string, string> = {};
+  if (req.headers.range) {
+    headers.Range = String(req.headers.range);
+  }
+  const upstream = await fetch(url, { headers });
+  if (!upstream.ok && upstream.status !== 206) {
+    res.status(upstream.status === 404 ? 404 : 502).end();
+    return;
+  }
+
+  res.status(upstream.status);
+  res.setHeader('Cache-Control', 'private, no-store, no-cache, must-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Disposition', 'inline');
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+
+  const passthroughHeaders = ['content-type', 'content-length', 'content-range', 'accept-ranges'];
+  for (const h of passthroughHeaders) {
+    const v = upstream.headers.get(h);
+    if (v) res.setHeader(h, v);
+  }
+  if (!upstream.headers.get('content-type') && mimeHint) {
+    res.setHeader('Content-Type', mimeHint);
+  }
+
+  if (!upstream.body) {
+    const ab = await upstream.arrayBuffer();
+    res.send(Buffer.from(ab));
+    return;
+  }
+
+  const reader = upstream.body.getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value) {
+        if (!res.write(Buffer.from(value))) {
+          await new Promise<void>((resolve) => res.once('drain', resolve));
+        }
+      }
+    }
+  } finally {
+    res.end();
+  }
+}
+
+function readEdgeFunctionCode(): string {
+  if (fs.existsSync(EDGE_WELCOME_FN_PATH)) {
+    return fs.readFileSync(EDGE_WELCOME_FN_PATH, 'utf8');
+  }
+  return '';
+}
+
+function buildWelcomeMigrationSql(): string {
+  return `-- Migração Automática: E-mail de Boas-Vindas via Edge Function
+alter table public.fans
+  add column if not exists welcome_email_sent_at timestamptz;
+
+create table if not exists public.welcome_email_logs (
+  id uuid primary key default gen_random_uuid(),
+  fan_id uuid references public.fans(id) on delete set null,
+  fan_email text not null,
+  trigger_source text not null check (trigger_source in ('signup', 'first_purchase', 'manual_test')),
+  provider text not null default 'supabase_edge',
+  status text not null check (status in ('sent', 'skipped', 'pending_config', 'failed')),
+  edge_response text,
+  error_message text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_welcome_email_logs_email_created
+  on public.welcome_email_logs (fan_email, created_at desc);
+
+alter table public.welcome_email_logs enable row level security;`;
+}
+
+async function logWelcomeEmailSafe(
+  client: SupabaseClient,
+  entry: {
+    fan_id?: string | null;
+    fan_email: string;
+    trigger_source: 'signup' | 'first_purchase' | 'manual_test';
+    provider: string;
+    status: 'sent' | 'skipped' | 'pending_config' | 'failed';
+    edge_response?: string | null;
+    error_message?: string | null;
+  }
+) {
+  try {
+    await client.from('welcome_email_logs').insert({
+      fan_id: entry.fan_id || null,
+      fan_email: entry.fan_email,
+      trigger_source: entry.trigger_source,
+      provider: entry.provider,
+      status: entry.status,
+      edge_response: entry.edge_response ? entry.edge_response.slice(0, 500) : null,
+      error_message: entry.error_message ? entry.error_message.slice(0, 500) : null,
+    });
+  } catch {
+    // Table may not be migrated yet in older Supabase instances
+  }
+}
+
+async function orchestrateFanWelcomeEmail(
+  client: SupabaseClient,
+  params: {
+    fanId?: string | null;
+    email: string;
+    displayName?: string | null;
+    triggerSource: 'signup' | 'first_purchase' | 'manual_test';
+    saleType?: 'vip_subscription' | 'ppv' | 'tip' | 'video_call';
+    amountBrl?: number;
+    siteUrl?: string;
+    forceTest?: boolean;
+  }
+): Promise<{ ok: boolean; status: string; provider: string; error?: string | null }> {
+  const cleanEmail = params.email.trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    return { ok: false, status: 'failed', provider: 'none', error: 'E-mail inválido' };
+  }
+
+  try {
+    // Check idempotency if not a manual test
+    if (!params.forceTest) {
+      const { data: fanRow } = await client
+        .from('fans')
+        .select('id, welcome_email_sent_at')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+      if (fanRow && 'welcome_email_sent_at' in fanRow && fanRow.welcome_email_sent_at) {
+        return { ok: true, status: 'skipped', provider: 'idempotent' };
+      }
+
+      try {
+        const { data: prevLogs } = await client
+          .from('welcome_email_logs')
+          .select('id, status')
+          .eq('fan_email', cleanEmail)
+          .eq('status', 'sent')
+          .limit(1);
+        if (prevLogs && prevLogs.length > 0) {
+          return { ok: true, status: 'skipped', provider: 'idempotent' };
+        }
+      } catch {
+        // welcome_email_logs table might not exist yet
+      }
+    }
+
+    const { data: prof } = await client
+      .from('creator_profile')
+      .select('display_name')
+      .eq('slug', 'solo')
+      .maybeSingle();
+    const creatorName = prof?.display_name || DEFAULT_CREATOR_PROFILE.display_name;
+
+    const edgeUrl = runtimeConfig.supabaseUrl
+      ? `${runtimeConfig.supabaseUrl.replace(/\/+$/, '')}/functions/v1/welcome-fan-email`
+      : '';
+
+    if (edgeUrl && runtimeConfig.supabaseServiceRoleKey) {
+      try {
+        const edgeResp = await fetch(edgeUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${runtimeConfig.supabaseServiceRoleKey}`,
+            apikey: runtimeConfig.supabaseAnonKey || runtimeConfig.supabaseServiceRoleKey,
+          },
+          body: JSON.stringify({
+            fanId: params.fanId || undefined,
+            email: cleanEmail,
+            displayName: params.displayName || undefined,
+            triggerSource: params.triggerSource,
+            saleType: params.saleType,
+            amountBrl: params.amountBrl,
+            creatorName,
+            siteUrl: params.siteUrl,
+            forceTest: Boolean(params.forceTest),
+          }),
+        });
+
+        const rawText = await edgeResp.text();
+        let parsed: { ok?: boolean; status?: string; provider?: string; error?: string; skipped?: boolean } = {};
+        try {
+          parsed = JSON.parse(rawText);
+        } catch {
+          // non-JSON error from Edge gateway
+        }
+
+        if (edgeResp.ok) {
+          return {
+            ok: true,
+            status: parsed.skipped ? 'skipped' : parsed.status || 'sent',
+            provider: parsed.provider || 'supabase_edge',
+            error: parsed.error || null,
+          };
+        }
+
+        // If Edge Function is deployed and returned a real failure, propagate its status
+        if (edgeResp.status !== 404) {
+          await logWelcomeEmailSafe(client, {
+            fan_id: params.fanId,
+            fan_email: cleanEmail,
+            trigger_source: params.triggerSource,
+            provider: 'supabase_edge',
+            status: 'failed',
+            edge_response: rawText,
+            error_message: parsed.error || `Edge HTTP ${edgeResp.status}`,
+          });
+          return {
+            ok: false,
+            status: 'failed',
+            provider: 'supabase_edge',
+            error: parsed.error || `Edge HTTP ${edgeResp.status}`,
+          };
+        }
+      } catch (edgeErr) {
+        // Network error calling Edge Function - fall through cleanly to fallback check
+        const errMsg = edgeErr instanceof Error ? edgeErr.message : 'Erro de rede na Edge Function';
+        if (!runtimeConfig.resendApiKey) {
+          await logWelcomeEmailSafe(client, {
+            fan_id: params.fanId,
+            fan_email: cleanEmail,
+            trigger_source: params.triggerSource,
+            provider: 'supabase_edge',
+            status: 'failed',
+            error_message: errMsg,
+          });
+          return { ok: false, status: 'failed', provider: 'supabase_edge', error: errMsg };
+        }
+      }
+    }
+
+    // Fallback: Edge Function not yet deployed in Supabase (404)
+    if (runtimeConfig.resendApiKey) {
+      const fanName = params.displayName || cleanEmail.split('@')[0];
+      const isPurchase = params.triggerSource === 'first_purchase';
+      const subject = isPurchase
+        ? `Bem-vindo(a) ao acervo privado de ${creatorName}`
+        : `Seu acesso em ${creatorName} está ativo`;
+      const html = `<div style="background:#09090b;color:#f4f4f5;padding:32px;font-family:sans-serif;"><h2 style="color:#d4af37;">${creatorName}</h2><p>Olá, ${fanName}!</p><p>${
+        isPurchase
+          ? 'Obrigado pela sua primeira compra! Seu acesso já está liberado na vitrine.'
+          : 'Seu cadastro +18 foi concluído com sucesso! Você já pode explorar prévias e conteúdos VIP.'
+      }</p></div>`;
+
+      const resendResp = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${runtimeConfig.resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: runtimeConfig.resendFromEmail,
+          to: [cleanEmail],
+          subject,
+          html,
+        }),
+      });
+      const resendText = await resendResp.text();
+      if (resendResp.ok) {
+        if (!params.forceTest) {
+          await client
+            .from('fans')
+            .update({ welcome_email_sent_at: new Date().toISOString() })
+            .eq('email', cleanEmail)
+            .then(() => {}, () => {});
+        }
+        await logWelcomeEmailSafe(client, {
+          fan_id: params.fanId,
+          fan_email: cleanEmail,
+          trigger_source: params.triggerSource,
+          provider: 'resend_fallback',
+          status: 'sent',
+          edge_response: resendText,
+        });
+        return { ok: true, status: 'sent', provider: 'resend_fallback' };
+      }
+      await logWelcomeEmailSafe(client, {
+        fan_id: params.fanId,
+        fan_email: cleanEmail,
+        trigger_source: params.triggerSource,
+        provider: 'resend_fallback',
+        status: 'failed',
+        edge_response: resendText,
+        error_message: `Resend HTTP ${resendResp.status}`,
+      });
+      return { ok: false, status: 'failed', provider: 'resend_fallback', error: resendText };
+    }
+
+    const pendingErr =
+      'Edge Function welcome-fan-email aguardando deploy no Supabase ou configuração de RESEND_API_KEY.';
+    await logWelcomeEmailSafe(client, {
+      fan_id: params.fanId,
+      fan_email: cleanEmail,
+      trigger_source: params.triggerSource,
+      provider: 'supabase_edge',
+      status: 'pending_config',
+      error_message: pendingErr,
+    });
+    return { ok: false, status: 'pending_config', provider: 'supabase_edge', error: pendingErr };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro ao orquestrar boas-vindas';
+    return { ok: false, status: 'failed', provider: 'supabase_edge', error: msg };
+  }
 }
 
 async function startServer() {
   const app = express();
 
   app.use(express.json({ limit: '10mb' }));
+
+  // --- OPAQUE PROTECTED MEDIA & ASSET STREAMING (ZERO URL LEAKAGE) ---
+
+  app.get('/api/profile/asset/:kind', async (req: Request, res: Response) => {
+    try {
+      const kind = req.params.kind === 'hero' ? 'hero' : req.params.kind === 'avatar' ? 'avatar' : null;
+      if (!kind) {
+        res.status(404).end();
+        return;
+      }
+
+      const defaultAsset = kind === 'hero' ? DEFAULT_HERO_ASSET : DEFAULT_AVATAR_ASSET;
+      let target = defaultAsset;
+
+      const client = getAdminClient();
+      if (client) {
+        const col = kind === 'hero' ? 'hero_url' : 'avatar_url';
+        const { data } = await client
+          .from('creator_profile')
+          .select(col)
+          .eq('slug', 'solo')
+          .maybeSingle();
+        const candidate = data ? String((data as Record<string, unknown>)[col] || '').trim() : '';
+        if (candidate && !candidate.startsWith('/api/profile/asset/')) {
+          target = candidate;
+        }
+      }
+
+      if (target.startsWith('/')) {
+        streamLocalFile(req, res, target);
+        return;
+      }
+
+      if (target.startsWith('http://') || target.startsWith('https://')) {
+        await streamRemoteUrl(req, res, target);
+        return;
+      }
+
+      if (client) {
+        const { data } = await client.storage.from('creator-previews').createSignedUrl(target, 60);
+        if (data?.signedUrl) {
+          await streamRemoteUrl(req, res, data.signedUrl);
+          return;
+        }
+      }
+
+      streamLocalFile(req, res, defaultAsset);
+    } catch {
+      res.status(404).end();
+    }
+  });
+
+  app.get('/api/media/fallback/:kind', (req: Request, res: Response) => {
+    const fallback = req.params.kind === 'video' ? FALLBACK_VIDEO_ASSET : FALLBACK_PHOTO_ASSET;
+    streamLocalFile(req, res, fallback, 'image/jpeg');
+  });
+
+  app.get('/api/media/stream/:ticket', async (req: Request, res: Response) => {
+    try {
+      const payload = verifyMediaTicket(String(req.params.ticket || ''));
+      if (!payload) {
+        res.status(403).end();
+        return;
+      }
+
+      if (payload.kind === 'local' || payload.target.startsWith('/')) {
+        streamLocalFile(req, res, payload.target, payload.mime);
+        return;
+      }
+
+      if (payload.kind === 'remote' || payload.target.startsWith('http://') || payload.target.startsWith('https://')) {
+        await streamRemoteUrl(req, res, payload.target, payload.mime);
+        return;
+      }
+
+      const client = getAdminClient();
+      if (!client) {
+        res.status(503).end();
+        return;
+      }
+
+      const bucket = payload.kind === 'preview' ? 'creator-previews' : 'creator-media';
+      const { data, error } = await client.storage.from(bucket).createSignedUrl(payload.target, 60);
+      if (error || !data?.signedUrl) {
+        res.status(404).end();
+        return;
+      }
+
+      await streamRemoteUrl(req, res, data.signedUrl, payload.mime);
+    } catch {
+      res.status(500).end();
+    }
+  });
+
+  app.get('/api/media/preview/:ticket', async (req: Request, res: Response) => {
+    try {
+      const payload = verifyMediaTicket(String(req.params.ticket || ''));
+      if (!payload) {
+        res.status(403).end();
+        return;
+      }
+
+      if (payload.kind === 'local' || payload.target.startsWith('/')) {
+        streamLocalFile(req, res, payload.target, payload.mime);
+        return;
+      }
+
+      if (payload.kind === 'remote' || payload.target.startsWith('http://') || payload.target.startsWith('https://')) {
+        await streamRemoteUrl(req, res, payload.target, payload.mime);
+        return;
+      }
+
+      const client = getAdminClient();
+      if (!client) {
+        res.status(503).end();
+        return;
+      }
+
+      const bucket = payload.kind === 'preview' ? 'creator-previews' : 'creator-media';
+      const { data, error } = await client.storage.from(bucket).createSignedUrl(payload.target, 60);
+      if (error || !data?.signedUrl) {
+        res.status(404).end();
+        return;
+      }
+
+      await streamRemoteUrl(req, res, data.signedUrl, payload.mime);
+    } catch {
+      res.status(500).end();
+    }
+  });
 
   // --- SUPABASE PROVISIONING & STATUS ---
 
@@ -1140,7 +1850,10 @@ async function startServer() {
     if (!client) {
       res.json({
         supabaseConnected: false,
-        profile: DEFAULT_CREATOR_PROFILE,
+        profile: maskProfileForClient({
+          ...DEFAULT_CREATOR_PROFILE,
+          video_call_plans: readVideoCallPlansFallback(),
+        }),
         mediaItems: [],
         fan: null,
         stats: {
@@ -1161,15 +1874,22 @@ async function startServer() {
         .eq('slug', 'solo')
         .maybeSingle();
 
-      const profile = profileRow
+      const resolvedPlans = resolveProfileVideoCallPlans(profileRow as Record<string, unknown> | null);
+      const rawProfile = profileRow
         ? {
             ...DEFAULT_CREATOR_PROFILE,
             ...profileRow,
             vip_monthly_price_brl: Number(profileRow.vip_monthly_price_brl || 49.9),
             avatar_url: profileRow.avatar_url || DEFAULT_CREATOR_PROFILE.avatar_url,
             hero_url: profileRow.hero_url || DEFAULT_CREATOR_PROFILE.hero_url,
+            video_call_plans: resolvedPlans,
           }
-        : DEFAULT_CREATOR_PROFILE;
+        : {
+            ...DEFAULT_CREATOR_PROFILE,
+            video_call_plans: resolvedPlans,
+          };
+
+      const profile = maskProfileForClient(rawProfile);
 
       let fan = null;
       const unlockedSet = new Set<string>();
@@ -1222,27 +1942,23 @@ async function startServer() {
       const mediaRows = rawMedia || [];
       const isFanVip = Boolean(fan?.is_vip);
 
-      const enriched = await Promise.all(
-        mediaRows.map(async (item) => {
-          const isUnlocked =
-            item.access_tier === 'free' ||
-            (item.access_tier === 'vip' && isFanVip) ||
-            unlockedSet.has(item.id);
+      const enriched = mediaRows.map((item) => {
+        const isUnlocked =
+          item.access_tier === 'free' ||
+          (item.access_tier === 'vip' && isFanVip) ||
+          unlockedSet.has(item.id);
 
-          const signedMediaUrl = isUnlocked ? await resolveSignedMediaUrl(client, item.storage_path) : null;
-          const previewUrl = isUnlocked
-            ? item.preview_url || (item.media_type === 'photo' ? signedMediaUrl : null)
-            : item.preview_url || null;
+        const { mediaUrl, previewUrl } = buildMaskedMediaUrls(item, isUnlocked);
 
-          return {
-            ...item,
-            price_brl: Number(item.price_brl || 0),
-            is_unlocked: isUnlocked,
-            media_url: signedMediaUrl,
-            preview_url: previewUrl,
-          };
-        })
-      );
+        return {
+          ...item,
+          storage_path: '',
+          price_brl: Number(item.price_brl || 0),
+          is_unlocked: isUnlocked,
+          media_url: mediaUrl,
+          preview_url: previewUrl,
+        };
+      });
 
       const { count: vipCount } = await client
         .from('fans')
@@ -1294,6 +2010,7 @@ async function startServer() {
         .maybeSingle();
 
       let fan = existing;
+      let isNewFanSignup = false;
       if (!fan) {
         const { data: created, error: createErr } = await client
           .from('fans')
@@ -1309,13 +2026,25 @@ async function startServer() {
           return;
         }
         fan = created;
+        isNewFanSignup = true;
+      }
+
+      if (isNewFanSignup) {
+        const origin = req.headers.origin ? String(req.headers.origin) : '';
+        await orchestrateFanWelcomeEmail(client, {
+          fanId: fan.id,
+          email: cleanEmail,
+          displayName: fan.display_name,
+          triggerSource: 'signup',
+          siteUrl: origin || undefined,
+        });
       }
 
       const isVipActive =
         Boolean(fan.is_vip) &&
         (!fan.vip_expires_at || new Date(fan.vip_expires_at).getTime() > Date.now());
 
-      res.json({ fan: { ...fan, is_vip: isVipActive } });
+      res.json({ fan: { ...fan, is_vip: isVipActive }, welcomeTriggered: isNewFanSignup });
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao acessar conta.' });
     }
@@ -1328,7 +2057,8 @@ async function startServer() {
       return;
     }
     try {
-      const { buyerEmail, buyerName, saleType, mediaId, amountBrl, paymentMethod, ageConfirmed18 } = req.body || {};
+      const { buyerEmail, buyerName, saleType, mediaId, videoCallPlanId, contactInfo, amountBrl, paymentMethod, ageConfirmed18 } =
+        req.body || {};
       const cleanEmail = String(buyerEmail || '').trim().toLowerCase();
 
       if (!cleanEmail || !cleanEmail.includes('@')) {
@@ -1339,12 +2069,13 @@ async function startServer() {
         res.status(400).json({ error: 'Confirme ter 18 anos ou mais para continuar.' });
         return;
       }
-      if (!['vip_subscription', 'ppv', 'tip'].includes(saleType)) {
+      if (!['vip_subscription', 'ppv', 'tip', 'video_call'].includes(saleType)) {
         res.status(400).json({ error: 'Tipo de venda inválido.' });
         return;
       }
 
       let authoritativeAmount = Number(amountBrl || 0);
+      let selectedVideoCallPlan: VideoCallPlanConfig | null = null;
       if (saleType === 'vip_subscription') {
         const { data: prof } = await client
           .from('creator_profile')
@@ -1367,12 +2098,30 @@ async function startServer() {
           return;
         }
         authoritativeAmount = Number(mediaRow.price_brl || 0);
+      } else if (saleType === 'video_call') {
+        const { data: prof } = await client
+          .from('creator_profile')
+          .select('*')
+          .eq('slug', 'solo')
+          .maybeSingle();
+        const plans = resolveProfileVideoCallPlans(prof as Record<string, unknown> | null);
+        selectedVideoCallPlan = plans.find((p) => p.id === videoCallPlanId && p.active) || null;
+        if (!selectedVideoCallPlan) {
+          res.status(404).json({ error: 'Plano de vídeo chamada não encontrado ou inativo.' });
+          return;
+        }
+        authoritativeAmount = Number(selectedVideoCallPlan.price_brl || 0);
       }
 
       if (authoritativeAmount <= 0 && saleType === 'tip') {
         res.status(400).json({ error: 'Informe um valor positivo para o mimo.' });
         return;
       }
+
+      const { count: priorSalesCount } = await client
+        .from('sales')
+        .select('*', { count: 'exact', head: true })
+        .eq('buyer_email', cleanEmail);
 
       // Upsert fan
       const vipExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -1383,6 +2132,14 @@ async function startServer() {
         .maybeSingle();
 
       let fanId: string;
+      const cleanBuyerName = buyerName ? String(buyerName).trim() : '';
+      const cleanContact = contactInfo ? String(contactInfo).trim() : '';
+      const combinedBuyerLabel =
+        cleanBuyerName && cleanContact
+          ? `${cleanBuyerName} · ${cleanContact}`
+          : cleanBuyerName || cleanContact || cleanEmail.split('@')[0];
+      const resolvedBuyerName = cleanBuyerName || cleanEmail.split('@')[0];
+
       if (existingFan) {
         fanId = existingFan.id;
         if (saleType === 'vip_subscription') {
@@ -1391,7 +2148,7 @@ async function startServer() {
             .update({
               is_vip: true,
               vip_expires_at: vipExpiry,
-              display_name: buyerName || existingFan.display_name,
+              display_name: cleanBuyerName || existingFan.display_name,
             })
             .eq('id', fanId);
         }
@@ -1400,7 +2157,7 @@ async function startServer() {
           .from('fans')
           .insert({
             email: cleanEmail,
-            display_name: buyerName ? String(buyerName).trim() : cleanEmail.split('@')[0],
+            display_name: resolvedBuyerName,
             is_vip: saleType === 'vip_subscription',
             vip_expires_at: saleType === 'vip_subscription' ? vipExpiry : null,
             age_confirmed_18: true,
@@ -1414,23 +2171,45 @@ async function startServer() {
         fanId = newFan.id;
       }
 
-      // Create sale record
-      const externalRef = `MP-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
-      const { data: sale, error: saleErr } = await client
+      // Create sale record (with constraint-safe fallback if existing live Supabase DB hasn't altered sales_sale_type_check)
+      const externalRef =
+        saleType === 'video_call' && selectedVideoCallPlan
+          ? `VC-${selectedVideoCallPlan.duration_minutes}MIN-${crypto.randomBytes(3).toString('hex').toUpperCase()}`
+          : `MP-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+
+      const saleInsertBase = {
+        fan_id: fanId,
+        buyer_email: cleanEmail,
+        buyer_name: saleType === 'video_call' ? combinedBuyerLabel : cleanBuyerName || null,
+        sale_type: saleType,
+        media_id: saleType === 'ppv' ? mediaId : null,
+        amount_brl: authoritativeAmount,
+        payment_method: paymentMethod === 'card' ? 'card' : 'pix',
+        status: 'paid',
+        external_ref: externalRef,
+      };
+
+      let { data: sale, error: saleErr } = await client
         .from('sales')
-        .insert({
-          fan_id: fanId,
-          buyer_email: cleanEmail,
-          buyer_name: buyerName ? String(buyerName).trim() : null,
-          sale_type: saleType,
-          media_id: saleType === 'ppv' ? mediaId : null,
-          amount_brl: authoritativeAmount,
-          payment_method: paymentMethod === 'card' ? 'card' : 'pix',
-          status: 'paid',
-          external_ref: externalRef,
-        })
+        .insert(saleInsertBase)
         .select('*')
         .single();
+
+      if (
+        saleErr &&
+        saleType === 'video_call' &&
+        (saleErr.code === '23514' ||
+          saleErr.message.toLowerCase().includes('check constraint') ||
+          saleErr.message.toLowerCase().includes('sale_type'))
+      ) {
+        const fallbackRes = await client
+          .from('sales')
+          .insert({ ...saleInsertBase, sale_type: 'ppv', media_id: null })
+          .select('*')
+          .single();
+        sale = fallbackRes.data;
+        saleErr = fallbackRes.error;
+      }
 
       if (saleErr) {
         res.status(500).json({ error: saleErr.message });
@@ -1461,7 +2240,26 @@ async function startServer() {
         }
       }
 
-      res.json({ ok: true, sale });
+      let welcomeTriggered = false;
+      if (!existingFan || (priorSalesCount || 0) === 0) {
+        const origin = req.headers.origin ? String(req.headers.origin) : '';
+        await orchestrateFanWelcomeEmail(client, {
+          fanId,
+          email: cleanEmail,
+          displayName: existingFan?.display_name || resolvedBuyerName,
+          triggerSource: 'first_purchase',
+          saleType,
+          amountBrl: authoritativeAmount,
+          siteUrl: origin || undefined,
+        });
+        welcomeTriggered = true;
+      }
+
+      res.json({
+        ok: true,
+        sale: sale ? normalizeSaleRecord(sale, new Map()) : sale,
+        welcomeTriggered,
+      });
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao processar compra.' });
     }
@@ -1474,7 +2272,10 @@ async function startServer() {
     if (!client) {
       res.json({
         supabaseConnected: false,
-        profile: DEFAULT_CREATOR_PROFILE,
+        profile: maskProfileForClient({
+          ...DEFAULT_CREATOR_PROFILE,
+          video_call_plans: readVideoCallPlansFallback(),
+        }),
         dashboard: {
           mediaItems: [],
           sales: [],
@@ -1484,6 +2285,7 @@ async function startServer() {
             vipRevenueBrl: 0,
             ppvRevenueBrl: 0,
             tipsRevenueBrl: 0,
+            videoCallRevenueBrl: 0,
             totalSalesCount: 0,
             activeVipFans: 0,
             totalMediaCount: 0,
@@ -1501,15 +2303,22 @@ async function startServer() {
         client.from('fans').select('*').order('created_at', { ascending: false }),
       ]);
 
-      const profile = profileRes.data
+      const resolvedPlans = resolveProfileVideoCallPlans(profileRes.data as Record<string, unknown> | null);
+      const rawProfile = profileRes.data
         ? {
             ...DEFAULT_CREATOR_PROFILE,
             ...profileRes.data,
             vip_monthly_price_brl: Number(profileRes.data.vip_monthly_price_brl || 49.9),
             avatar_url: profileRes.data.avatar_url || DEFAULT_CREATOR_PROFILE.avatar_url,
             hero_url: profileRes.data.hero_url || DEFAULT_CREATOR_PROFILE.hero_url,
+            video_call_plans: resolvedPlans,
           }
-        : DEFAULT_CREATOR_PROFILE;
+        : {
+            ...DEFAULT_CREATOR_PROFILE,
+            video_call_plans: resolvedPlans,
+          };
+
+      const profile = maskProfileForClient(rawProfile);
 
       const mediaRows = mediaRes.data || [];
       const mediaTitleMap = new Map<string, string>();
@@ -1517,24 +2326,19 @@ async function startServer() {
         mediaTitleMap.set(m.id, m.title);
       }
 
-      const enrichedMedia = await Promise.all(
-        mediaRows.map(async (item) => {
-          const signedUrl = await resolveSignedMediaUrl(client, item.storage_path);
-          return {
-            ...item,
-            price_brl: Number(item.price_brl || 0),
-            media_url: signedUrl,
-            preview_url: await resolvePreviewUrl(client, item.preview_url, item.storage_path, item.media_type),
-            is_unlocked: true,
-          };
-        })
-      );
+      const enrichedMedia = mediaRows.map((item) => {
+        const { mediaUrl, previewUrl } = buildMaskedMediaUrls(item, true);
+        return {
+          ...item,
+          storage_path: '',
+          price_brl: Number(item.price_brl || 0),
+          media_url: mediaUrl,
+          preview_url: previewUrl,
+          is_unlocked: true,
+        };
+      });
 
-      const salesRows = (salesRes.data || []).map((s) => ({
-        ...s,
-        amount_brl: Number(s.amount_brl || 0),
-        media_title: s.media_id ? mediaTitleMap.get(s.media_id) || 'Mídia removida' : null,
-      }));
+      const salesRows = (salesRes.data || []).map((s) => normalizeSaleRecord(s, mediaTitleMap));
 
       const paidSales = salesRows.filter((s) => s.status === 'paid');
       const totalRevenueBrl = paidSales.reduce((acc, s) => acc + s.amount_brl, 0);
@@ -1546,6 +2350,9 @@ async function startServer() {
         .reduce((acc, s) => acc + s.amount_brl, 0);
       const tipsRevenueBrl = paidSales
         .filter((s) => s.sale_type === 'tip')
+        .reduce((acc, s) => acc + s.amount_brl, 0);
+      const videoCallRevenueBrl = paidSales
+        .filter((s) => s.sale_type === 'video_call')
         .reduce((acc, s) => acc + s.amount_brl, 0);
 
       const fansRows = fansRes.data || [];
@@ -1565,6 +2372,7 @@ async function startServer() {
             vipRevenueBrl,
             ppvRevenueBrl,
             tipsRevenueBrl,
+            videoCallRevenueBrl,
             totalSalesCount: paidSales.length,
             activeVipFans,
             totalMediaCount: enrichedMedia.length,
@@ -1838,6 +2646,12 @@ async function startServer() {
       const days = Number(vip_days || 30);
       const vipExpiresAt = makeVip ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString() : null;
 
+      const { data: beforeFan } = await client
+        .from('fans')
+        .select('id')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
       const { data, error } = await client
         .from('fans')
         .upsert(
@@ -1857,6 +2671,18 @@ async function startServer() {
         res.status(500).json({ error: error.message });
         return;
       }
+
+      if (!beforeFan && data) {
+        const origin = req.headers.origin ? String(req.headers.origin) : '';
+        await orchestrateFanWelcomeEmail(client, {
+          fanId: data.id,
+          email: cleanEmail,
+          displayName: data.display_name,
+          triggerSource: 'signup',
+          siteUrl: origin || undefined,
+        });
+      }
+
       res.json({ fan: data });
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao salvar assinante.' });
@@ -2008,8 +2834,12 @@ async function startServer() {
       if (vip_monthly_price_brl !== undefined) payload.vip_monthly_price_brl = Number(vip_monthly_price_brl);
       if (vip_description !== undefined) payload.vip_description = String(vip_description).trim();
       if (pix_key !== undefined) payload.pix_key = String(pix_key).trim();
-      if (avatar_url !== undefined) payload.avatar_url = avatar_url;
-      if (hero_url !== undefined) payload.hero_url = hero_url;
+      if (avatar_url !== undefined && !String(avatar_url).startsWith('/api/profile/asset/')) {
+        payload.avatar_url = avatar_url;
+      }
+      if (hero_url !== undefined && !String(hero_url).startsWith('/api/profile/asset/')) {
+        payload.hero_url = hero_url;
+      }
 
       const { data, error } = await client
         .from('creator_profile')
@@ -2030,9 +2860,45 @@ async function startServer() {
           .then(() => {}, () => {});
       }
 
-      res.json({ profile: data });
+      if (Array.isArray(req.body?.video_call_plans)) {
+        const sanitizedPlans = sanitizeVideoCallPlans(req.body.video_call_plans);
+        saveVideoCallPlansFallback(sanitizedPlans);
+        await client
+          .from('creator_profile')
+          .update({ video_call_plans: sanitizedPlans })
+          .eq('slug', 'solo')
+          .then(() => {}, () => {});
+      }
+
+      const resolvedPlans = resolveProfileVideoCallPlans(data as Record<string, unknown>);
+      res.json({ profile: maskProfileForClient({ ...data, video_call_plans: resolvedPlans }) });
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao atualizar perfil.' });
+    }
+  });
+
+  app.patch('/api/creator/video-calls', requireCreatorAuth, async (req: Request, res: Response) => {
+    try {
+      const incoming = req.body?.plans;
+      if (!Array.isArray(incoming) || incoming.length !== 4) {
+        res.status(400).json({ error: 'Informe exatamente os 4 planos de Vídeo Chamada.' });
+        return;
+      }
+      const sanitized = sanitizeVideoCallPlans(incoming);
+      saveVideoCallPlansFallback(sanitized);
+
+      const client = getAdminClient();
+      if (client) {
+        await client
+          .from('creator_profile')
+          .update({ video_call_plans: sanitized, updated_at: new Date().toISOString() })
+          .eq('slug', 'solo')
+          .then(() => {}, () => {});
+      }
+
+      res.json({ ok: true, video_call_plans: sanitized });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao salvar planos de Vídeo Chamada.' });
     }
   });
 
@@ -2043,7 +2909,7 @@ async function startServer() {
       return;
     }
     try {
-      const { buyerEmail, buyerName, saleType, mediaId, amountBrl, paymentMethod, status, externalRef } =
+      const { buyerEmail, buyerName, saleType, mediaId, videoCallPlanId, amountBrl, paymentMethod, status, externalRef } =
         req.body || {};
 
       const cleanEmail = String(buyerEmail || '').trim().toLowerCase();
@@ -2051,7 +2917,7 @@ async function startServer() {
         res.status(400).json({ error: 'Informe um e-mail válido do comprador para vincular ao banco de vendas.' });
         return;
       }
-      if (!['vip_subscription', 'ppv', 'tip'].includes(saleType)) {
+      if (!['vip_subscription', 'ppv', 'tip', 'video_call'].includes(saleType)) {
         res.status(400).json({ error: 'Tipo de transação inválido.' });
         return;
       }
@@ -2059,6 +2925,7 @@ async function startServer() {
       const method = paymentMethod === 'card' ? 'card' : 'pix';
 
       let authoritativeAmount = Number(amountBrl || 0);
+      let vcDuration = 15;
       if (saleType === 'vip_subscription' && (!Number.isFinite(authoritativeAmount) || authoritativeAmount <= 0)) {
         const { data: prof } = await client
           .from('creator_profile')
@@ -2079,12 +2946,31 @@ async function startServer() {
             .maybeSingle();
           authoritativeAmount = Number(mediaRow?.price_brl || 0);
         }
+      } else if (saleType === 'video_call') {
+        const { data: prof } = await client
+          .from('creator_profile')
+          .select('*')
+          .eq('slug', 'solo')
+          .maybeSingle();
+        const plans = resolveProfileVideoCallPlans(prof as Record<string, unknown> | null);
+        const plan = plans.find((p) => p.id === videoCallPlanId) || plans[0];
+        if (plan) {
+          vcDuration = plan.duration_minutes;
+          if (!Number.isFinite(authoritativeAmount) || authoritativeAmount <= 0) {
+            authoritativeAmount = plan.price_brl;
+          }
+        }
       }
 
       if (!Number.isFinite(authoritativeAmount) || authoritativeAmount <= 0) {
         res.status(400).json({ error: 'Informe um valor positivo em R$ para registrar a transação.' });
         return;
       }
+
+      const { count: priorSalesCount } = await client
+        .from('sales')
+        .select('*', { count: 'exact', head: true })
+        .eq('buyer_email', cleanEmail);
 
       const vipExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
       const { data: existingFan } = await client
@@ -2094,6 +2980,7 @@ async function startServer() {
         .maybeSingle();
 
       let fanId: string;
+      const resolvedBuyerName = buyerName ? String(buyerName).trim() : cleanEmail.split('@')[0];
       if (existingFan) {
         fanId = existingFan.id;
         if (normalizedStatus === 'paid' && saleType === 'vip_subscription') {
@@ -2111,7 +2998,7 @@ async function startServer() {
           .from('fans')
           .insert({
             email: cleanEmail,
-            display_name: buyerName ? String(buyerName).trim() : cleanEmail.split('@')[0],
+            display_name: resolvedBuyerName,
             is_vip: normalizedStatus === 'paid' && saleType === 'vip_subscription',
             vip_expires_at: normalizedStatus === 'paid' && saleType === 'vip_subscription' ? vipExpiry : null,
             age_confirmed_18: true,
@@ -2125,25 +3012,47 @@ async function startServer() {
         fanId = newFan.id;
       }
 
+      const rawCleanRef = String(externalRef || '').trim();
       const cleanRef =
-        String(externalRef || '').trim() ||
-        `MP-PIX-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+        saleType === 'video_call'
+          ? rawCleanRef.startsWith('VC-')
+            ? rawCleanRef
+            : `VC-${vcDuration}MIN-${rawCleanRef || crypto.randomBytes(3).toString('hex').toUpperCase()}`
+          : rawCleanRef || `MP-PIX-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
-      const { data: sale, error: saleErr } = await client
+      const saleInsertBase = {
+        fan_id: fanId,
+        buyer_email: cleanEmail,
+        buyer_name: buyerName ? String(buyerName).trim() : null,
+        sale_type: saleType,
+        media_id: saleType === 'ppv' ? mediaId : null,
+        amount_brl: authoritativeAmount,
+        payment_method: method,
+        status: normalizedStatus,
+        external_ref: cleanRef,
+      };
+
+      let { data: sale, error: saleErr } = await client
         .from('sales')
-        .insert({
-          fan_id: fanId,
-          buyer_email: cleanEmail,
-          buyer_name: buyerName ? String(buyerName).trim() : null,
-          sale_type: saleType,
-          media_id: saleType === 'ppv' ? mediaId : null,
-          amount_brl: authoritativeAmount,
-          payment_method: method,
-          status: normalizedStatus,
-          external_ref: cleanRef,
-        })
+        .insert(saleInsertBase)
         .select('*')
         .single();
+
+      if (
+        saleErr &&
+        saleType === 'video_call' &&
+        (saleErr.code === '23514' ||
+          saleErr.message.toLowerCase().includes('check constraint') ||
+          saleErr.message.toLowerCase().includes('sale_type'))
+      ) {
+        const fallbackRes = await client
+          .from('sales')
+          .insert({ ...saleInsertBase, sale_type: 'ppv', media_id: null })
+          .select('*')
+          .single();
+        sale = fallbackRes.data;
+        saleErr = fallbackRes.error;
+      }
 
       if (saleErr) {
         res.status(500).json({ error: saleErr.message });
@@ -2173,7 +3082,20 @@ async function startServer() {
         }
       }
 
-      res.json({ sale });
+      if (!existingFan || (priorSalesCount || 0) === 0) {
+        const origin = req.headers.origin ? String(req.headers.origin) : '';
+        await orchestrateFanWelcomeEmail(client, {
+          fanId,
+          email: cleanEmail,
+          displayName: existingFan?.display_name || resolvedBuyerName,
+          triggerSource: 'first_purchase',
+          saleType,
+          amountBrl: authoritativeAmount,
+          siteUrl: origin || undefined,
+        });
+      }
+
+      res.json({ sale: sale ? normalizeSaleRecord(sale, new Map()) : sale });
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao registrar transação.' });
     }
@@ -2237,6 +3159,212 @@ async function startServer() {
     }
   });
 
+  // --- WELCOME FAN EMAIL (SUPABASE EDGE FUNCTION ORCHESTRATION) ---
+
+  app.get('/api/creator/welcome-emails', requireCreatorAuth, async (_req: Request, res: Response) => {
+    const client = getAdminClient();
+    const edgeUrl = runtimeConfig.supabaseUrl
+      ? `${runtimeConfig.supabaseUrl.replace(/\/+$/, '')}/functions/v1/welcome-fan-email`
+      : null;
+
+    let edgeDeployed = false;
+    if (edgeUrl && runtimeConfig.supabaseServiceRoleKey) {
+      try {
+        const probe = await fetch(edgeUrl, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${runtimeConfig.supabaseServiceRoleKey}`,
+            apikey: runtimeConfig.supabaseAnonKey || runtimeConfig.supabaseServiceRoleKey,
+          },
+        });
+        edgeDeployed = probe.ok;
+      } catch {
+        edgeDeployed = false;
+      }
+    }
+
+    let logs: unknown[] = [];
+    let schemaNeedsMigration = false;
+    if (client) {
+      const { data, error } = await client
+        .from('welcome_email_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(40);
+      if (error) {
+        schemaNeedsMigration = true;
+      } else {
+        logs = data || [];
+      }
+    }
+
+    res.json({
+      edgeDeployed,
+      edgeUrl,
+      resendConfigured: Boolean(runtimeConfig.resendApiKey),
+      fromEmail: runtimeConfig.resendFromEmail,
+      schemaNeedsMigration,
+      logs,
+      edgeFunctionCode: readEdgeFunctionCode(),
+      migrationSql: buildWelcomeMigrationSql(),
+    });
+  });
+
+  app.post('/api/creator/welcome-emails/config', requireCreatorAuth, async (req: Request, res: Response) => {
+    try {
+      const { resendApiKey, fromEmail } = req.body || {};
+      const updates: Record<string, string> = {};
+
+      if (typeof resendApiKey === 'string' && resendApiKey.trim()) {
+        runtimeConfig.resendApiKey = resendApiKey.trim();
+        updates.RESEND_API_KEY = resendApiKey.trim();
+      }
+      if (typeof fromEmail === 'string' && fromEmail.trim()) {
+        runtimeConfig.resendFromEmail = fromEmail.trim();
+        updates.RESEND_FROM_EMAIL = fromEmail.trim();
+      }
+
+      if (Object.keys(updates).length > 0) {
+        saveEnvLocal(updates);
+      }
+
+      res.json({
+        ok: true,
+        resendConfigured: Boolean(runtimeConfig.resendApiKey),
+        fromEmail: runtimeConfig.resendFromEmail,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao salvar configuração.' });
+    }
+  });
+
+  app.post('/api/creator/welcome-emails/deploy', requireCreatorAuth, async (req: Request, res: Response) => {
+    try {
+      const { accessToken, resendApiKey, fromEmail } = req.body || {};
+      const token = String(accessToken || '').trim();
+      if (!token) {
+        res.status(400).json({ error: 'Informe o Access Token pessoal do Supabase (sbp_...).' });
+        return;
+      }
+      const projectRef = runtimeConfig.supabaseUrl ? extractProjectRef(runtimeConfig.supabaseUrl) : null;
+      if (!projectRef) {
+        res.status(400).json({ error: 'Projeto Supabase não conectado.' });
+        return;
+      }
+
+      const envUpdates: Record<string, string> = {};
+      if (typeof resendApiKey === 'string' && resendApiKey.trim()) {
+        runtimeConfig.resendApiKey = resendApiKey.trim();
+        envUpdates.RESEND_API_KEY = resendApiKey.trim();
+      }
+      if (typeof fromEmail === 'string' && fromEmail.trim()) {
+        runtimeConfig.resendFromEmail = fromEmail.trim();
+        envUpdates.RESEND_FROM_EMAIL = fromEmail.trim();
+      }
+      if (Object.keys(envUpdates).length > 0) {
+        saveEnvLocal(envUpdates);
+      }
+
+      // 1. Run additive schema migration (welcome_email_sent_at + welcome_email_logs + triggers)
+      const migrationSql = buildWelcomeMigrationSql();
+      await executeSchemaViaManagementApi(token, projectRef, migrationSql);
+
+      // 2. Push secrets to Supabase Edge Function environment
+      const secretsToSet: Array<{ name: string; value: string }> = [];
+      if (runtimeConfig.resendApiKey) {
+        secretsToSet.push({ name: 'RESEND_API_KEY', value: runtimeConfig.resendApiKey });
+      }
+      if (runtimeConfig.resendFromEmail) {
+        secretsToSet.push({ name: 'RESEND_FROM_EMAIL', value: runtimeConfig.resendFromEmail });
+      }
+      if (secretsToSet.length > 0) {
+        await fetch(`https://api.supabase.com/v1/projects/${projectRef}/secrets`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(secretsToSet),
+        });
+      }
+
+      // 3. Deploy welcome-fan-email Edge Function bundle via Management API
+      const edgeCode = readEdgeFunctionCode();
+      if (!edgeCode) {
+        res.status(500).json({ error: 'Código da Edge Function não encontrado no servidor.' });
+        return;
+      }
+
+      const form = new FormData();
+      form.append(
+        'metadata',
+        JSON.stringify({
+          name: 'welcome-fan-email',
+          entrypoint_path: 'index.ts',
+          verify_jwt: false,
+        })
+      );
+      form.append('file', new Blob([edgeCode], { type: 'application/typescript' }), 'index.ts');
+
+      const deployResp = await fetch(
+        `https://api.supabase.com/v1/projects/${projectRef}/functions/deploy?slug=welcome-fan-email`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: form,
+        }
+      );
+
+      if (!deployResp.ok) {
+        const errText = await deployResp.text();
+        res.status(deployResp.status).json({
+          error: `Falha ao publicar Edge Function no Supabase: ${errText}`,
+        });
+        return;
+      }
+
+      const deployed = await deployResp.json();
+      res.json({
+        ok: true,
+        functionSlug: deployed?.slug || 'welcome-fan-email',
+        version: deployed?.version,
+      });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao publicar Edge Function.' });
+    }
+  });
+
+  app.post('/api/creator/welcome-emails/test', requireCreatorAuth, async (req: Request, res: Response) => {
+    const client = getAdminClient();
+    if (!client) {
+      res.status(503).json({ error: 'Supabase não conectado.' });
+      return;
+    }
+    try {
+      const { email, displayName, triggerSource } = req.body || {};
+      const cleanEmail = String(email || '').trim().toLowerCase();
+      if (!cleanEmail || !cleanEmail.includes('@')) {
+        res.status(400).json({ error: 'Informe um e-mail válido para testar o disparo.' });
+        return;
+      }
+      const origin = req.headers.origin ? String(req.headers.origin) : '';
+      const result = await orchestrateFanWelcomeEmail(client, {
+        email: cleanEmail,
+        displayName: displayName ? String(displayName).trim() : 'Assinante Teste',
+        triggerSource:
+          triggerSource === 'first_purchase' || triggerSource === 'signup' ? triggerSource : 'manual_test',
+        saleType: triggerSource === 'first_purchase' ? 'vip_subscription' : undefined,
+        amountBrl: triggerSource === 'first_purchase' ? 49.9 : undefined,
+        siteUrl: origin || undefined,
+        forceTest: true,
+      });
+
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao testar disparo.' });
+    }
+  });
+
   app.get('/api/creator/export-zip', requireCreatorAuth, async (_req: Request, res: Response) => {
     try {
       const zip = new JSZip();
@@ -2247,6 +3375,7 @@ async function startServer() {
         const entries = fs.readdirSync(currentDir, { withFileTypes: true });
         for (const entry of entries) {
           if (entry.name.startsWith('.env') && entry.name !== '.env.example') continue;
+          if (entry.name === '.video-call-plans.json') continue;
           if (entry.name.endsWith('.log') || entry.name === '.DS_Store') continue;
 
           const fullPath = path.join(currentDir, entry.name);

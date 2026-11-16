@@ -249,7 +249,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#453F3B] pb-5">
         <div>
           <h2 className="font-display text-2xl font-semibold text-zinc-50">
             Conexão & Provisionamento Supabase
@@ -271,7 +271,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
           <button
             type="button"
             onClick={onRefreshStatus}
-            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 transition-colors shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 transition-colors shrink-0 cursor-pointer"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Verificar Conexão
@@ -280,7 +280,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
       </div>
 
       {/* Live Connection Diagnostics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-zinc-800 rounded-xl border border-zinc-800 bg-[#121215]">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#453F3B] rounded-xl border border-[#453F3B] bg-[#23201E]">
         <div className="p-5 space-y-1">
           <p className="text-xs text-zinc-400">API Supabase</p>
           <div className="flex items-center gap-2 text-sm font-semibold">
@@ -345,12 +345,12 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
       </div>
 
       {/* Mode Switcher */}
-      <div className="flex items-center gap-1 p-1 rounded-lg bg-[#121215] border border-zinc-800 w-fit">
+      <div className="flex items-center gap-1 p-1 rounded-lg bg-[#23201E] border border-[#453F3B] w-fit">
         <button
           type="button"
           onClick={() => setMode('existing')}
           className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-md transition-colors cursor-pointer ${
-            mode === 'existing' ? 'bg-[#D4AF37] text-zinc-950 font-semibold' : 'text-zinc-400 hover:text-zinc-100'
+            mode === 'existing' ? 'bg-[#E5C158] text-[#1C1918] font-semibold' : 'text-zinc-400 hover:text-zinc-100'
           }`}
         >
           <Link2 className="h-3.5 w-3.5" />
@@ -360,7 +360,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
           type="button"
           onClick={() => setMode('create_new')}
           className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-md transition-colors cursor-pointer ${
-            mode === 'create_new' ? 'bg-[#D4AF37] text-zinc-950 font-semibold' : 'text-zinc-400 hover:text-zinc-100'
+            mode === 'create_new' ? 'bg-[#E5C158] text-[#1C1918] font-semibold' : 'text-zinc-400 hover:text-zinc-100'
           }`}
         >
           <PlusCircle className="h-3.5 w-3.5" />
@@ -382,7 +382,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
 
       {/* MODE A: CONNECT EXISTING */}
       {mode === 'existing' && (
-        <form onSubmit={handleConnectExisting} className="rounded-xl border border-zinc-800 bg-[#121215] p-6 space-y-5">
+        <form onSubmit={handleConnectExisting} className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-zinc-300 mb-1.5">
@@ -394,7 +394,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
                 value={supabaseUrl}
                 onChange={(e) => setSupabaseUrl(e.target.value)}
                 placeholder="https://seuprojeto.supabase.co"
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
 
@@ -407,7 +407,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
                 value={anonKey}
                 onChange={(e) => setAnonKey(e.target.value)}
                 placeholder="eyJhbGciOi..."
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
 
@@ -421,12 +421,12 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
                 value={serviceRoleKey}
                 onChange={(e) => setServiceRoleKey(e.target.value)}
                 placeholder="eyJhbGciOi... (Settings → API → service_role)"
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
           </div>
 
-          <div className="border-t border-zinc-800 pt-5 space-y-4">
+          <div className="border-t border-[#453F3B] pt-5 space-y-4">
             <p className="text-xs font-semibold text-zinc-200">
               Criação Automática das Tabelas (opcional — ou use o SQL Editor abaixo)
             </p>
@@ -440,7 +440,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
                   value={databaseUrl}
                   onChange={(e) => setDatabaseUrl(e.target.value)}
                   placeholder="postgresql://postgres:SENHA@db.xxxx.supabase.co:5432/postgres"
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
               <div>
@@ -452,7 +452,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
                   value={existingAccessToken}
                   onChange={(e) => setExistingAccessToken(e.target.value)}
                   placeholder="sbp_..."
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
             </div>
@@ -470,7 +470,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
             <button
               type="button"
               onClick={() => setShowSql((v) => !v)}
-              className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-200 hover:border-zinc-500 transition-colors cursor-pointer"
+              className="rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2.5 text-xs font-medium text-zinc-200 hover:border-zinc-500 transition-colors cursor-pointer"
             >
               {showSql ? 'Ocultar SQL' : 'Ver SQL das Tabelas (schema.sql)'}
             </button>
@@ -480,7 +480,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
 
       {/* MODE B: CREATE BRAND NEW PROJECT */}
       {mode === 'create_new' && (
-        <form onSubmit={handleProvisionNewProject} className="rounded-xl border border-zinc-800 bg-[#121215] p-6 space-y-5">
+        <form onSubmit={handleProvisionNewProject} className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-5">
           <p className="text-xs text-zinc-400">
             Gere um Personal Access Token em{' '}
             <span className="font-mono text-zinc-200">supabase.com/dashboard/account/tokens</span>{' '}
@@ -498,27 +498,27 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
                 value={accessToken}
                 onChange={(e) => setAccessToken(e.target.value)}
                 placeholder="sbp_xxxxxxxxxxxxxxxxxxxx"
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
             <button
               type="button"
               onClick={handleLoadOrgs}
               disabled={busy}
-              className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              className="rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2.5 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               Carregar Organizações
             </button>
           </div>
 
           {organizations.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-zinc-800">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-[#453F3B]">
               <div>
                 <label className="block text-xs font-medium text-zinc-300 mb-1.5">Organização</label>
                 <select
                   value={selectedOrgId}
                   onChange={(e) => setSelectedOrgId(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
                 >
                   {organizations.map((org) => (
                     <option key={org.id} value={org.id}>
@@ -535,7 +535,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
                   required
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
 
@@ -544,7 +544,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
                 <select
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-xs text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
                 >
                   <option value="sa-east-1">América do Sul (São Paulo — sa-east-1)</option>
                   <option value="us-east-1">EUA Leste (us-east-1)</option>
@@ -561,7 +561,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
                   value={dbPass}
                   onChange={(e) => setDbPass(e.target.value)}
                   placeholder="Mínimo 8 caracteres"
-                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
 
@@ -577,7 +577,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
                   <button
                     type="button"
                     onClick={handleFinalizeManually}
-                    className="rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs text-zinc-200 hover:border-zinc-500 cursor-pointer"
+                    className="rounded-lg border border-[#453F3B] bg-[#1C1918] px-4 py-2.5 text-xs text-zinc-200 hover:border-zinc-500 cursor-pointer"
                   >
                     Verificar Novamente ({provisioningRef})
                   </button>
@@ -594,7 +594,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
 
       {/* SQL Viewer / Copy Fallback */}
       {(showSql || (status?.connected && !status?.schemaReady)) && (
-        <div className="rounded-xl border border-zinc-800 bg-[#121215] p-6 space-y-4">
+        <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-4">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h3 className="text-sm font-semibold text-zinc-100">
@@ -607,13 +607,13 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, stat
             <button
               type="button"
               onClick={handleCopySql}
-              className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-2 rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2 text-xs font-medium text-zinc-100 hover:border-[#D4AF37] shrink-0 cursor-pointer"
             >
               {copiedSql ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
               {copiedSql ? 'Copiado!' : 'Copiar SQL'}
             </button>
           </div>
-          <pre className="max-h-72 overflow-auto rounded-lg border border-zinc-800 bg-[#09090B] p-4 font-mono text-xs text-zinc-300 leading-relaxed">
+          <pre className="max-h-72 overflow-auto rounded-lg border border-[#453F3B] bg-[#1C1918] p-4 font-mono text-xs text-zinc-300 leading-relaxed">
             {schemaSql}
           </pre>
         </div>

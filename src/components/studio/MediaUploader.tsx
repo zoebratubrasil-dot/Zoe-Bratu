@@ -291,7 +291,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 
   return (
     <div className="space-y-8">
-      <div className="border-b border-zinc-800 pb-5">
+      <div className="border-b border-[#453F3B] pb-5">
         <h2 className="font-display text-2xl font-semibold text-zinc-50">
           Enviar Fotos e Vídeos
         </h2>
@@ -325,8 +325,8 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             onClick={() => queuedFiles.length === 0 && fileInputRef.current?.click()}
             className={`relative flex flex-col items-center justify-center rounded-xl border border-dashed p-6 transition-colors min-h-[320px] ${
               queuedFiles.length > 0
-                ? 'border-zinc-700 bg-[#121215]'
-                : 'border-zinc-700 bg-[#121215] hover:border-[#D4AF37] cursor-pointer'
+                ? 'border-[#453F3B] bg-[#23201E]'
+                : 'border-[#453F3B] bg-[#23201E] hover:border-[#D4AF37] cursor-pointer'
             }`}
           >
             <input
@@ -343,7 +343,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 
             {queuedFiles.length === 1 && primaryQueued ? (
               <div className="w-full space-y-4">
-                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-black border border-zinc-800">
+                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-black border border-[#453F3B]">
                   {primaryQueued.mediaType === 'video' ? (
                     <video
                       src={primaryQueued.previewSrc}
@@ -365,7 +365,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                       removeQueuedFile(primaryQueued.id);
                     }}
                     aria-label="Remover arquivo"
-                    className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-md bg-black/80 text-zinc-200 hover:text-white border border-zinc-700 cursor-pointer"
+                    className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-md bg-black/80 text-zinc-200 hover:text-white border border-[#453F3B] cursor-pointer"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -402,7 +402,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                       e.stopPropagation();
                       fileInputRef.current?.click();
                     }}
-                    className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs text-[#E5C158] hover:border-[#D4AF37] cursor-pointer"
+                    className="rounded-md border border-[#453F3B] bg-[#1C1918] px-3 py-1 text-xs text-[#E5C158] hover:border-[#D4AF37] cursor-pointer"
                   >
                     + Adicionar fotos/vídeos
                   </button>
@@ -412,7 +412,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                   {queuedFiles.map((q) => (
                     <div
                       key={q.id}
-                      className="relative aspect-[4/3] rounded-lg overflow-hidden border border-zinc-800 bg-black group"
+                      className="relative aspect-[4/3] rounded-lg overflow-hidden border border-[#453F3B] bg-black group"
                     >
                       {q.mediaType === 'video' ? (
                         <video
@@ -431,7 +431,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                           removeQueuedFile(q.id);
                         }}
                         aria-label="Remover item"
-                        className="absolute right-1.5 top-1.5 rounded bg-black/80 p-1 text-zinc-300 hover:text-rose-400 border border-zinc-700 cursor-pointer"
+                        className="absolute right-1.5 top-1.5 rounded bg-black/80 p-1 text-zinc-300 hover:text-rose-400 border border-[#453F3B] cursor-pointer"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -441,7 +441,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
               </div>
             ) : (
               <div className="text-center space-y-3">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-zinc-700 bg-zinc-900 text-[#D4AF37]">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#453F3B] bg-[#1C1918] text-[#D4AF37]">
                   <Upload className="h-5 w-5" />
                 </div>
                 <div className="space-y-1">
@@ -457,7 +457,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
           </div>
 
           {/* Optional public preview cover */}
-          <div className="rounded-xl border border-zinc-800 bg-[#121215] p-5 space-y-3">
+          <div className="rounded-xl border border-[#453F3B] bg-[#23201E] p-5 space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-zinc-200">Capa de Prévia / Teaser (opcional)</p>
@@ -468,7 +468,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
               <button
                 type="button"
                 onClick={() => coverInputRef.current?.click()}
-                className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:border-zinc-500 shrink-0 cursor-pointer"
+                className="rounded-md border border-[#453F3B] bg-[#1C1918] px-3 py-1.5 text-xs font-medium text-zinc-200 hover:border-zinc-500 shrink-0 cursor-pointer"
               >
                 {coverFile ? 'Trocar Capa' : 'Enviar Capa'}
               </button>
@@ -485,7 +485,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             </div>
             {coverPreviewSrc && (
               <div className="flex items-center gap-3 pt-1">
-                <img src={coverPreviewSrc} alt="Capa" className="h-14 w-20 rounded-md object-cover border border-zinc-700" />
+                <img src={coverPreviewSrc} alt="Capa" className="h-14 w-20 rounded-md object-cover border border-[#453F3B]" />
                 <span className="text-xs text-zinc-300 truncate">{coverFile?.name}</span>
                 <button
                   type="button"
@@ -504,7 +504,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
         </div>
 
         {/* Right: Metadata & Pricing */}
-        <div className="lg:col-span-6 rounded-xl border border-zinc-800 bg-[#121215] p-6 space-y-5">
+        <div className="lg:col-span-6 rounded-xl border border-[#453F3B] bg-[#23201E] p-6 space-y-5">
           <div className="flex items-center gap-2 text-xs text-zinc-400">
             {primaryQueued?.mediaType === 'video' ? (
               <Film className="h-4 w-4 text-[#D4AF37]" />
@@ -528,7 +528,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={isBatch ? 'Ex: Ensaio Silk Night (ou usa o nome de cada foto)' : 'Ex: Ensaio Silk Night — Bastidores'}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+              className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
 
@@ -539,7 +539,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Descreva os detalhes deste ensaio ou vídeo para seus assinantes..."
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+              className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
 
@@ -551,7 +551,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                 value={collectionName}
                 onChange={(e) => setCollectionName(e.target.value)}
                 placeholder="Ex: Bastidores, Verão, Silk"
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
 
@@ -560,7 +560,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
               <select
                 value={accessTier}
                 onChange={(e) => setAccessTier(e.target.value as AccessTier)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
               >
                 <option value="vip">Incluso no Clube VIP</option>
                 <option value="ppv">Venda Avulsa (PPV)</option>
@@ -581,7 +581,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                 required
                 value={priceBrl}
                 onChange={(e) => setPriceBrl(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 font-mono text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
+                className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
               />
             </div>
           )}
@@ -616,7 +616,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
           <button
             type="submit"
             disabled={uploading || !supabaseReady}
-            className="w-full rounded-lg bg-[#D4AF37] px-5 py-3 text-sm font-semibold text-zinc-950 hover:bg-[#E5C158] disabled:opacity-50 transition-colors cursor-pointer"
+            className="w-full rounded-lg bg-[#E5C158] px-5 py-3 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
           >
             {uploading
               ? progressLabel || 'Enviando para o Supabase...'

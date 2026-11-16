@@ -1,8 +1,17 @@
 export type MediaType = 'photo' | 'video';
 export type AccessTier = 'free' | 'vip' | 'ppv';
-export type SaleType = 'vip_subscription' | 'ppv' | 'tip';
+export type SaleType = 'vip_subscription' | 'ppv' | 'tip' | 'video_call';
 export type PaymentMethod = 'pix' | 'card';
 export type SaleStatus = 'paid' | 'pending' | 'refunded';
+
+export interface VideoCallPlan {
+  id: string;
+  title: string;
+  duration_minutes: number;
+  price_brl: number;
+  description: string;
+  active: boolean;
+}
 
 export interface CreatorProfile {
   id: string;
@@ -16,6 +25,7 @@ export interface CreatorProfile {
   vip_monthly_price_brl: number;
   vip_description: string;
   pix_key: string;
+  video_call_plans?: VideoCallPlan[];
   age_verified_18: boolean;
   updated_at: string;
 }
@@ -92,8 +102,33 @@ export interface CreatorDashboardData {
     vipRevenueBrl: number;
     ppvRevenueBrl: number;
     tipsRevenueBrl: number;
+    videoCallRevenueBrl?: number;
     totalSalesCount: number;
     activeVipFans: number;
     totalMediaCount: number;
   };
 }
+
+export interface WelcomeEmailLog {
+  id: string;
+  fan_id: string | null;
+  fan_email: string;
+  trigger_source: 'signup' | 'first_purchase' | 'manual_test';
+  provider: string;
+  status: 'sent' | 'skipped' | 'pending_config' | 'failed';
+  edge_response: string | null;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface WelcomeEmailOverview {
+  edgeDeployed: boolean;
+  edgeUrl: string | null;
+  resendConfigured: boolean;
+  fromEmail: string;
+  schemaNeedsMigration: boolean;
+  logs: WelcomeEmailLog[];
+  edgeFunctionCode: string;
+  migrationSql: string;
+}
+

@@ -17,6 +17,7 @@ create table if not exists public.creator_profile (
   vip_description text not null default 'Acesso ilimitado a todos os ensaios e vídeos marcados como VIP, atualizações semanais e prioridade em pedidos.',
   pix_key text default '',
   admin_email text,
+  video_call_plans jsonb,
   age_verified_18 boolean not null default true,
   updated_at timestamptz not null default now()
 );
@@ -60,7 +61,7 @@ create table if not exists public.sales (
   fan_id uuid references public.fans(id) on delete set null,
   buyer_email text not null,
   buyer_name text,
-  sale_type text not null check (sale_type in ('vip_subscription', 'ppv', 'tip')),
+  sale_type text not null check (sale_type in ('vip_subscription', 'ppv', 'tip', 'video_call')),
   media_id uuid references public.media_items(id) on delete set null,
   amount_brl numeric(10,2) not null,
   payment_method text not null default 'pix' check (payment_method in ('pix', 'card')),
@@ -121,3 +122,115 @@ drop policy if exists "Public read previews" on storage.objects;
 create policy "Public read previews"
   on storage.objects for select
   using (bucket_id = 'creator-previews');
+
+-- 6. Rastreamento e Logs de E-mail de Boas-Vindas (Edge Function)
+alter table public.fans
+  add column if not exists welcome_email_sent_at timestamptz;
+
+create table if not exists public.welcome_email_logs (
+  id uuid primary key default gen_random_uuid(),
+  fan_id uuid references public.fans(id) on delete set null,
+  fan_email text not null,
+  trigger_source text not null check (trigger_source in ('signup', 'first_purchase', 'manual_test')),
+  provider text not null default 'supabase_edge',
+  status text not null check (status in ('sent', 'skipped', 'pending_config', 'failed')),
+  edge_response text,
+  error_message text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_welcome_email_logs_email_created
+  on public.welcome_email_logs (fan_email, created_at desc);
+
+alter table public.welcome_email_logs enable row level security;
+
+-- Trigger opcional via pg_net no Postgres para acionar a Edge Function welcome-fan-email diretamente do banco
+create or replace function public.trg_dispatch_welcome_fan_email()
+returns trigger
+language plpgsql
+security definer
+as $$
+declare
+  edge_url text := current_setting('app.settings.welcome_edge_url', true);
+  service_key text := current_setting('app.settings.service_role_key', true);
+  already_sent timestamptz;
+  prior_sales integer := 0;
+begin
+  if edge_url is null or edge_url = '' then
+    return new;
+  end if;
+
+  if tg_table_name = 'fans' then
+    if new.welcome_email_sent_at is not null then
+      return new;
+    end if;
+    perform net.http_post(
+      url := edge_url,
+      headers := jsonb_build_object(
+        'Content-Type', 'application/json',
+        'Authorization', 'Bearer ' || coalesce(service_key, '')
+      ),
+      body := jsonb_build_object(
+        'type', 'INSERT',
+        'table', 'fans',
+        'record', to_jsonb(new)
+      )
+    );
+  elsif tg_table_name = 'sales' then
+    select count(*) into prior_sales
+    from public.sales
+    where buyer_email = new.buyer_email
+      and id <> new.id;
+
+    select welcome_email_sent_at into already_sent
+    from public.fans
+    where email = new.buyer_email
+    limit 1;
+
+    if prior_sales = 0 and already_sent is null then
+      perform net.http_post(
+        url := edge_url,
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || coalesce(service_key, '')
+        ),
+        body := jsonb_build_object(
+          'type', 'INSERT',
+          'table', 'sales',
+          'record', to_jsonb(new)
+        )
+      );
+    end if;
+  end if;
+  return new;
+exception
+  when others then
+    return new;
+end;
+$$;
+
+drop trigger if exists trg_welcome_new_fan on public.fans;
+create trigger trg_welcome_new_fan
+  after insert on public.fans
+  for each row
+  execute function public.trg_dispatch_welcome_fan_email();
+
+drop trigger if exists trg_welcome_first_purchase on public.sales;
+create trigger trg_welcome_first_purchase
+  after insert on public.sales
+  for each row
+  execute function public.trg_dispatch_welcome_fan_email();
+
+-- 7. Planos Editáveis de Vídeo Chamada (4 planos na vitrine pública)
+alter table public.creator_profile
+  add column if not exists video_call_plans jsonb;
+
+do $$
+begin
+  alter table public.sales drop constraint if exists sales_sale_type_check;
+  alter table public.sales add constraint sales_sale_type_check
+    check (sale_type in ('vip_subscription', 'ppv', 'tip', 'video_call'));
+exception
+  when others then null;
+end $$;
+
