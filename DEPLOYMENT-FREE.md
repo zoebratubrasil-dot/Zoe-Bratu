@@ -2,6 +2,12 @@
 
 Esta configuração mantém o frontend no Cloudflare Pages e executa o servidor Express/Node.js no Render. O Supabase continua responsável pelo banco de dados e pelos arquivos.
 
+## 0. Supabase — atualizar o projeto existente
+
+O projeto `modelo1` já tem as cinco tabelas centrais e buckets de mídia. A versão atual do código usa colunas extras e a tabela `welcome_email_logs` que ainda não estão no banco. Antes do deploy, abra o SQL Editor do Supabase, revise e execute o arquivo `supabase/upgrade-existing-project.sql` desta branch. Ele faz somente alterações aditivas e atualiza a restrição de tipos de venda; não apaga tabelas nem registros existentes.
+
+Não execute o schema completo de criação sobre o banco existente.
+
 ## 1. Render — API Node.js
 
 1. Abra https://dashboard.render.com/ e crie uma conta/conecte o GitHub.
