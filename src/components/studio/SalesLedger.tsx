@@ -1,18 +1,20 @@
 import React, { useMemo, useState } from 'react';
-import { Download, Search } from 'lucide-react';
+import { Download, Search, QrCode } from 'lucide-react';
 import type { CreatorDashboardData, SaleStatus } from '../../types';
 import { formatBrl, formatDateTime } from '../../lib/format';
 
 interface SalesLedgerProps {
-  creatorPin: string;
+  creatorToken: string;
   dashboard: CreatorDashboardData;
   onRefresh: () => Promise<void>;
+  onOpenPix?: () => void;
 }
 
 export const SalesLedger: React.FC<SalesLedgerProps> = ({
-  creatorPin,
+  creatorToken,
   dashboard,
   onRefresh,
+  onOpenPix,
 }) => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'vip_subscription' | 'ppv' | 'tip'>('all');
@@ -37,7 +39,7 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-creator-pin': creatorPin,
+          'x-creator-token': creatorToken,
         },
         body: JSON.stringify({ status }),
       });
@@ -80,15 +82,27 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
             Acompanhe receitas de assinaturas VIP, desbloqueios avulsos (PPV) e mimos em tempo real.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleExportCsv}
-          disabled={filteredSales.length === 0}
-          className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-40 shrink-0 cursor-pointer"
-        >
-          <Download className="h-3.5 w-3.5" />
-          Exportar CSV
-        </button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          {onOpenPix && (
+            <button
+              type="button"
+              onClick={onOpenPix}
+              className="inline-flex items-center gap-2 rounded-lg border border-[#D4AF37]/50 bg-[#D4AF37]/10 px-4 py-2 text-xs font-medium text-[#E5C158] hover:bg-[#D4AF37]/20 transition-colors cursor-pointer"
+            >
+              <QrCode className="h-3.5 w-3.5" />
+              Chave PIX & QR Code
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={filteredSales.length === 0}
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-xs font-medium text-zinc-200 hover:border-zinc-500 disabled:opacity-40 cursor-pointer"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Exportar CSV
+          </button>
+        </div>
       </div>
 
       {/* Metrics Strip */}

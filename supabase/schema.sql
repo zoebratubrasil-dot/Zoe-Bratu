@@ -16,6 +16,7 @@ create table if not exists public.creator_profile (
   vip_monthly_price_brl numeric(10,2) not null default 49.90,
   vip_description text not null default 'Acesso ilimitado a todos os ensaios e vídeos marcados como VIP, atualizações semanais e prioridade em pedidos.',
   pix_key text default '',
+  admin_email text,
   age_verified_18 boolean not null default true,
   updated_at timestamptz not null default now()
 );

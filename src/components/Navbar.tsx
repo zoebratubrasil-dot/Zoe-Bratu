@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import type { StudioTab } from './CreatorStudio';
 
 export type AppView = 'storefront' | 'studio';
 
@@ -7,6 +8,7 @@ interface NavbarProps {
   brandName: string;
   activeView: AppView;
   onNavigateView: (view: AppView) => void;
+  onNavigateStudioTab: (tab: StudioTab) => void;
   onJumpToSection: (sectionId: string) => void;
   onOpenVipModal: () => void;
 }
@@ -15,12 +17,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   brandName,
   activeView,
   onNavigateView,
+  onNavigateStudioTab,
   onJumpToSection,
   onOpenVipModal,
 }) => {
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-[#09090B]/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-8 px-6 py-4 lg:px-10">
+      <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 sm:gap-8 px-6 py-4 lg:px-10">
         {/* Zone 1: Single text element wordmark */}
         <button
           type="button"
@@ -63,12 +66,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => onNavigateView('studio')}
+            onClick={() => onNavigateStudioTab('overview')}
             className={`relative py-1 whitespace-nowrap shrink-0 transition-colors cursor-pointer hover:text-zinc-100 ${
               activeView === 'studio' ? 'text-zinc-100' : ''
             }`}
           >
-            Estúdio da Criadora
+            Administração
             {activeView === 'studio' && (
               <motion.span
                 layoutId="navbar-active-underline"
@@ -79,25 +82,32 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => {
-              onNavigateView('studio');
-            }}
+            onClick={() => onNavigateStudioTab('sales')}
             className="whitespace-nowrap shrink-0 hover:text-zinc-100 transition-colors cursor-pointer"
           >
             Banco de Vendas
           </button>
         </nav>
 
-        {/* Zone 3: 1 primary action */}
-        <div className="flex items-center shrink-0">
+        {/* Zone 3: Primary action + mobile admin shortcut */}
+        <div className="flex items-center gap-2.5 shrink-0">
           {activeView === 'storefront' ? (
-            <button
-              type="button"
-              onClick={onOpenVipModal}
-              className="px-4 py-2 text-xs font-semibold text-zinc-950 bg-[#D4AF37] rounded-md hover:bg-[#E5C158] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              Assinar VIP
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => onNavigateStudioTab('overview')}
+                className="md:hidden px-3 py-2 text-xs font-medium text-zinc-200 border border-zinc-700 bg-zinc-900 rounded-md hover:border-zinc-500 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                Admin
+              </button>
+              <button
+                type="button"
+                onClick={onOpenVipModal}
+                className="px-4 py-2 text-xs font-semibold text-zinc-950 bg-[#D4AF37] rounded-md hover:bg-[#E5C158] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                Assinar VIP
+              </button>
+            </>
           ) : (
             <button
               type="button"

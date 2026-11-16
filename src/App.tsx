@@ -37,8 +37,26 @@ const INITIAL_STATS: StorefrontStats = {
 };
 
 export default function App() {
-  const [activeView, setActiveView] = useState<AppView>('storefront');
-  const [studioTab, setStudioTab] = useState<StudioTab>('upload');
+  const [activeView, setActiveView] = useState<AppView>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pathname = window.location.pathname.toLowerCase();
+    if (
+      pathname === '/admin' ||
+      pathname.startsWith('/admin/') ||
+      params.has('admin') ||
+      window.location.hash === '#admin' ||
+      params.get('studio_auth') === 'google' ||
+      params.has('code') ||
+      params.has('token_hash') ||
+      params.has('error_description') ||
+      window.location.hash.includes('access_token=') ||
+      window.location.hash.includes('error_description=')
+    ) {
+      return 'studio';
+    }
+    return 'storefront';
+  });
+  const [studioTab, setStudioTab] = useState<StudioTab>('overview');
 
   const [supabaseStatus, setSupabaseStatus] = useState<SupabaseStatus | null>(null);
   const [profile, setProfile] = useState<CreatorProfile>(INITIAL_PROFILE);
@@ -105,7 +123,7 @@ export default function App() {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleNavigateToStudio = (tab: StudioTab = 'upload') => {
+  const handleNavigateToStudio = (tab: StudioTab = 'overview') => {
     setStudioTab(tab);
     setActiveView('studio');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -134,6 +152,7 @@ export default function App() {
             setActiveView(view);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          onNavigateStudioTab={(tab) => handleNavigateToStudio(tab)}
           onJumpToSection={handleJumpToSection}
           onOpenVipModal={() => setModalState({ isOpen: true, mode: 'vip', mediaItem: null })}
         />
@@ -161,7 +180,7 @@ export default function App() {
                   onOpenTipModal={() => setModalState({ isOpen: true, mode: 'tip', mediaItem: null })}
                   onOpenFanLogin={() => setModalState({ isOpen: true, mode: 'fan_login', mediaItem: null })}
                   onLogoutFan={handleLogoutFan}
-                  onNavigateToStudio={(tab) => handleNavigateToStudio(tab || 'upload')}
+                  onNavigateToStudio={(tab) => handleNavigateToStudio(tab || 'overview')}
                 />
               </motion.div>
             ) : (
@@ -178,6 +197,10 @@ export default function App() {
                   profile={profile}
                   onRefreshStatus={refreshSupabaseStatus}
                   onRefreshStorefront={() => refreshStorefront()}
+                  onOpenStorefront={() => {
+                    setActiveView('storefront');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                 />
               </motion.div>
             )}
@@ -199,10 +222,10 @@ export default function App() {
             </button>
             <button
               type="button"
-              onClick={() => handleNavigateToStudio('upload')}
+              onClick={() => handleNavigateToStudio('overview')}
               className="hover:text-zinc-300 transition-colors cursor-pointer"
             >
-              Estúdio da Criadora
+              Administração do Site
             </button>
           </div>
         </div>

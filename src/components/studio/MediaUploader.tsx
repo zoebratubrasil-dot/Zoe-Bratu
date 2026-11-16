@@ -1,25 +1,70 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Film, Image as ImageIcon, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { Upload, Film, Image as ImageIcon, CheckCircle2, AlertCircle, X, Trash2 } from 'lucide-react';
 import type { AccessTier, MediaType } from '../../types';
+import { inferMediaKind, inferMimeType, uploadFileToSupabaseBucket } from '../../lib/uploadMedia';
+
+interface QueuedFile {
+  id: string;
+  file: File;
+  previewSrc: string;
+  mediaType: MediaType;
+  durationSeconds: number | null;
+}
 
 interface MediaUploaderProps {
-  creatorPin: string;
+  creatorToken: string;
   supabaseReady: boolean;
   onUploaded: () => Promise<void>;
   onGoToSupabase: () => void;
 }
 
+function fileNameToTitle(name: string): string {
+  const clean = name.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ').trim();
+  if (!clean) return 'Nova Mídia';
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
+
+async function createBlurredPhotoTeaser(file: File): Promise<File | null> {
+  try {
+    const imgUrl = URL.createObjectURL(file);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = reject;
+        el.src = imgUrl;
+      });
+      const maxDim = 420;
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.max(64, Math.round(img.width * scale));
+      const h = Math.max(64, Math.round(img.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.filter = 'blur(18px) brightness(0.75)';
+      ctx.drawImage(img, -12, -12, w + 24, h + 24);
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.72)
+      );
+      if (!blob) return null;
+      return new File([blob], `teaser-${file.name.replace(/\.[^/.]+$/, '')}.jpg`, { type: 'image/jpeg' });
+    } finally {
+      URL.revokeObjectURL(imgUrl);
+    }
+  } catch {
+    return null;
+  }
+}
+
 export const MediaUploader: React.FC<MediaUploaderProps> = ({
-  creatorPin,
+  creatorToken,
   supabaseReady,
   onUploaded,
   onGoToSupabase,
 }) => {
-  const [file, setFile] = useState<File | null>(null);
-  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
-  const [mediaType, setMediaType] = useState<MediaType>('photo');
-  const [durationSeconds, setDurationSeconds] = useState<number | null>(null);
-
+  const [queuedFiles, setQueuedFiles] = useState<QueuedFile[]>([]);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreviewSrc, setCoverPreviewSrc] = useState<string | null>(null);
 
@@ -37,88 +82,84 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSelectFile = (selected: File | null) => {
-    if (!selected) return;
+  const primaryQueued = queuedFiles[0] || null;
+  const isBatch = queuedFiles.length > 1;
+
+  const handleSelectFiles = (fileList: FileList | File[] | null) => {
+    if (!fileList || fileList.length === 0) return;
     setStatusMsg(null);
-    const isVideo = selected.type.startsWith('video/');
-    const isPhoto = selected.type.startsWith('image/');
-    if (!isVideo && !isPhoto) {
-      setStatusMsg({ type: 'err', text: 'Selecione apenas arquivos de foto (JPG, PNG, WEBP) ou vídeo (MP4, MOV, WEBM).' });
-      return;
-    }
 
-    setFile(selected);
-    setMediaType(isVideo ? 'video' : 'photo');
-    if (!title) {
-      const cleanTitle = selected.name.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ');
-      setTitle(cleanTitle.charAt(0).toUpperCase() + cleanTitle.slice(1));
-    }
+    const added: QueuedFile[] = [];
+    const rejected: string[] = [];
 
-    const objUrl = URL.createObjectURL(selected);
-    setPreviewSrc(objUrl);
+    for (const selected of Array.from(fileList)) {
+      const kind = inferMediaKind(selected);
+      if (!kind) {
+        rejected.push(selected.name);
+        continue;
+      }
 
-    if (isVideo) {
-      const vid = document.createElement('video');
-      vid.preload = 'metadata';
-      vid.onloadedmetadata = () => {
-        if (Number.isFinite(vid.duration)) {
-          setDurationSeconds(Math.round(vid.duration));
-        }
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const objUrl = URL.createObjectURL(selected);
+      const entry: QueuedFile = {
+        id,
+        file: selected,
+        previewSrc: objUrl,
+        mediaType: kind,
+        durationSeconds: null,
       };
-      vid.src = objUrl;
-    } else {
-      setDurationSeconds(null);
-    }
-  };
+      added.push(entry);
 
-  const handleSelectCover = (selected: File | null) => {
-    if (!selected || !selected.type.startsWith('image/')) return;
-    setCoverFile(selected);
-    setCoverPreviewSrc(URL.createObjectURL(selected));
-  };
-
-  const uploadToSupabaseBucket = async (targetFile: File, bucket: 'creator-media' | 'creator-previews') => {
-    // 1. Try signed upload URL (fast direct browser -> Supabase Storage)
-    const urlResp = await fetch('/api/creator/media/upload-url', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-creator-pin': creatorPin,
-      },
-      body: JSON.stringify({ fileName: targetFile.name, bucket }),
-    });
-
-    if (urlResp.ok) {
-      const { signedUrl, storagePath, publicUrl } = await urlResp.json();
-      const putResp = await fetch(signedUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': targetFile.type || 'application/octet-stream',
-        },
-        body: targetFile,
-      });
-      if (putResp.ok) {
-        return { storagePath, publicUrl };
+      if (kind === 'video') {
+        const vid = document.createElement('video');
+        vid.preload = 'metadata';
+        vid.onloadedmetadata = () => {
+          if (Number.isFinite(vid.duration)) {
+            const dur = Math.round(vid.duration);
+            setQueuedFiles((prev) =>
+              prev.map((q) => (q.id === id ? { ...q, durationSeconds: dur } : q))
+            );
+          }
+        };
+        vid.src = objUrl;
       }
     }
 
-    // 2. Fallback binary stream through Express server
-    const binResp = await fetch('/api/creator/media/upload-binary', {
-      method: 'POST',
-      headers: {
-        'x-creator-pin': creatorPin,
-        'x-file-name': targetFile.name,
-        'x-mime-type': targetFile.type || 'application/octet-stream',
-        'x-bucket': bucket,
-        'Content-Type': 'application/octet-stream',
-      },
-      body: targetFile,
-    });
-    const binData = await binResp.json();
-    if (!binResp.ok) {
-      throw new Error(binData.error || 'Falha ao enviar arquivo para o Storage.');
+    if (rejected.length > 0) {
+      setStatusMsg({
+        type: 'err',
+        text: `Arquivo(s) ignorado(s) por formato inválido: ${rejected.join(', ')}. Use JPG, PNG, WEBP, MP4, MOV ou WEBM.`,
+      });
     }
-    return { storagePath: binData.storagePath, publicUrl: binData.publicUrl };
+
+    if (added.length === 0) return;
+
+    setQueuedFiles((prev) => {
+      const next = [...prev, ...added];
+      if (next.length === 1 && !title.trim()) {
+        setTitle(fileNameToTitle(next[0].file.name));
+      }
+      return next;
+    });
+  };
+
+  const removeQueuedFile = (id: string) => {
+    setQueuedFiles((prev) => {
+      const target = prev.find((q) => q.id === id);
+      if (target) URL.revokeObjectURL(target.previewSrc);
+      const next = prev.filter((q) => q.id !== id);
+      if (next.length === 0) {
+        setTitle('');
+      }
+      return next;
+    });
+  };
+
+  const handleSelectCover = (selected: File | null) => {
+    if (!selected || inferMediaKind(selected) !== 'photo') return;
+    if (coverPreviewSrc) URL.revokeObjectURL(coverPreviewSrc);
+    setCoverFile(selected);
+    setCoverPreviewSrc(URL.createObjectURL(selected));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,68 +170,118 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
       setStatusMsg({ type: 'err', text: 'Conecte o Supabase e crie as tabelas antes de enviar mídias.' });
       return;
     }
-    if (!file) {
-      setStatusMsg({ type: 'err', text: 'Selecione uma foto ou vídeo para enviar.' });
+    if (queuedFiles.length === 0) {
+      setStatusMsg({ type: 'err', text: 'Selecione pelo menos uma foto ou vídeo para enviar.' });
       return;
     }
-    if (!title.trim()) {
+    if (!isBatch && !title.trim()) {
       setStatusMsg({ type: 'err', text: 'Informe um título para o conteúdo.' });
       return;
     }
 
     setUploading(true);
+    let savedCount = 0;
+
     try {
-      let previewUrl: string | null = null;
+      let sharedCoverUrl: string | null = null;
       if (coverFile) {
         setProgressLabel('Enviando capa de prévia...');
-        const cov = await uploadToSupabaseBucket(coverFile, 'creator-previews');
-        previewUrl = cov.publicUrl;
+        const cov = await uploadFileToSupabaseBucket(coverFile, 'creator-previews', creatorToken);
+        sharedCoverUrl = cov.publicUrl;
       }
 
-      setProgressLabel(`Enviando ${mediaType === 'video' ? 'vídeo' : 'foto'} para o Storage privado...`);
-      const uploaded = await uploadToSupabaseBucket(file, 'creator-media');
+      for (let i = 0; i < queuedFiles.length; i++) {
+        const q = queuedFiles[i];
+        const prefix = queuedFiles.length > 1 ? `(${i + 1}/${queuedFiles.length}) ` : '';
+        const itemTitle = isBatch
+          ? title.trim()
+            ? `${title.trim()} #${i + 1}`
+            : fileNameToTitle(q.file.name)
+          : title.trim();
 
-      setProgressLabel('Registrando no banco Postgres...');
-      const saveResp = await fetch('/api/creator/media', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-creator-pin': creatorPin,
-        },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          mediaType,
-          accessTier,
-          priceBrl: accessTier === 'ppv' ? Number(priceBrl || 0) : 0,
-          collectionName: collectionName.trim() || 'Geral',
-          storagePath: uploaded.storagePath,
-          previewUrl,
-          durationSeconds,
-          fileSizeBytes: file.size,
-          mimeType: file.type,
-          isPublished,
-        }),
-      });
+        let itemPreviewUrl = sharedCoverUrl;
 
-      const saveData = await saveResp.json();
-      if (!saveResp.ok) {
-        throw new Error(saveData.error || 'Erro ao salvar registro no banco.');
+        // For paid photos without custom cover, create a small blurred teaser so the storefront shows her real blurred photo
+        if (!itemPreviewUrl && q.mediaType === 'photo' && accessTier !== 'free') {
+          setProgressLabel(`${prefix}Gerando prévia borrada segura...`);
+          const blurredFile = await createBlurredPhotoTeaser(q.file);
+          if (blurredFile) {
+            try {
+              const teaserUpload = await uploadFileToSupabaseBucket(
+                blurredFile,
+                'creator-previews',
+                creatorToken
+              );
+              itemPreviewUrl = teaserUpload.publicUrl;
+            } catch {
+              // non-fatal; continue uploading main photo
+            }
+          }
+        }
+
+        setProgressLabel(
+          `${prefix}Enviando ${q.mediaType === 'video' ? 'vídeo' : 'foto'} para o Supabase...`
+        );
+        const uploaded = await uploadFileToSupabaseBucket(q.file, 'creator-media', creatorToken);
+
+        setProgressLabel(`${prefix}Salvando no acervo do site...`);
+        const saveResp = await fetch('/api/creator/media', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-creator-token': creatorToken,
+          },
+          body: JSON.stringify({
+            title: itemTitle,
+            description: description.trim(),
+            mediaType: q.mediaType,
+            accessTier,
+            priceBrl: accessTier === 'ppv' ? Number(priceBrl || 0) : 0,
+            collectionName: collectionName.trim() || 'Geral',
+            storagePath: uploaded.storagePath,
+            previewUrl: itemPreviewUrl,
+            durationSeconds: q.durationSeconds,
+            fileSizeBytes: q.file.size,
+            mimeType: inferMimeType(q.file),
+            isPublished,
+          }),
+        });
+
+        const saveData = await saveResp.json();
+        if (!saveResp.ok) {
+          throw new Error(saveData.error || `Erro ao salvar "${itemTitle}" no banco.`);
+        }
+        savedCount++;
       }
 
-      setStatusMsg({ type: 'ok', text: `"${title}" enviado e publicado no seu acervo com sucesso!` });
-      setFile(null);
-      setPreviewSrc(null);
+      for (const q of queuedFiles) {
+        URL.revokeObjectURL(q.previewSrc);
+      }
+      if (coverPreviewSrc) URL.revokeObjectURL(coverPreviewSrc);
+
+      setQueuedFiles([]);
       setCoverFile(null);
       setCoverPreviewSrc(null);
       setTitle('');
       setDescription('');
-      setDurationSeconds(null);
+
       await onUploaded();
+      setStatusMsg({
+        type: 'ok',
+        text:
+          savedCount > 1
+            ? `${savedCount} arquivos enviados e salvos no site com sucesso!`
+            : `"${title.trim() || 'Conteúdo'}" enviado e salvo no site com sucesso!`,
+      });
     } catch (err) {
+      if (savedCount > 0) {
+        await onUploaded();
+      }
       setStatusMsg({
         type: 'err',
-        text: err instanceof Error ? err.message : 'Erro ao enviar mídia.',
+        text:
+          (savedCount > 0 ? `${savedCount} item(ns) salvo(s), mas houve erro no próximo: ` : '') +
+          (err instanceof Error ? err.message : 'Erro ao enviar mídia.'),
       });
     } finally {
       setUploading(false);
@@ -205,7 +296,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
           Enviar Fotos e Vídeos
         </h2>
         <p className="text-sm text-zinc-400 mt-1">
-          Faça upload direto para o bucket privado <span className="font-mono text-zinc-300">creator-media</span> no Supabase e defina o modelo de venda.
+          Selecione uma ou várias fotos/vídeos, defina o acesso e clique em <span className="text-zinc-200 font-medium">Enviar e Salvar no Site</span>.
         </p>
       </div>
 
@@ -229,11 +320,11 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
-              handleSelectFile(e.dataTransfer.files?.[0] || null);
+              handleSelectFiles(e.dataTransfer.files);
             }}
-            onClick={() => !file && fileInputRef.current?.click()}
+            onClick={() => queuedFiles.length === 0 && fileInputRef.current?.click()}
             className={`relative flex flex-col items-center justify-center rounded-xl border border-dashed p-6 transition-colors min-h-[320px] ${
-              file
+              queuedFiles.length > 0
                 ? 'border-zinc-700 bg-[#121215]'
                 : 'border-zinc-700 bg-[#121215] hover:border-[#D4AF37] cursor-pointer'
             }`}
@@ -241,26 +332,37 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               accept="image/*,video/*"
               className="hidden"
-              onChange={(e) => handleSelectFile(e.target.files?.[0] || null)}
+              onChange={(e) => {
+                handleSelectFiles(e.target.files);
+                e.target.value = '';
+              }}
             />
 
-            {previewSrc ? (
+            {queuedFiles.length === 1 && primaryQueued ? (
               <div className="w-full space-y-4">
                 <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-black border border-zinc-800">
-                  {mediaType === 'video' ? (
-                    <video src={previewSrc} controls playsInline className="h-full w-full object-contain" />
+                  {primaryQueued.mediaType === 'video' ? (
+                    <video
+                      src={primaryQueued.previewSrc}
+                      controls
+                      playsInline
+                      className="h-full w-full object-contain"
+                    />
                   ) : (
-                    <img src={previewSrc} alt="Prévia" className="h-full w-full object-contain" />
+                    <img
+                      src={primaryQueued.previewSrc}
+                      alt="Prévia"
+                      className="h-full w-full object-contain"
+                    />
                   )}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setFile(null);
-                      setPreviewSrc(null);
-                      setDurationSeconds(null);
+                      removeQueuedFile(primaryQueued.id);
                     }}
                     aria-label="Remover arquivo"
                     className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-md bg-black/80 text-zinc-200 hover:text-white border border-zinc-700 cursor-pointer"
@@ -269,11 +371,72 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                   </button>
                 </div>
                 <div className="flex items-center justify-between text-xs text-zinc-400">
-                  <span className="truncate max-w-[240px] text-zinc-200">{file?.name}</span>
-                  <span className="font-mono tabular-nums">
-                    {file ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` : ''}
-                    {durationSeconds ? ` · ${durationSeconds}s` : ''}
-                  </span>
+                  <span className="truncate max-w-[220px] text-zinc-200">{primaryQueued.file.name}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono tabular-nums">
+                      {(primaryQueued.file.size / (1024 * 1024)).toFixed(1)} MB
+                      {primaryQueued.durationSeconds ? ` · ${primaryQueued.durationSeconds}s` : ''}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        fileInputRef.current?.click();
+                      }}
+                      className="text-[#E5C158] hover:underline cursor-pointer"
+                    >
+                      + Adicionar mais
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : queuedFiles.length > 1 ? (
+              <div className="w-full space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-zinc-200">
+                    {queuedFiles.length} arquivos selecionados para envio
+                  </p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs text-[#E5C158] hover:border-[#D4AF37] cursor-pointer"
+                  >
+                    + Adicionar fotos/vídeos
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-1">
+                  {queuedFiles.map((q) => (
+                    <div
+                      key={q.id}
+                      className="relative aspect-[4/3] rounded-lg overflow-hidden border border-zinc-800 bg-black group"
+                    >
+                      {q.mediaType === 'video' ? (
+                        <video
+                          src={q.previewSrc}
+                          muted
+                          playsInline
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <img src={q.previewSrc} alt={q.file.name} className="h-full w-full object-cover" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeQueuedFile(q.id);
+                        }}
+                        aria-label="Remover item"
+                        className="absolute right-1.5 top-1.5 rounded bg-black/80 p-1 text-zinc-300 hover:text-rose-400 border border-zinc-700 cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : (
@@ -283,10 +446,10 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-zinc-100">
-                    Arraste sua foto ou vídeo aqui, ou clique para selecionar
+                    Arraste suas fotos ou vídeos aqui, ou clique para selecionar
                   </p>
                   <p className="text-xs text-zinc-400">
-                    Suporta JPG, PNG, WEBP, MP4, MOV e WEBM (até 500 MB)
+                    Você pode escolher vários arquivos de uma vez (JPG, PNG, WEBP, MP4, MOV, WEBM)
                   </p>
                 </div>
               </div>
@@ -295,17 +458,17 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 
           {/* Optional public preview cover */}
           <div className="rounded-xl border border-zinc-800 bg-[#121215] p-5 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-zinc-200">Capa de Prévia / Teaser (opcional)</p>
                 <p className="text-xs text-zinc-400">
-                  Imagem borrada ou teaser exibida antes do desbloqueio VIP/Avulso.
+                  Para fotos VIP/Avulsas sem capa própria, geramos automaticamente uma prévia borrada segura.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => coverInputRef.current?.click()}
-                className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:border-zinc-500 cursor-pointer"
+                className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:border-zinc-500 shrink-0 cursor-pointer"
               >
                 {coverFile ? 'Trocar Capa' : 'Enviar Capa'}
               </button>
@@ -314,7 +477,10 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={(e) => handleSelectCover(e.target.files?.[0] || null)}
+                onChange={(e) => {
+                  handleSelectCover(e.target.files?.[0] || null);
+                  e.target.value = '';
+                }}
               />
             </div>
             {coverPreviewSrc && (
@@ -324,6 +490,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                 <button
                   type="button"
                   onClick={() => {
+                    if (coverPreviewSrc) URL.revokeObjectURL(coverPreviewSrc);
                     setCoverFile(null);
                     setCoverPreviewSrc(null);
                   }}
@@ -339,22 +506,28 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
         {/* Right: Metadata & Pricing */}
         <div className="lg:col-span-6 rounded-xl border border-zinc-800 bg-[#121215] p-6 space-y-5">
           <div className="flex items-center gap-2 text-xs text-zinc-400">
-            {mediaType === 'video' ? (
+            {primaryQueued?.mediaType === 'video' ? (
               <Film className="h-4 w-4 text-[#D4AF37]" />
             ) : (
               <ImageIcon className="h-4 w-4 text-[#D4AF37]" />
             )}
-            <span>Tipo detectado: {mediaType === 'video' ? 'Vídeo Privado' : 'Ensaio / Foto'}</span>
+            <span>
+              {isBatch
+                ? `Envio em lote: ${queuedFiles.length} arquivos`
+                : `Tipo detectado: ${primaryQueued?.mediaType === 'video' ? 'Vídeo Privado' : 'Ensaio / Foto'}`}
+            </span>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-zinc-300 mb-1.5">Título da Mídia</label>
+            <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+              {isBatch ? 'Título Base (opcional no envio em lote)' : 'Título da Mídia'}
+            </label>
             <input
               type="text"
-              required
+              required={!isBatch}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Ensaio Silk Night — Bastidores"
+              placeholder={isBatch ? 'Ex: Ensaio Silk Night (ou usa o nome de cada foto)' : 'Ex: Ensaio Silk Night — Bastidores'}
               className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
             />
           </div>
@@ -445,7 +618,11 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
             disabled={uploading || !supabaseReady}
             className="w-full rounded-lg bg-[#D4AF37] px-5 py-3 text-sm font-semibold text-zinc-950 hover:bg-[#E5C158] disabled:opacity-50 transition-colors cursor-pointer"
           >
-            {uploading ? progressLabel || 'Enviando para o Supabase...' : 'Enviar e Salvar no Acervo'}
+            {uploading
+              ? progressLabel || 'Enviando para o Supabase...'
+              : isBatch
+              ? `Enviar e Salvar ${queuedFiles.length} Arquivos no Site`
+              : 'Enviar e Salvar no Acervo'}
           </button>
         </div>
       </form>

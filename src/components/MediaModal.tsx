@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { X, Lock, Play, Check, CreditCard, QrCode, ShieldAlert, Image as ImageIcon, Film } from 'lucide-react';
 import type { CreatorProfile, FanAccount, MediaItem, PaymentMethod, SaleType } from '../types';
 import { formatBrl, formatDuration, formatDateShort } from '../lib/format';
+import { PixQrCard } from './PixQrCard';
 
 interface MediaModalProps {
   isOpen: boolean;
@@ -366,10 +367,17 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                     </div>
 
                     {paymentMethod === 'pix' && profile.pix_key && (
-                      <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-3 text-xs text-zinc-300">
-                        <span className="text-zinc-400">Chave Pix da criadora: </span>
-                        <span className="font-mono text-zinc-100 select-all">{profile.pix_key}</span>
-                      </div>
+                      <PixQrCard
+                        compact
+                        pixKey={profile.pix_key}
+                        merchantName={profile.display_name}
+                        merchantCity={profile.location}
+                        amountBrl={
+                          mediaItem.access_tier === 'vip' ? profile.vip_monthly_price_brl : mediaItem.price_brl
+                        }
+                        txid={`MP${mediaItem.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12).toUpperCase()}`}
+                        description={mediaItem.access_tier === 'vip' ? 'Clube VIP' : mediaItem.title}
+                      />
                     )}
 
                     <label className="flex items-start gap-2.5 text-xs text-zinc-400 cursor-pointer">
@@ -525,10 +533,15 @@ export const MediaModal: React.FC<MediaModalProps> = ({
               </div>
 
               {paymentMethod === 'pix' && profile.pix_key && (
-                <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-3 text-xs text-zinc-300">
-                  <span className="text-zinc-400">Chave Pix configurada: </span>
-                  <span className="font-mono text-zinc-100 select-all">{profile.pix_key}</span>
-                </div>
+                <PixQrCard
+                  compact
+                  pixKey={profile.pix_key}
+                  merchantName={profile.display_name}
+                  merchantCity={profile.location}
+                  amountBrl={mode === 'vip' ? profile.vip_monthly_price_brl : Number(tipAmount || 0)}
+                  txid={mode === 'vip' ? 'MPVIP30DIAS' : 'MPMIMO'}
+                  description={mode === 'vip' ? 'Assinatura VIP' : 'Mimo Direto'}
+                />
               )}
 
               <label className="flex items-start gap-2.5 text-xs text-zinc-400 cursor-pointer">

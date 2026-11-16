@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Lock, Play, Search, UserCheck, Upload, Database, Image as ImageIcon, Film, Heart } from 'lucide-react';
 import type { CreatorProfile, FanAccount, MediaItem, StorefrontStats } from '../types';
@@ -20,7 +20,7 @@ interface StorefrontProps {
   onOpenTipModal: () => void;
   onOpenFanLogin: () => void;
   onLogoutFan: () => void;
-  onNavigateToStudio: (tab?: 'upload' | 'supabase') => void;
+  onNavigateToStudio: (tab?: 'overview' | 'upload' | 'supabase') => void;
 }
 
 type TypeFilter = 'all' | 'photo' | 'video' | 'vip' | 'ppv' | 'free';
@@ -45,6 +45,14 @@ export const Storefront: React.FC<StorefrontProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [heroImgFailed, setHeroImgFailed] = useState(false);
   const [avatarImgFailed, setAvatarImgFailed] = useState(false);
+
+  useEffect(() => {
+    setHeroImgFailed(false);
+  }, [profile.hero_url]);
+
+  useEffect(() => {
+    setAvatarImgFailed(false);
+  }, [profile.avatar_url]);
 
   const collections = useMemo(() => {
     const set = new Set<string>();
@@ -164,10 +172,10 @@ export const Storefront: React.FC<StorefrontProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => onNavigateToStudio('upload')}
+              onClick={() => onNavigateToStudio('overview')}
               className="text-sm font-medium text-zinc-400 hover:text-zinc-100 underline underline-offset-4 px-2 py-2 whitespace-nowrap shrink-0 cursor-pointer"
             >
-              Painel da Criadora
+              Administração do Site
             </button>
           </div>
         </div>

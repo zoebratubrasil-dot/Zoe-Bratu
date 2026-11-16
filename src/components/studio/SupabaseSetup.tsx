@@ -3,14 +3,14 @@ import { Database, CheckCircle2, AlertTriangle, Copy, Check, RefreshCw, PlusCirc
 import type { SupabaseStatus } from '../../types';
 
 interface SupabaseSetupProps {
-  creatorPin: string;
+  creatorToken: string;
   status: SupabaseStatus | null;
   onRefreshStatus: () => Promise<void>;
 }
 
 type SetupMode = 'existing' | 'create_new';
 
-export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorPin, status, onRefreshStatus }) => {
+export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorToken, status, onRefreshStatus }) => {
   const [mode, setMode] = useState<SetupMode>('existing');
 
   // Existing project form
@@ -224,7 +224,7 @@ export const SupabaseSetup: React.FC<SupabaseSetupProps> = ({ creatorPin, status
     setMessage(null);
     try {
       const resp = await fetch('/api/creator/export-zip', {
-        headers: { 'x-creator-pin': creatorPin },
+        headers: { 'x-creator-token': creatorToken },
       });
       if (!resp.ok) {
         const errData = await resp.json().catch(() => ({}));
