@@ -1,5 +1,10 @@
 # Maison Privé — implantação gratuita
 
+## Ordem recomendada
+
+1. Revise e faça merge da [PR #1](https://github.com/zoebratubrasil-dot/Zoe-Bratu/pull/1) na branch `main`.
+2. Depois de o merge terminar, siga os passos abaixo. Cloudflare Pages e Render devem usar a branch `main`.
+
 Esta configuração mantém o frontend no Cloudflare Pages e executa o servidor Express/Node.js no Render. O Supabase continua responsável pelo banco de dados e pelos arquivos.
 
 ## 0. Supabase — atualizar o projeto existente
