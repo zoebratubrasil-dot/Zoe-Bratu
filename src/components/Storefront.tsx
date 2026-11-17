@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Lock, Play, Eye, Search, UserCheck, Upload, Database, Image as ImageIcon, Film, Heart, Video, Clock, ArrowRight, Aperture, MessageCircle } from 'lucide-react';
+import { Lock, Play, Eye, Search, UserCheck, Upload, Database, Image as ImageIcon, Film, Heart, Gift, Video, Clock, ArrowRight, Aperture, MessageCircle } from 'lucide-react';
 import type { CreatorProfile, FanAccount, MediaItem, StorefrontStats, VideoCallPlan } from '../types';
 import { formatBrl, formatDuration, formatDateShort } from '../lib/format';
 import { resolveVideoCallPlans } from '../lib/videoCalls';
 import { buildWhatsappReceiptUrl } from '../lib/whatsapp';
 import { ProtectedImage, ProtectedVideo } from './ProtectedMedia';
 import { AboutCreatorPanel } from './AboutCreatorPanel';
+import { MimoShowcaseSection } from './MimoShowcaseSection';
 import videoCallCameraHero from '../assets/images/video_call_camera_hero_1794853603138.jpg';
 
 const CREATOR_LIVE_CALL_PHOTO = '/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG';
@@ -40,7 +41,7 @@ interface StorefrontProps {
   onSelectMedia: (item: MediaItem) => void;
   onSelectVideoCallPlan: (plan: VideoCallPlan) => void;
   onOpenVipModal: () => void;
-  onOpenTipModal: () => void;
+  onOpenTipModal: (presetAmount?: number) => void;
   onOpenFanLogin: () => void;
   onLogoutFan: () => void;
   onNavigateToStudio: (tab?: 'overview' | 'upload' | 'supabase' | 'video_calls' | 'profile') => void;
@@ -214,11 +215,11 @@ export const Storefront: React.FC<StorefrontProps> = ({
               </button>
               <button
                 type="button"
-                onClick={onOpenTipModal}
-                className="inline-flex items-center gap-2 rounded-sm border border-[#2B2725]/35 bg-[#EAE6E2] px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:border-[#1C1918] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                onClick={() => onOpenTipModal()}
+                className="mimo-shimmer-btn group inline-flex items-center gap-2 rounded-sm px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] transition-transform duration-200 hover:-translate-y-0.5 whitespace-nowrap shrink-0 cursor-pointer"
               >
-                <Heart className="h-3.5 w-3.5 text-[#8A6218]" />
-                Enviar Mimo
+                <Gift className="h-3.5 w-3.5 text-[#E5C158] transition-transform duration-200 group-hover:rotate-[-12deg] group-hover:scale-110" />
+                <span>Enviar Mimo · Surpreenda</span>
               </button>
               <button
                 type="button"
@@ -528,6 +529,13 @@ export const Storefront: React.FC<StorefrontProps> = ({
           )}
         </div>
       </section>
+
+      {/* BLOCK 2.5: Luxury Gift / Enviar Mimo Interactive Showcase */}
+      <MimoShowcaseSection
+        profile={profile}
+        avatarImgFailed={avatarImgFailed}
+        onOpenTipModal={onOpenTipModal}
+      />
 
       {/* BLOCK 3: Gallery Showcase ("ROLO DE CONTATO & PELÍCULA 35MM") */}
       <section id="vitrine-grid" className="bg-[#EAE6E2] text-[#1C1918] p-6 sm:p-8 lg:p-12 border-b border-[#2B2725]/25 space-y-7">

@@ -12,6 +12,7 @@ import {
   Radio,
   Sliders,
   Layers,
+  Gift,
 } from 'lucide-react';
 import type { CreatorProfile, VideoCallPlan } from '../types';
 import { resolveCreatorAboutContent } from '../lib/creatorAbout';
@@ -27,7 +28,7 @@ interface AboutCreatorPanelProps {
   videoCallPlans: VideoCallPlan[];
   onSelectVideoCallPlan: (plan: VideoCallPlan) => void;
   onOpenVipModal: () => void;
-  onOpenTipModal: () => void;
+  onOpenTipModal: (presetAmount?: number) => void;
   onNavigateToStudio: (tab?: 'overview' | 'upload' | 'supabase' | 'video_calls' | 'profile') => void;
 }
 
@@ -469,10 +470,11 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
           </button>
           <button
             type="button"
-            onClick={onOpenTipModal}
-            className="rounded-sm border border-[#5A524D] px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#F4F1ED] hover:border-[#E5C158] transition-colors cursor-pointer"
+            onClick={() => onOpenTipModal()}
+            className="mimo-shimmer-btn group inline-flex items-center gap-2 rounded-sm px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] transition-transform hover:-translate-y-0.5 cursor-pointer"
           >
-            Enviar Mimo
+            <Gift className="h-3.5 w-3.5 text-[#E5C158] transition-transform group-hover:rotate-[-10deg]" />
+            <span>Enviar Mimo</span>
           </button>
           {waUrl ? (
             <a

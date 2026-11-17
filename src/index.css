@@ -55,3 +55,62 @@
   background-size: 14px 20px;
 }
 
+@keyframes mimoSpecularSweep {
+  0% {
+    transform: translateX(-140%) skewX(-22deg);
+  }
+  45%, 100% {
+    transform: translateX(240%) skewX(-22deg);
+  }
+}
+
+@keyframes mimoGoldPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(229, 193, 88, 0.35), 0 8px 24px -8px rgba(229, 193, 88, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(229, 193, 88, 0.14), 0 12px 30px -6px rgba(229, 193, 88, 0.45);
+  }
+}
+
+.mimo-shimmer-btn {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(125deg, #2b221e 0%, #4b3129 45%, #7c561e 100%);
+  border: 1px solid rgba(229, 193, 88, 0.72);
+  animation: mimoGoldPulse 3.2s ease-in-out infinite;
+}
+
+.mimo-shimmer-btn::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: 0;
+  width: 45%;
+  height: 140%;
+  background: linear-gradient(90deg, transparent, rgba(255, 244, 206, 0.42), transparent);
+  animation: mimoSpecularSweep 3.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.mimo-card-sheen {
+  position: relative;
+  overflow: hidden;
+}
+
+.mimo-card-sheen::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: 0;
+  width: 38%;
+  height: 160%;
+  background: linear-gradient(90deg, transparent, rgba(229, 193, 88, 0.16), transparent);
+  transform: translateX(-160%) skewX(-22deg);
+  transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.mimo-card-sheen:hover::after {
+  transform: translateX(320%) skewX(-22deg);
+}

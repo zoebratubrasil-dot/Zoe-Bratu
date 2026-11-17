@@ -79,11 +79,13 @@ export default function App() {
     mode: 'media' | 'vip' | 'tip' | 'fan_login' | 'video_call';
     mediaItem: MediaItem | null;
     videoCallPlan: VideoCallPlan | null;
+    tipPresetAmount?: number;
   }>({
     isOpen: false,
     mode: 'media',
     mediaItem: null,
     videoCallPlan: null,
+    tipPresetAmount: undefined,
   });
 
   const refreshSupabaseStatus = useCallback(async () => {
@@ -202,8 +204,14 @@ export default function App() {
                   onOpenVipModal={() =>
                     setModalState({ isOpen: true, mode: 'vip', mediaItem: null, videoCallPlan: null })
                   }
-                  onOpenTipModal={() =>
-                    setModalState({ isOpen: true, mode: 'tip', mediaItem: null, videoCallPlan: null })
+                  onOpenTipModal={(presetAmount) =>
+                    setModalState({
+                      isOpen: true,
+                      mode: 'tip',
+                      mediaItem: null,
+                      videoCallPlan: null,
+                      tipPresetAmount: presetAmount,
+                    })
                   }
                   onOpenFanLogin={() =>
                     setModalState({ isOpen: true, mode: 'fan_login', mediaItem: null, videoCallPlan: null })
@@ -283,6 +291,7 @@ export default function App() {
         mode={modalState.mode}
         mediaItem={modalState.mediaItem}
         videoCallPlan={modalState.videoCallPlan}
+        tipPresetAmount={modalState.tipPresetAmount}
         profile={profile}
         fan={fan}
         supabaseConnected={Boolean(supabaseStatus?.connected && supabaseStatus?.schemaReady)}

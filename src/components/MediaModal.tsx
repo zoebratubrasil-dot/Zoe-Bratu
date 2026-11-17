@@ -1,9 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { X, Lock, Play, Check, CreditCard, QrCode, ShieldAlert, Image as ImageIcon, Film, Video, Clock, MessageCircle, Heart } from 'lucide-react';
+import {
+  X,
+  Lock,
+  Play,
+  Check,
+  CreditCard,
+  QrCode,
+  ShieldAlert,
+  Image as ImageIcon,
+  Film,
+  Video,
+  Clock,
+  MessageCircle,
+  Heart,
+  Gift,
+  Sparkles,
+  Crown,
+  Wine,
+} from 'lucide-react';
 import type { CreatorProfile, FanAccount, MediaItem, PaymentMethod, SaleType, VideoCallPlan } from '../types';
 import { formatBrl, formatDuration, formatDateShort } from '../lib/format';
 import { resolveVideoCallPlans } from '../lib/videoCalls';
+import { MIMO_GIFT_TIERS, type MimoGiftTier } from '../lib/mimoGifts';
 import { buildWhatsappReceiptUrl } from '../lib/whatsapp';
 import { PixQrCard } from './PixQrCard';
 import { ProtectedImage, ProtectedVideo } from './ProtectedMedia';
@@ -15,6 +34,7 @@ interface MediaModalProps {
   mode: 'media' | 'vip' | 'tip' | 'fan_login' | 'video_call';
   mediaItem: MediaItem | null;
   videoCallPlan?: VideoCallPlan | null;
+  tipPresetAmount?: number;
   profile: CreatorProfile;
   fan: FanAccount | null;
   supabaseConnected: boolean;
@@ -32,6 +52,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
   mode,
   mediaItem,
   videoCallPlan,
+  tipPresetAmount,
   profile,
   fan,
   supabaseConnected,
@@ -49,6 +70,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [ageConfirmed, setAgeConfirmed] = useState(true);
   const [tipAmount, setTipAmount] = useState('50');
+  const [tipNote, setTipNote] = useState('');
   const [selectedCallPlanId, setSelectedCallPlanId] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -71,11 +93,15 @@ export const MediaModal: React.FC<MediaModalProps> = ({
     } else if (activeCallPlans[0]?.id) {
       setSelectedCallPlanId((prev) => prev || activeCallPlans[0].id);
     }
+    if (mode === 'tip') {
+      setTipAmount(String(tipPresetAmount && tipPresetAmount >= 5 ? tipPresetAmount : 50));
+      setTipNote('');
+    }
     setErrorMsg(null);
     setSuccessMsg(null);
     setLastOrderRef('');
     setShowMissingWaNotice(false);
-  }, [isOpen, mode, mediaItem?.id, videoCallPlan?.id, fan?.email, fan?.display_name]);
+  }, [isOpen, mode, mediaItem?.id, videoCallPlan?.id, tipPresetAmount, fan?.email, fan?.display_name]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -157,7 +183,12 @@ export const MediaModal: React.FC<MediaModalProps> = ({
         body: JSON.stringify({
           buyerEmail: email.trim(),
           buyerName: name.trim(),
-          contactInfo: saleType === 'video_call' ? contactInfo.trim() : undefined,
+          contactInfo:
+            saleType === 'video_call'
+              ? contactInfo.trim()
+              : saleType === 'tip' && tipNote.trim()
+              ? `Recado: ${tipNote.trim()}`
+              : undefined,
           saleType,
           mediaId: saleType === 'ppv' ? mediaItem?.id : undefined,
           videoCallPlanId: saleType === 'video_call' ? currentCallPlan?.id : undefined,
@@ -586,44 +617,22 @@ export const MediaModal: React.FC<MediaModalProps> = ({
           </div>
         )}
 
-        {/* MODE: VIP SUBSCRIPTION OR TIP */}
-        {(mode === 'vip' || mode === 'tip') && (
+        {/* MODE: VIP SUBSCRIPTION */}
+        {mode === 'vip' && (
           <div className="p-8 max-w-xl mx-auto">
-            <p className="text-xs font-medium text-[#D4AF37] mb-2">
-              {mode === 'vip' ? 'Acesso Total Mensal' : 'Apoio Direto à Criadora'}
-            </p>
+            <p className="text-xs font-medium text-[#D4AF37] mb-2">Acesso Total Mensal</p>
             <h2 className="font-display text-2xl font-semibold text-zinc-50 mb-2">
-              {mode === 'vip'
-                ? `Clube VIP — ${profile.display_name}`
-                : `Enviar Mimo para ${profile.display_name}`}
+              Clube VIP — {profile.display_name}
             </h2>
-            <p className="text-sm text-zinc-400 mb-6">
-              {mode === 'vip'
-                ? profile.vip_description
-                : 'Envie um agradecimento direto registrado no banco de vendas da criadora.'}
-            </p>
+            <p className="text-sm text-zinc-400 mb-6">{profile.vip_description}</p>
 
             <div className="space-y-4">
-              {mode === 'vip' ? (
-                <div className="flex items-center justify-between rounded-lg border border-[#453F3B] bg-[#1C1918]/70 px-4 py-3.5">
-                  <span className="text-sm text-zinc-300">Plano Mensal VIP (30 dias)</span>
-                  <span className="font-mono text-xl font-semibold text-[#E5C158] tabular-nums">
-                    {formatBrl(profile.vip_monthly_price_brl)}
-                  </span>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">Valor do mimo (R$)</label>
-                  <input
-                    type="number"
-                    min="5"
-                    step="5"
-                    value={tipAmount}
-                    onChange={(e) => setTipAmount(e.target.value)}
-                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-sm text-zinc-100 focus:border-[#D4AF37] focus:outline-none"
-                  />
-                </div>
-              )}
+              <div className="flex items-center justify-between rounded-lg border border-[#453F3B] bg-[#1C1918]/70 px-4 py-3.5">
+                <span className="text-sm text-zinc-300">Plano Mensal VIP (30 dias)</span>
+                <span className="font-mono text-xl font-semibold text-[#E5C158] tabular-nums">
+                  {formatBrl(profile.vip_monthly_price_brl)}
+                </span>
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -681,9 +690,9 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                   pixKey={profile.pix_key}
                   merchantName={profile.display_name}
                   merchantCity={profile.location}
-                  amountBrl={mode === 'vip' ? profile.vip_monthly_price_brl : Number(tipAmount || 0)}
-                  txid={mode === 'vip' ? 'MPVIP30DIAS' : 'MPMIMO'}
-                  description={mode === 'vip' ? 'Assinatura VIP' : 'Mimo Direto'}
+                  amountBrl={profile.vip_monthly_price_brl}
+                  txid="MPVIP30DIAS"
+                  description="Assinatura VIP"
                 />
               )}
 
@@ -724,28 +733,288 @@ export const MediaModal: React.FC<MediaModalProps> = ({
               <button
                 type="button"
                 disabled={submitting}
-                onClick={() =>
-                  handleCheckout(
-                    mode === 'vip' ? 'vip_subscription' : 'tip',
-                    mode === 'vip' ? profile.vip_monthly_price_brl : Number(tipAmount || 0)
-                  )
-                }
+                onClick={() => handleCheckout('vip_subscription', profile.vip_monthly_price_brl)}
                 className="w-full rounded-lg bg-[#E5C158] px-5 py-3 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {submitting
                   ? 'Confirmando no Supabase...'
-                  : mode === 'vip'
-                  ? `Confirmar Assinatura VIP (${formatBrl(profile.vip_monthly_price_brl)})`
-                  : `Enviar Mimo (${formatBrl(Number(tipAmount || 0))})`}
+                  : `Confirmar Assinatura VIP (${formatBrl(profile.vip_monthly_price_brl)})`}
               </button>
 
-              {renderWhatsappReceiptCta(
-                mode === 'vip' ? 'Assinatura Clube VIP (30 dias)' : 'Mimo Direto',
-                mode === 'vip' ? profile.vip_monthly_price_brl : Number(tipAmount || 0)
-              )}
+              {renderWhatsappReceiptCta('Assinatura Clube VIP (30 dias)', profile.vip_monthly_price_brl)}
             </div>
           </div>
         )}
+
+        {/* MODE: ELABORATE LUXURY MIMO / TIP CONCIERGE */}
+        {mode === 'tip' && (() => {
+          const parsedAmount = Number(tipAmount || 0);
+          const matchedTier: MimoGiftTier | undefined = MIMO_GIFT_TIERS.find(
+            (t) => Number(t.amount_brl) === parsedAmount
+          );
+          const renderSmallIcon = (icon: MimoGiftTier['icon'], active: boolean) => {
+            const cls = `h-4 w-4 ${active ? 'text-[#E5C158]' : 'text-[#C7C1BA]'}`;
+            if (icon === 'wine') return <Wine className={cls} />;
+            if (icon === 'heart') return <Heart className={`${cls} ${active ? 'fill-current' : ''}`} />;
+            if (icon === 'sparkles') return <Sparkles className={cls} />;
+            return <Crown className={cls} />;
+          };
+
+          return (
+            <div className="p-6 sm:p-8 max-w-2xl mx-auto space-y-6">
+              {/* Illuminated Portrait Hero Banner */}
+              <div className="relative overflow-hidden rounded-sm border border-[#E5C158]/50 bg-gradient-to-r from-[#1C1918] via-[#2B221E] to-[#1C1918] p-5">
+                <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="relative h-20 w-20 shrink-0">
+                    <motion.div
+                      aria-hidden="true"
+                      animate={{ opacity: [0.45, 1, 0.45] }}
+                      transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+                      className="absolute -inset-1 rounded-sm border border-[#E5C158]"
+                    />
+                    <div className="h-full w-full overflow-hidden rounded-sm border border-[#E5C158] bg-[#1C1918]">
+                      <ProtectedImage
+                        src={profile.avatar_url || CREATOR_LIVE_CALL_PHOTO}
+                        alt={profile.display_name}
+                        containerClassName="h-full w-full"
+                        className="h-full w-full object-cover object-top"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <p className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-[#E5C158]">
+                      <Gift className="h-3.5 w-3.5" />
+                      Gesto de Carinho · Mimo VIP
+                    </p>
+                    <h2 className="font-display text-2xl sm:text-3xl font-bold uppercase tracking-tight text-[#F4F1ED]">
+                      Surpreenda {profile.display_name} Com Um Mimo
+                    </h2>
+                    <p className="text-xs text-[#DED9D3] leading-relaxed">
+                      Escolha um mimo abaixo ou defina um valor livre. Seu gesto ganha destaque imediato junto com seu recado pessoal para a Carioca.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4 Luxury Preset Cards */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-[#F4F1ED]">Selecione um mimo especial</span>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#E5C158]">
+                    Destaque Instantâneo
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {MIMO_GIFT_TIERS.map((tier) => {
+                    const isSelected = Number(tipAmount || 0) === tier.amount_brl;
+                    return (
+                      <button
+                        key={tier.id}
+                        type="button"
+                        onClick={() => setTipAmount(String(tier.amount_brl))}
+                        className={`mimo-card-sheen relative rounded-sm border p-3 text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-[#E5C158] bg-[#2E241F] shadow-[0_0_20px_-6px_rgba(229,193,88,0.5)]'
+                            : 'border-[#453F3B] bg-[#1C1918] hover:border-[#E5C158]/60'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 mb-1.5">
+                          {renderSmallIcon(tier.icon, isSelected)}
+                          <span className="font-mono text-[9px] uppercase tracking-wider text-[#E5C158]">
+                            {tier.featured ? 'Top' : tier.badge.split(' ')[0]}
+                          </span>
+                        </div>
+                        <p className="text-xs font-semibold text-[#F4F1ED] leading-tight line-clamp-1">
+                          {tier.title}
+                        </p>
+                        <p className="font-mono text-base font-bold text-[#E5C158] tabular-nums mt-1">
+                          {formatBrl(tier.amount_brl)}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Custom Amount + Recognition Perk Banner */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-stretch">
+                <div className="sm:col-span-5">
+                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                    Ou digite outro valor (R$)
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    step="5"
+                    value={tipAmount}
+                    onChange={(e) => setTipAmount(e.target.value)}
+                    className="w-full rounded-sm border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 font-mono text-base font-semibold text-[#E5C158] focus:border-[#E5C158] focus:outline-none"
+                  />
+                </div>
+                <div className="sm:col-span-7 flex flex-col justify-center rounded-sm border border-[#E5C158]/35 bg-[#1C1918]/90 px-4 py-3">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#E5C158]">
+                    {matchedTier ? matchedTier.badge : 'Gesto Personalizado'}
+                  </p>
+                  <p className="text-xs text-[#DED9D3] mt-0.5 leading-relaxed">
+                    {matchedTier
+                      ? matchedTier.perk
+                      : 'Todo mimo demonstra cavalheirismo e coloca seu nome em evidência para a Carioca.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Secret Note / Dedication */}
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                  Deixe um recado carinhoso ou dedicatória para {profile.display_name} (opcional)
+                </label>
+                <textarea
+                  rows={2}
+                  maxLength={180}
+                  value={tipNote}
+                  onChange={(e) => setTipNote(e.target.value)}
+                  placeholder="Ex: Adorei seu sorriso carioca! Um brinde especial para alegrar seu dia..."
+                  className="w-full rounded-sm border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#E5C158] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">Seu e-mail</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                    className="w-full rounded-sm border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#E5C158] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">Seu nome ou apelido</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Como ela deve te chamar"
+                    className="w-full rounded-sm border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#E5C158] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('pix')}
+                  className={`flex items-center justify-center gap-2 rounded-sm border px-4 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
+                    paymentMethod === 'pix'
+                      ? 'border-[#E5C158] bg-[#E5C158]/10 text-[#E5C158]'
+                      : 'border-[#453F3B] bg-[#1C1918] text-zinc-300 hover:border-zinc-600'
+                  }`}
+                >
+                  <QrCode className="h-4 w-4" />
+                  Pix Instantâneo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('card')}
+                  className={`flex items-center justify-center gap-2 rounded-sm border px-4 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
+                    paymentMethod === 'card'
+                      ? 'border-[#E5C158] bg-[#E5C158]/10 text-[#E5C158]'
+                      : 'border-[#453F3B] bg-[#1C1918] text-zinc-300 hover:border-zinc-600'
+                  }`}
+                >
+                  <CreditCard className="h-4 w-4" />
+                  Cartão de Crédito
+                </button>
+              </div>
+
+              {paymentMethod === 'pix' && profile.pix_key && (
+                <PixQrCard
+                  compact
+                  pixKey={profile.pix_key}
+                  merchantName={profile.display_name}
+                  merchantCity={profile.location}
+                  amountBrl={parsedAmount}
+                  txid="MPMIMO"
+                  description={matchedTier ? matchedTier.title : 'Mimo Especial'}
+                />
+              )}
+
+              <label className="flex items-start gap-2.5 text-xs text-zinc-400 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={ageConfirmed}
+                  onChange={(e) => setAgeConfirmed(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[#E5C158]"
+                />
+                <span>Declaro ter 18 anos ou mais e aceito os termos do atendimento privado.</span>
+              </label>
+
+              {errorMsg && (
+                <div className="rounded-sm border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200 space-y-2">
+                  <p>{errorMsg}</p>
+                  {!supabaseConnected && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onGoToSupabaseSetup();
+                      }}
+                      className="underline font-medium text-[#E5C158] cursor-pointer"
+                    >
+                      Conectar Supabase agora →
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {successMsg && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="relative overflow-hidden rounded-sm border border-[#E5C158] bg-gradient-to-r from-[#2D2419] via-[#3A2B1D] to-[#2D2419] p-4 text-xs text-[#F4F1ED]"
+                >
+                  <div className="flex items-start gap-3">
+                    <motion.span
+                      animate={{ rotate: [0, 12, -12, 0], scale: [1, 1.15, 1] }}
+                      transition={{ duration: 0.9, repeat: 2 }}
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-[#E5C158] text-[#1C1918]"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </motion.span>
+                    <div>
+                      <p className="font-semibold text-[#E5C158] uppercase tracking-wider text-[11px]">
+                        Mimo Registrado Com Brilho!
+                      </p>
+                      <p className="mt-1 text-[#DED9D3]">{successMsg}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => handleCheckout('tip', parsedAmount)}
+                className="mimo-shimmer-btn group w-full inline-flex items-center justify-center gap-2 rounded-sm px-5 py-3.5 text-sm font-bold uppercase tracking-wider text-[#FAF8F5] disabled:opacity-50 transition-transform hover:-translate-y-0.5 cursor-pointer"
+              >
+                <Gift className="h-4 w-4 text-[#E5C158] transition-transform group-hover:rotate-[-10deg]" />
+                <span>
+                  {submitting
+                    ? 'Registrando Mimo Especial...'
+                    : `Enviar Mimo Agora (${formatBrl(parsedAmount)})`}
+                </span>
+              </button>
+
+              {renderWhatsappReceiptCta(
+                matchedTier
+                  ? `Mimo: ${matchedTier.title}${tipNote.trim() ? ` — "${tipNote.trim()}"` : ''}`
+                  : `Mimo Especial${tipNote.trim() ? ` — "${tipNote.trim()}"` : ''}`,
+                parsedAmount
+              )}
+            </div>
+          );
+        })()}
 
         {/* MODE: VIDEO CALL CHECKOUT */}
         {mode === 'video_call' && currentCallPlan && (
