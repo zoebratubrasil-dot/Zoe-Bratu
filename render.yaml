@@ -1,6 +1,27 @@
 services:
   - type: web
-    name: maison-prive-api
+    name: Zoe-Bratu
+    runtime: node
+    plan: free
+    buildCommand: bun install && bun run build
+    startCommand: bun run start
+    healthCheckPath: /api/supabase/status
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CREATOR_AUTH_SECRET
+        generateValue: true
+
+  - type: web
+    name: maison-prive-api-xxkl
     runtime: node
     plan: free
     buildCommand: npm install --legacy-peer-deps && npm run build
