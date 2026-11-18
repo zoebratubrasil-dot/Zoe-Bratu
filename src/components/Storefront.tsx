@@ -9,6 +9,7 @@ import { computeFanLoyalty } from '../lib/loyalty';
 import { ProtectedImage, ProtectedVideo } from './ProtectedMedia';
 import { AboutCreatorPanel } from './AboutCreatorPanel';
 import { MimoShowcaseSection } from './MimoShowcaseSection';
+import { FanTestimonialsSection } from './FanTestimonialsSection';
 import { LoyaltyBadge } from './LoyaltyBadge';
 import videoCallCameraHero from '../assets/images/video_call_camera_hero_1794853603138.jpg';
 
@@ -45,6 +46,7 @@ interface StorefrontProps {
   onOpenFanLogin: (tab?: 'register' | 'login') => void;
   onOpenFanAccount: () => void;
   onLogoutFan: () => void;
+  onTestimonialsUpdated?: () => Promise<void> | void;
   favoriteIds?: string[];
   onToggleFavorite?: (mediaId: string) => void;
 }
@@ -64,6 +66,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
   onOpenFanLogin,
   onOpenFanAccount,
   onLogoutFan,
+  onTestimonialsUpdated,
   favoriteIds = [],
   onToggleFavorite,
 }) => {
@@ -140,6 +143,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
           { id: 'video-chamada', label: 'Vídeo Chamada' },
           { id: 'enviar-mimo', label: '6 Mimos' },
           { id: 'vitrine-grid', label: 'Galeria 35mm' },
+          { id: 'depoimentos-fas', label: 'Depoimentos' },
           { id: 'clube-vip', label: 'Clube VIP' },
         ].map((navLink) => (
           <button
@@ -1166,6 +1170,13 @@ export const Storefront: React.FC<StorefrontProps> = ({
           </div>
         )}
       </section>
+
+      {/* BLOCK 3.5: Verified Fan Testimonials Social Proof */}
+      <FanTestimonialsSection
+        profile={profile}
+        fan={fan}
+        onTestimonialAdded={onTestimonialsUpdated || (() => {})}
+      />
 
       {/* BLOCK 4: Clube VIP Closing Espresso Charcoal Film Reel Section */}
       <section

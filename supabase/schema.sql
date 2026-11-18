@@ -234,6 +234,10 @@ alter table public.creator_profile
 alter table public.creator_profile
   add column if not exists mimo_config jsonb;
 
+-- 10. Depoimentos Verificados dos Fãs
+alter table public.creator_profile
+  add column if not exists testimonials jsonb;
+
 do $$
 begin
   alter table public.sales drop constraint if exists sales_sale_type_check;

@@ -11,8 +11,9 @@ import JSZip from 'jszip';
 import { createServer as createViteServer } from 'vite';
 import { DEFAULT_CREATOR_ABOUT, sanitizeCreatorAboutContent } from './src/lib/creatorAbout';
 import { DEFAULT_MIMO_SECTION, sanitizeMimoSectionConfig } from './src/lib/mimoGifts';
+import { DEFAULT_FAN_TESTIMONIALS, sanitizeTestimonials } from './src/lib/testimonials';
 import { computeFanLoyalty } from './src/lib/loyalty';
-import type { CreatorAboutContent, MimoSectionConfig } from './src/types';
+import type { CreatorAboutContent, FanTestimonial, MimoSectionConfig } from './src/types';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
@@ -25,6 +26,7 @@ const VIDEO_CALL_PLANS_PATH = path.resolve(process.cwd(), '.video-call-plans.jso
 const CREATOR_CONTACT_PATH = path.resolve(process.cwd(), '.creator-contact.json');
 const CREATOR_ABOUT_PATH = path.resolve(process.cwd(), '.creator-about.json');
 const CREATOR_MIMO_PATH = path.resolve(process.cwd(), '.creator-mimo-config.json');
+const CREATOR_TESTIMONIALS_PATH = path.resolve(process.cwd(), '.creator-testimonials.json');
 
 export interface VideoCallPlanConfig {
   id: string;
@@ -197,6 +199,32 @@ function resolveProfileMimoConfig(profileRow: Record<string, unknown> | null | u
   return readMimoConfigFallback();
 }
 
+function readTestimonialsFallback(options?: { stripEmail?: boolean }): FanTestimonial[] {
+  try {
+    if (fs.existsSync(CREATOR_TESTIMONIALS_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(CREATOR_TESTIMONIALS_PATH, 'utf8'));
+      return sanitizeTestimonials(parsed, options);
+    }
+  } catch {
+    // ignore corrupt fallback
+  }
+  return sanitizeTestimonials(DEFAULT_FAN_TESTIMONIALS, options);
+}
+
+function saveTestimonialsFallback(testimonials: FanTestimonial[]): void {
+  fs.writeFileSync(CREATOR_TESTIMONIALS_PATH, JSON.stringify(testimonials, null, 2) + '\n', 'utf8');
+}
+
+function resolveProfileTestimonials(
+  profileRow: Record<string, unknown> | null | undefined,
+  options?: { stripEmail?: boolean }
+): FanTestimonial[] {
+  if (profileRow && Array.isArray(profileRow.testimonials)) {
+    return sanitizeTestimonials(profileRow.testimonials, options);
+  }
+  return readTestimonialsFallback(options);
+}
+
 function normalizeSaleRecord<T extends { sale_type: string; media_id?: string | null; external_ref?: string | null; amount_brl?: unknown }>(
   sale: T,
   mediaTitleMap: Map<string, string>
@@ -315,6 +343,7 @@ const DEFAULT_CREATOR_PROFILE = {
   video_call_plans: DEFAULT_VIDEO_CALL_PLANS,
   about_section: DEFAULT_CREATOR_ABOUT,
   mimo_config: DEFAULT_MIMO_SECTION,
+  testimonials: DEFAULT_FAN_TESTIMONIALS,
   age_verified_18: true,
   updated_at: new Date().toISOString(),
 };
@@ -2062,6 +2091,7 @@ async function startServer() {
           video_call_plans: readVideoCallPlansFallback(),
           about_section: readAboutSectionFallback(),
           mimo_config: readMimoConfigFallback(),
+          testimonials: readTestimonialsFallback({ stripEmail: true }),
         }),
         mediaItems: [],
         fan: null,
@@ -2087,6 +2117,9 @@ async function startServer() {
       const resolvedWhatsapp = resolveProfileWhatsapp(profileRow as Record<string, unknown> | null);
       const resolvedAbout = resolveProfileAboutSection(profileRow as Record<string, unknown> | null);
       const resolvedMimo = resolveProfileMimoConfig(profileRow as Record<string, unknown> | null);
+      const resolvedTestimonials = resolveProfileTestimonials(profileRow as Record<string, unknown> | null, {
+        stripEmail: true,
+      });
       const rawProfile = profileRow
         ? {
             ...DEFAULT_CREATOR_PROFILE,
@@ -2098,6 +2131,7 @@ async function startServer() {
             video_call_plans: resolvedPlans,
             about_section: resolvedAbout,
             mimo_config: resolvedMimo,
+            testimonials: resolvedTestimonials,
           }
         : {
             ...DEFAULT_CREATOR_PROFILE,
@@ -2105,6 +2139,7 @@ async function startServer() {
             video_call_plans: resolvedPlans,
             about_section: resolvedAbout,
             mimo_config: resolvedMimo,
+            testimonials: resolvedTestimonials,
           };
 
       const profile = maskProfileForClient(rawProfile);
@@ -2502,72 +2537,182 @@ async function startServer() {
     }
   });
 
+  app.post('/api/storefront/testimonials', async (req: Request, res: Response) => {
+    const client = getAdminClient();
+    if (!client) {
+      res.status(503).json({ error: 'Conecte seu banco Supabase antes de enviar depoimentos verificados.' });
+      return;
+    }
+    try {
+      const { email, authorName, authorLocation, category, rating, comment } = req.body || {};
+      const cleanEmail = String(email || '').trim().toLowerCase();
+      if (!cleanEmail || !cleanEmail.includes('@')) {
+        res.status(400).json({ error: 'Informe o e-mail utilizado em sua assinatura ou compra para validar o depoimento.' });
+        return;
+      }
+
+      const cleanComment = String(comment || '').trim();
+      if (cleanComment.length < 15) {
+        res.status(400).json({ error: 'Escreva um depoimento com pelo menos 15 caracteres.' });
+        return;
+      }
+      if (cleanComment.length > 600) {
+        res.status(400).json({ error: 'O depoimento pode ter no máximo 600 caracteres.' });
+        return;
+      }
+
+      const { data: paidSales, error: salesErr } = await client
+        .from('sales')
+        .select('id, sale_type, amount_brl, status, created_at')
+        .eq('buyer_email', cleanEmail)
+        .eq('status', 'paid');
+
+      if (salesErr) {
+        res.status(500).json({ error: salesErr.message });
+        return;
+      }
+
+      if (!paidSales || paidSales.length === 0) {
+        res.status(403).json({
+          error:
+            'Apenas internautas com ao menos 1 compra ou assinatura confirmada (Pix/cartão pago) podem publicar um depoimento verificado.',
+        });
+        return;
+      }
+
+      const { data: fanRow } = await client
+        .from('fans')
+        .select('display_name')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+      const loyalty = computeFanLoyalty(paidSales);
+      const validCat = ['video_call', 'instagram', 'vip_subscription', 'tip', 'ppv'].includes(String(category))
+        ? (String(category) as FanTestimonial['category'])
+        : 'video_call';
+      const numericRating = Math.min(5, Math.max(1, Math.round(Number(rating) || 5)));
+
+      const fallbackName = fanRow?.display_name || cleanEmail.split('@')[0];
+      const resolvedAuthorName = String(authorName || fallbackName).trim().slice(0, 60) || fallbackName;
+      const resolvedLocation = String(authorLocation || 'Brasil').trim().slice(0, 50) || 'Brasil';
+
+      const newTestimonial: FanTestimonial = {
+        id: `testi-${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`,
+        author_name: resolvedAuthorName,
+        author_location: resolvedLocation,
+        author_email: cleanEmail,
+        category: validCat,
+        rating: numericRating,
+        comment: cleanComment,
+        verified_purchase: true,
+        loyalty_label: loyalty.tier_label,
+        is_published: true,
+        featured: false,
+        created_at: new Date().toISOString(),
+      };
+
+      const { data: profileRow } = await client
+        .from('creator_profile')
+        .select('testimonials')
+        .eq('slug', 'solo')
+        .maybeSingle();
+
+      const existing = resolveProfileTestimonials(profileRow as Record<string, unknown> | null, {
+        stripEmail: false,
+      });
+      const updatedList = sanitizeTestimonials([newTestimonial, ...existing].slice(0, 60), {
+        stripEmail: false,
+      });
+
+      saveTestimonialsFallback(updatedList);
+      await client
+        .from('creator_profile')
+        .update({ testimonials: updatedList, updated_at: new Date().toISOString() })
+        .eq('slug', 'solo')
+        .then(() => {}, () => {});
+
+      res.json({
+        ok: true,
+        testimonial: sanitizeTestimonials([newTestimonial], { stripEmail: true })[0],
+        testimonials: sanitizeTestimonials(updatedList, { stripEmail: true }),
+      });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao publicar depoimento.' });
+    }
+  });
+
   // --- CREATOR STUDIO API (Protected) ---
 
   app.get('/api/creator/dashboard', requireCreatorAuth, async (_req: Request, res: Response) => {
     const client = getAdminClient();
     if (!client) {
-      res.json({
-        supabaseConnected: false,
-        profile: maskProfileForClient({
-          ...DEFAULT_CREATOR_PROFILE,
-          whatsapp_number: readWhatsappFallback(),
-          video_call_plans: readVideoCallPlansFallback(),
-          about_section: readAboutSectionFallback(),
-          mimo_config: readMimoConfigFallback(),
-        }),
-        dashboard: {
-          mediaItems: [],
-          sales: [],
-          fans: [],
-          metrics: {
-            totalRevenueBrl: 0,
-            vipRevenueBrl: 0,
-            ppvRevenueBrl: 0,
-            tipsRevenueBrl: 0,
-            videoCallRevenueBrl: 0,
-            totalSalesCount: 0,
-            activeVipFans: 0,
-            totalMediaCount: 0,
+        res.json({
+          supabaseConnected: false,
+          profile: maskProfileForClient({
+            ...DEFAULT_CREATOR_PROFILE,
+            whatsapp_number: readWhatsappFallback(),
+            video_call_plans: readVideoCallPlansFallback(),
+            about_section: readAboutSectionFallback(),
+            mimo_config: readMimoConfigFallback(),
+            testimonials: readTestimonialsFallback({ stripEmail: false }),
+          }),
+          dashboard: {
+            mediaItems: [],
+            sales: [],
+            fans: [],
+            metrics: {
+              totalRevenueBrl: 0,
+              vipRevenueBrl: 0,
+              ppvRevenueBrl: 0,
+              tipsRevenueBrl: 0,
+              videoCallRevenueBrl: 0,
+              totalSalesCount: 0,
+              activeVipFans: 0,
+              totalMediaCount: 0,
+            },
           },
-        },
-      });
-      return;
-    }
+        });
+        return;
+      }
 
-    try {
-      const [profileRes, mediaRes, salesRes, fansRes] = await Promise.all([
-        client.from('creator_profile').select('*').eq('slug', 'solo').maybeSingle(),
-        client.from('media_items').select('*').order('created_at', { ascending: false }),
-        client.from('sales').select('*').order('created_at', { ascending: false }),
-        client.from('fans').select('*').order('created_at', { ascending: false }),
-      ]);
+      try {
+        const [profileRes, mediaRes, salesRes, fansRes] = await Promise.all([
+          client.from('creator_profile').select('*').eq('slug', 'solo').maybeSingle(),
+          client.from('media_items').select('*').order('created_at', { ascending: false }),
+          client.from('sales').select('*').order('created_at', { ascending: false }),
+          client.from('fans').select('*').order('created_at', { ascending: false }),
+        ]);
 
-      const resolvedPlans = resolveProfileVideoCallPlans(profileRes.data as Record<string, unknown> | null);
-      const resolvedWhatsapp = resolveProfileWhatsapp(profileRes.data as Record<string, unknown> | null);
-      const resolvedAbout = resolveProfileAboutSection(profileRes.data as Record<string, unknown> | null);
-      const resolvedMimo = resolveProfileMimoConfig(profileRes.data as Record<string, unknown> | null);
-      const rawProfile = profileRes.data
-        ? {
-            ...DEFAULT_CREATOR_PROFILE,
-            ...profileRes.data,
-            vip_monthly_price_brl: Number(profileRes.data.vip_monthly_price_brl || 49.9),
-            avatar_url: profileRes.data.avatar_url || DEFAULT_CREATOR_PROFILE.avatar_url,
-            hero_url: profileRes.data.hero_url || DEFAULT_CREATOR_PROFILE.hero_url,
-            whatsapp_number: resolvedWhatsapp,
-            video_call_plans: resolvedPlans,
-            about_section: resolvedAbout,
-            mimo_config: resolvedMimo,
-          }
-        : {
-            ...DEFAULT_CREATOR_PROFILE,
-            whatsapp_number: resolvedWhatsapp,
-            video_call_plans: resolvedPlans,
-            about_section: resolvedAbout,
-            mimo_config: resolvedMimo,
-          };
+        const resolvedPlans = resolveProfileVideoCallPlans(profileRes.data as Record<string, unknown> | null);
+        const resolvedWhatsapp = resolveProfileWhatsapp(profileRes.data as Record<string, unknown> | null);
+        const resolvedAbout = resolveProfileAboutSection(profileRes.data as Record<string, unknown> | null);
+        const resolvedMimo = resolveProfileMimoConfig(profileRes.data as Record<string, unknown> | null);
+        const resolvedTestimonials = resolveProfileTestimonials(profileRes.data as Record<string, unknown> | null, {
+          stripEmail: false,
+        });
+        const rawProfile = profileRes.data
+          ? {
+              ...DEFAULT_CREATOR_PROFILE,
+              ...profileRes.data,
+              vip_monthly_price_brl: Number(profileRes.data.vip_monthly_price_brl || 49.9),
+              avatar_url: profileRes.data.avatar_url || DEFAULT_CREATOR_PROFILE.avatar_url,
+              hero_url: profileRes.data.hero_url || DEFAULT_CREATOR_PROFILE.hero_url,
+              whatsapp_number: resolvedWhatsapp,
+              video_call_plans: resolvedPlans,
+              about_section: resolvedAbout,
+              mimo_config: resolvedMimo,
+              testimonials: resolvedTestimonials,
+            }
+          : {
+              ...DEFAULT_CREATOR_PROFILE,
+              whatsapp_number: resolvedWhatsapp,
+              video_call_plans: resolvedPlans,
+              about_section: resolvedAbout,
+              mimo_config: resolvedMimo,
+              testimonials: resolvedTestimonials,
+            };
 
-      const profile = maskProfileForClient(rawProfile);
+        const profile = maskProfileForClient(rawProfile);
 
       const mediaRows = mediaRes.data || [];
       const mediaTitleMap = new Map<string, string>();
@@ -3240,6 +3385,9 @@ async function startServer() {
           : resolveProfileWhatsapp(data as Record<string, unknown>);
       const resolvedAbout = updatedAbout || resolveProfileAboutSection(data as Record<string, unknown>);
       const resolvedMimo = updatedMimo || resolveProfileMimoConfig(data as Record<string, unknown>);
+      const resolvedTestimonials = resolveProfileTestimonials(data as Record<string, unknown>, {
+        stripEmail: false,
+      });
       res.json({
         profile: maskProfileForClient({
           ...data,
@@ -3247,6 +3395,7 @@ async function startServer() {
           video_call_plans: resolvedPlans,
           about_section: resolvedAbout,
           mimo_config: resolvedMimo,
+          testimonials: resolvedTestimonials,
         }),
       });
     } catch (err) {
@@ -3326,6 +3475,31 @@ async function startServer() {
       res.json({ ok: true, mimo_config: sanitized });
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao salvar cartões de Mimos Especiais.' });
+    }
+  });
+
+  app.patch('/api/creator/testimonials', requireCreatorAuth, async (req: Request, res: Response) => {
+    try {
+      const incoming = req.body?.testimonials;
+      if (!Array.isArray(incoming)) {
+        res.status(400).json({ error: 'Lista de depoimentos inválida.' });
+        return;
+      }
+      const sanitized = sanitizeTestimonials(incoming, { stripEmail: false });
+      saveTestimonialsFallback(sanitized);
+
+      const client = getAdminClient();
+      if (client) {
+        await client
+          .from('creator_profile')
+          .update({ testimonials: sanitized, updated_at: new Date().toISOString() })
+          .eq('slug', 'solo')
+          .then(() => {}, () => {});
+      }
+
+      res.json({ ok: true, testimonials: sanitized });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao salvar depoimentos dos fãs.' });
     }
   });
 
@@ -3808,7 +3982,15 @@ async function startServer() {
         const entries = fs.readdirSync(currentDir, { withFileTypes: true });
         for (const entry of entries) {
           if (entry.name.startsWith('.env') && entry.name !== '.env.example') continue;
-          if (entry.name === '.video-call-plans.json') continue;
+          if (
+            entry.name === '.video-call-plans.json' ||
+            entry.name === '.creator-contact.json' ||
+            entry.name === '.creator-about.json' ||
+            entry.name === '.creator-mimo-config.json' ||
+            entry.name === '.creator-testimonials.json'
+          ) {
+            continue;
+          }
           if (entry.name.endsWith('.log') || entry.name === '.DS_Store') continue;
 
           const fullPath = path.join(currentDir, entry.name);

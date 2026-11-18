@@ -13,6 +13,7 @@ import type { CreatorProfile, FanAccount, MediaItem, StorefrontStats, SupabaseSt
 import { DEFAULT_VIDEO_CALL_PLANS } from './lib/videoCalls';
 import { DEFAULT_CREATOR_ABOUT } from './lib/creatorAbout';
 import { DEFAULT_MIMO_SECTION } from './lib/mimoGifts';
+import { DEFAULT_FAN_TESTIMONIALS } from './lib/testimonials';
 import { buildWhatsappReceiptUrl } from './lib/whatsapp';
 import { useLocalFavorites } from './lib/favorites';
 
@@ -33,6 +34,7 @@ const INITIAL_PROFILE: CreatorProfile = {
   video_call_plans: DEFAULT_VIDEO_CALL_PLANS,
   about_section: DEFAULT_CREATOR_ABOUT,
   mimo_config: DEFAULT_MIMO_SECTION,
+  testimonials: DEFAULT_FAN_TESTIMONIALS,
   age_verified_18: true,
   updated_at: new Date().toISOString(),
 };
@@ -271,6 +273,7 @@ export default function App() {
                   })
                 }
                 onLogoutFan={handleLogoutFan}
+                onTestimonialsUpdated={() => refreshStorefront()}
                 favoriteIds={favoriteIds}
                 onToggleFavorite={toggleFavorite}
               />
@@ -314,6 +317,13 @@ export default function App() {
                 className="hover:text-[#F4F1ED] transition-colors cursor-pointer py-1"
               >
                 Galeria
+              </button>
+              <button
+                type="button"
+                onClick={() => handleJumpToSection('depoimentos-fas')}
+                className="hover:text-[#F4F1ED] transition-colors cursor-pointer py-1"
+              >
+                Depoimentos
               </button>
               <button
                 type="button"

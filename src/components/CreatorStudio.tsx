@@ -19,6 +19,7 @@ import {
   QrCode,
   Video,
   Gift,
+  MessageSquareQuote,
 } from 'lucide-react';
 import type { CreatorDashboardData, CreatorProfile, SupabaseStatus } from '../types';
 import { getBrowserSupabaseClient } from '../lib/supabaseBrowser';
@@ -32,6 +33,7 @@ import { SalesLedger } from './studio/SalesLedger';
 import { CreatorProfileSettings } from './studio/CreatorProfileSettings';
 import { VideoCallSettings } from './studio/VideoCallSettings';
 import { MimoSettings } from './studio/MimoSettings';
+import { TestimonialsSettings } from './studio/TestimonialsSettings';
 import { SupabaseSetup } from './studio/SupabaseSetup';
 
 export type StudioTab =
@@ -40,6 +42,7 @@ export type StudioTab =
   | 'manage'
   | 'video_calls'
   | 'mimos'
+  | 'testimonials'
   | 'fans'
   | 'pix'
   | 'sales'
@@ -969,6 +972,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
     { id: 'upload', label: 'Enviar Fotos & Vídeos', icon: <Upload className="h-4 w-4" /> },
     { id: 'video_calls', label: 'Vídeo Chamadas', icon: <Video className="h-4 w-4" /> },
     { id: 'mimos', label: '6 Cartões de Mimos', icon: <Gift className="h-4 w-4" /> },
+    { id: 'testimonials', label: 'Depoimentos dos Fãs', icon: <MessageSquareQuote className="h-4 w-4" /> },
     { id: 'profile', label: 'Informações & Capa', icon: <UserCog className="h-4 w-4" /> },
     { id: 'fans', label: 'Assinantes & VIPs', icon: <Users className="h-4 w-4" /> },
     { id: 'pix', label: 'Pix & QR Code', icon: <QrCode className="h-4 w-4" /> },
@@ -1031,6 +1035,9 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
               </button>
               <button type="button" onClick={() => setActiveTab('mimos')} className="hover:text-[#181615] cursor-pointer">
                 Mimos
+              </button>
+              <button type="button" onClick={() => setActiveTab('testimonials')} className="hover:text-[#181615] cursor-pointer">
+                Depoimentos
               </button>
               <button type="button" onClick={() => setActiveTab('pix')} className="hover:text-[#181615] cursor-pointer">
                 Pix & QR
@@ -1271,6 +1278,17 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                   creatorToken={creatorToken}
                   profile={studioProfile}
                   dashboard={dashboard}
+                  onUpdated={async () => {
+                    await fetchDashboard(creatorToken);
+                    await onRefreshStorefront();
+                  }}
+                />
+              )}
+
+              {activeTab === 'testimonials' && (
+                <TestimonialsSettings
+                  creatorToken={creatorToken}
+                  profile={studioProfile}
                   onUpdated={async () => {
                     await fetchDashboard(creatorToken);
                     await onRefreshStorefront();

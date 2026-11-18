@@ -69,6 +69,23 @@ export interface MimoSectionConfig {
   tiers: MimoGiftTier[];
 }
 
+export type TestimonialCategory = 'video_call' | 'instagram' | 'vip_subscription' | 'tip' | 'ppv';
+
+export interface FanTestimonial {
+  id: string;
+  author_name: string;
+  author_location: string;
+  author_email?: string;
+  category: TestimonialCategory;
+  rating: number;
+  comment: string;
+  verified_purchase: boolean;
+  loyalty_label?: string | null;
+  is_published: boolean;
+  featured?: boolean;
+  created_at: string;
+}
+
 export interface CreatorProfile {
   id: string;
   slug: string;
@@ -85,6 +102,7 @@ export interface CreatorProfile {
   video_call_plans?: VideoCallPlan[];
   about_section?: CreatorAboutContent;
   mimo_config?: MimoSectionConfig;
+  testimonials?: FanTestimonial[];
   age_verified_18: boolean;
   updated_at: string;
 }
