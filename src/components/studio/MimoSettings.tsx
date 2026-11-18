@@ -261,19 +261,24 @@ export const MimoSettings: React.FC<MimoSettingsProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#181615] mb-1">
-              Texto de Estímulo da Vitrine
-            </label>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <label className="block text-xs font-semibold text-[#181615]">
+                Descrição da Vitrine de Mimos (até 1.200 caracteres)
+              </label>
+              <span className="font-mono text-[11px] text-[#524B45] tabular-nums">
+                {config.section_description.length}/1200
+              </span>
+            </div>
             <textarea
-              rows={2}
-              maxLength={420}
+              rows={4}
+              maxLength={1200}
               value={config.section_description}
               onChange={(e) => setConfig({ ...config, section_description: e.target.value })}
               className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-[#181615]/10">
+          <div className="space-y-4 pt-2 border-t border-[#181615]/10">
             <div>
               <label className="block text-xs font-semibold text-[#181615] mb-1">
                 Título Dentro da Janela de Mimo (Modal)
@@ -287,12 +292,17 @@ export const MimoSettings: React.FC<MimoSettingsProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#181615] mb-1">
-                Subtítulo Dentro da Janela de Mimo (Modal)
-              </label>
-              <input
-                type="text"
-                maxLength={320}
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <label className="block text-xs font-semibold text-[#181615]">
+                  Descrição Dentro da Janela de Mimo (Modal — até 1.200 caracteres)
+                </label>
+                <span className="font-mono text-[11px] text-[#524B45] tabular-nums">
+                  {config.modal_description.length}/1200
+                </span>
+              </div>
+              <textarea
+                rows={3}
+                maxLength={1200}
                 value={config.modal_description}
                 onChange={(e) => setConfig({ ...config, modal_description: e.target.value })}
                 className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 text-sm text-[#181615] focus:border-[#181615] focus:outline-none"
@@ -301,7 +311,7 @@ export const MimoSettings: React.FC<MimoSettingsProps> = ({
           </div>
         </div>
 
-        {/* 4 Editable Special Gift Cards */}
+        {/* 6 Editable Special Gift Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {config.tiers.map((tier, idx) => (
             <div
@@ -419,12 +429,17 @@ export const MimoSettings: React.FC<MimoSettingsProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#181615] mb-1">
-                  Descrição / Benefício ao Presentear
-                </label>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <label className="block text-xs font-semibold text-[#181615]">
+                    Descrição do Mimo / Benefício ao Presentear
+                  </label>
+                  <span className="font-mono text-[11px] text-[#524B45] tabular-nums">
+                    {tier.perk.length}/1200
+                  </span>
+                </div>
                 <textarea
-                  rows={2}
-                  maxLength={200}
+                  rows={4}
+                  maxLength={1200}
                   value={tier.perk}
                   onChange={(e) => updateTierField(idx, 'perk', e.target.value)}
                   className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-2 text-xs text-[#181615] focus:border-[#181615] focus:outline-none"

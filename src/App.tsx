@@ -19,8 +19,8 @@ import { useLocalFavorites } from './lib/favorites';
 const INITIAL_PROFILE: CreatorProfile = {
   id: 'default-solo-creator',
   slug: 'solo',
-  display_name: 'Valentina Noir',
-  handle: '@valentinanoir',
+  display_name: 'Lorena Noir',
+  handle: '@lorenanoir',
   bio: 'Ensaios autorais, bastidores íntimos e vídeos exclusivos em 4K. Conteúdo estritamente para maiores de 18 anos.',
   location: 'Rio de Janeiro, Brasil',
   avatar_url: '/api/profile/asset/avatar',
@@ -102,6 +102,13 @@ export default function App() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  useEffect(() => {
+    document.title =
+      activeView === 'studio'
+        ? 'Administração · Vídeo Chamada Modelo Feminina Atraente Lorena Noir'
+        : 'Vídeo Chamada Modelo Feminina Atraente Lorena Noir';
+  }, [activeView]);
 
   const refreshSupabaseStatus = useCallback(async () => {
     try {

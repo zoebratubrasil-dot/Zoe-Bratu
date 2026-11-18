@@ -109,7 +109,7 @@ export function sanitizeMimoTiers(input: unknown): MimoGiftTier[] {
       subtitle: cleanStr(item.subtitle, fallback.subtitle, 90),
       amount_brl: Number.isFinite(priceNum) && priceNum >= 5 ? Number(priceNum.toFixed(2)) : fallback.amount_brl,
       badge: cleanStr(item.badge, fallback.badge, 40),
-      perk: cleanStr(item.perk, fallback.perk, 200),
+      perk: cleanStr(item.perk, fallback.perk, 1200),
       icon: VALID_ICONS.includes(iconCandidate) ? iconCandidate : fallback.icon,
       featured: typeof item.featured === 'boolean' ? item.featured : fallback.featured,
       active: typeof item.active === 'boolean' ? item.active : fallback.active,
@@ -126,11 +126,11 @@ export function sanitizeMimoSectionConfig(input: unknown): MimoSectionConfig {
     section_kicker: cleanStr(src.section_kicker, DEFAULT_MIMO_SECTION.section_kicker, 80),
     section_tag: cleanStr(src.section_tag, DEFAULT_MIMO_SECTION.section_tag, 60),
     section_title: cleanStr(src.section_title, DEFAULT_MIMO_SECTION.section_title, 90),
-    section_description: cleanStr(src.section_description, DEFAULT_MIMO_SECTION.section_description, 420),
+    section_description: cleanStr(src.section_description, DEFAULT_MIMO_SECTION.section_description, 1200),
     cta_label: cleanStr(src.cta_label, DEFAULT_MIMO_SECTION.cta_label, 40),
     card_cta_label: cleanStr(src.card_cta_label, DEFAULT_MIMO_SECTION.card_cta_label, 40),
     modal_title: cleanStr(src.modal_title, DEFAULT_MIMO_SECTION.modal_title, 90),
-    modal_description: cleanStr(src.modal_description, DEFAULT_MIMO_SECTION.modal_description, 320),
+    modal_description: cleanStr(src.modal_description, DEFAULT_MIMO_SECTION.modal_description, 1200),
     tiers: sanitizeMimoTiers(src.tiers),
   };
 }

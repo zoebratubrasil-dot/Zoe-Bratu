@@ -932,7 +932,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                     <h2 className="font-display text-2xl sm:text-3xl font-bold uppercase tracking-tight text-[#F4F1ED]">
                       {mimoConfig.modal_title}
                     </h2>
-                    <p className="text-xs text-[#DED9D3] leading-relaxed">
+                    <p className="text-xs text-[#DED9D3] leading-relaxed whitespace-pre-line break-words">
                       {mimoConfig.modal_description}
                     </p>
                   </div>
@@ -998,7 +998,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                   <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#E5C158]">
                     {matchedTier ? matchedTier.badge : 'Gesto Personalizado'}
                   </p>
-                  <p className="text-xs text-[#DED9D3] mt-0.5 leading-relaxed">
+                  <p className="text-xs text-[#DED9D3] mt-0.5 leading-relaxed whitespace-pre-line break-words">
                     {matchedTier
                       ? matchedTier.perk
                       : 'Todo mimo demonstra cavalheirismo e coloca seu nome em evidência para a Carioca.'}

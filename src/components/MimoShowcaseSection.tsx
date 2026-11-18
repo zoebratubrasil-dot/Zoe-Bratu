@@ -95,7 +95,7 @@ export const MimoShowcaseSection: React.FC<MimoShowcaseSectionProps> = ({
               <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold uppercase tracking-tight text-[#F4F1ED] leading-[0.96]">
                 {mimoConfig.section_title}
               </h2>
-              <p className="text-sm text-[#DED9D3] max-w-2xl leading-relaxed">
+              <p className="text-sm text-[#DED9D3] max-w-2xl leading-relaxed whitespace-pre-line break-words">
                 {mimoConfig.section_description}
               </p>
             </div>
@@ -177,7 +177,7 @@ export const MimoShowcaseSection: React.FC<MimoShowcaseSectionProps> = ({
                       {formatBrl(tier.amount_brl)}
                     </p>
 
-                    <p className="text-xs text-[#DED9D3] leading-relaxed border-t border-[#453F3B]/80 pt-3">
+                    <p className="text-xs text-[#DED9D3] leading-relaxed border-t border-[#453F3B]/80 pt-3 whitespace-pre-line break-words">
                       {tier.perk}
                     </p>
                   </div>
