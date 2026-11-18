@@ -349,8 +349,8 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
         ? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
         : null;
       const redirectTo = bridgeId
-        ? `${window.location.origin}/?studio_auth=google&bridge=${bridgeId}`
-        : `${window.location.origin}/?studio_auth=google`;
+        ? `${window.location.origin}/admin?studio_auth=google&bridge=${bridgeId}`
+        : `${window.location.origin}/admin?studio_auth=google`;
 
       const resp = await fetch('/api/creator/send-otp', {
         method: 'POST',
@@ -476,8 +476,8 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
         ? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
         : null;
       const redirectTo = bridgeId
-        ? `${window.location.origin}/?studio_auth=google&bridge=${bridgeId}`
-        : `${window.location.origin}/?studio_auth=google`;
+        ? `${window.location.origin}/admin?studio_auth=google&bridge=${bridgeId}`
+        : `${window.location.origin}/admin?studio_auth=google`;
 
       const { data, error } = await sb.auth.signInWithOAuth({
         provider: 'google',
@@ -522,8 +522,29 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
 
   if (!creatorToken) {
     return (
-      <main className="mx-auto max-w-[1100px] px-3 sm:px-6 py-6 sm:py-12 lg:px-10">
-        <div className="rounded-sm bg-[#181615] p-2.5 sm:p-5 shadow-xl">
+      <div className="min-h-screen flex flex-col">
+        <header className="border-b border-[#181615]/20 bg-[#FAF8F5]/95 backdrop-blur-md">
+          <div className="mx-auto flex max-w-[1100px] items-center justify-between gap-4 px-4 sm:px-6 py-3 lg:px-10">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-sm bg-[#181615] text-[#E5C158] shrink-0">
+                <Lock className="h-3.5 w-3.5" />
+              </span>
+              <span className="font-display text-base sm:text-lg font-bold uppercase tracking-wider text-[#181615] truncate">
+                {studioProfile.display_name} · Painel Administrativo
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenStorefront}
+              className="inline-flex items-center gap-1.5 rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-[#181615] hover:border-[#181615] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Site Público
+            </button>
+          </div>
+        </header>
+        <main className="mx-auto w-full max-w-[1100px] flex-1 px-3 sm:px-6 py-6 sm:py-12 lg:px-10">
+          <div className="rounded-sm bg-[#181615] p-2.5 sm:p-5 shadow-xl">
           <div className="grid grid-cols-1 md:grid-cols-12 rounded-sm bg-[#FAF8F5] border border-[#181615]/20 overflow-hidden">
             {/* Editorial Photo Side Column */}
             <div className="hidden md:flex md:col-span-5 flex-col justify-between bg-[#F3EFEA] border-r border-[#181615]/15 p-5">
@@ -604,7 +625,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                     O provedor Google ainda está desativado no seu Supabase. Para ativar o botão Google acima, habilite-o no painel e adicione esta URL em <span className="text-[#181615] font-semibold">Redirect URLs</span>:
                   </p>
                   <code className="block rounded-sm border border-[#181615]/15 bg-white px-2.5 py-1.5 text-[11px] text-[#181615] break-all select-all">
-                    {window.location.origin}/
+                    {window.location.origin}/admin
                   </code>
                   <a
                     href={`https://supabase.com/dashboard/project/${authConfig.supabaseProjectRef}/auth/providers`}
@@ -937,7 +958,8 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
             </div>
           </div>
         </div>
-      </main>
+        </main>
+      </div>
     );
   }
 
@@ -955,9 +977,45 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
   ];
 
   return (
-    <main className="mx-auto max-w-[1440px] px-3 sm:px-6 py-5 sm:py-8 lg:px-10 space-y-5 sm:space-y-8">
-      {/* Top Editorial Lookbook Masthead (framed in dark #181615 like the reference mockup) */}
-      <div className="rounded-sm bg-[#181615] p-2 sm:p-5 shadow-lg">
+    <div className="min-h-screen flex flex-col">
+      <header className="sticky top-0 z-40 border-b border-[#181615]/20 bg-[#FAF8F5]/95 backdrop-blur-md">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4 px-3 sm:px-6 py-2.5 sm:py-3 lg:px-10">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-sm bg-[#181615] text-[#E5C158] shrink-0">
+              <Lock className="h-3.5 w-3.5" />
+            </span>
+            <div className="min-w-0">
+              <p className="font-display text-base sm:text-xl font-bold uppercase tracking-wider text-[#181615] truncate leading-none">
+                {studioProfile.display_name} · Admin
+              </p>
+              <p className="hidden sm:block text-[10px] font-mono uppercase tracking-[0.14em] text-[#524B45] mt-0.5">
+                Área Administrativa Privada (/admin) · Separada do Site Público
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onOpenStorefront}
+              className="inline-flex items-center gap-1.5 rounded-sm bg-[#181615] px-3 sm:px-4 py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] hover:bg-[#332E2C] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <ExternalLink className="h-3.5 w-3.5 text-[#E5C158]" />
+              <span>Abrir Site Público</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 rounded-sm border border-[#181615]/25 bg-[#EFEBE5] px-3 py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[#181615] hover:border-[#181615] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Sair</span>
+            </button>
+          </div>
+        </div>
+      </header>
+      <main className="mx-auto w-full max-w-[1440px] flex-1 px-3 sm:px-6 py-5 sm:py-8 lg:px-10 space-y-5 sm:space-y-8">
+        {/* Top Editorial Lookbook Masthead (framed in dark #181615 like the reference mockup) */}
+        <div className="rounded-sm bg-[#181615] p-2 sm:p-5 shadow-lg">
         <div className="rounded-sm bg-[#FAF8F5] border border-[#181615]/20 overflow-hidden">
           {/* Top Editorial Mini Navigation */}
           <div className="hidden sm:flex items-center justify-between gap-4 border-b border-[#181615]/15 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#524B45]">
@@ -1251,6 +1309,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
           </AnimatePresence>
         </section>
       </div>
-    </main>
+      </main>
+    </div>
   );
 };

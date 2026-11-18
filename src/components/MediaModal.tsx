@@ -43,6 +43,7 @@ const CREATOR_LIVE_CALL_PHOTO = '/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG
 interface MediaModalProps {
   isOpen: boolean;
   mode: 'media' | 'vip' | 'tip' | 'fan_login' | 'fan_account' | 'video_call';
+  fanAuthInitialTab?: 'register' | 'login';
   mediaItem: MediaItem | null;
   videoCallPlan?: VideoCallPlan | null;
   tipPresetAmount?: number;
@@ -56,8 +57,6 @@ interface MediaModalProps {
   onOpenVipModal?: () => void;
   onOpenTipModal?: () => void;
   onLogoutFan?: () => void;
-  onGoToSupabaseSetup: () => void;
-  onGoToProfileSetup?: () => void;
   isFavorite?: boolean;
   onToggleFavorite?: (mediaId: string) => void;
 }
@@ -65,6 +64,7 @@ interface MediaModalProps {
 export const MediaModal: React.FC<MediaModalProps> = ({
   isOpen,
   mode,
+  fanAuthInitialTab = 'register',
   mediaItem,
   videoCallPlan,
   tipPresetAmount,
@@ -78,11 +78,10 @@ export const MediaModal: React.FC<MediaModalProps> = ({
   onOpenVipModal,
   onOpenTipModal,
   onLogoutFan,
-  onGoToSupabaseSetup,
-  onGoToProfileSetup,
   isFavorite = false,
   onToggleFavorite,
 }) => {
+  const [fanAuthTab, setFanAuthTab] = useState<'register' | 'login'>(fanAuthInitialTab);
   const [email, setEmail] = useState(fan?.email || '');
   const [name, setName] = useState(fan?.display_name || '');
   const [contactInfo, setContactInfo] = useState('');
@@ -106,6 +105,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
     null;
 
   useEffect(() => {
+    setFanAuthTab(fanAuthInitialTab);
     if (fan?.email) setEmail(fan.email);
     if (fan?.display_name) setName(fan.display_name);
     if (videoCallPlan?.id) {
@@ -125,7 +125,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
     setLastOrderRef('');
     setCheckoutLoyalty(null);
     setShowMissingWaNotice(false);
-  }, [isOpen, mode, mediaItem?.id, videoCallPlan?.id, tipPresetAmount, fan?.email, fan?.display_name]);
+  }, [isOpen, mode, fanAuthInitialTab, mediaItem?.id, videoCallPlan?.id, tipPresetAmount, fan?.email, fan?.display_name]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -154,7 +154,11 @@ export const MediaModal: React.FC<MediaModalProps> = ({
     e.preventDefault();
     setErrorMsg(null);
     if (!supabaseConnected) {
-      setErrorMsg('Conecte seu projeto Supabase no Estúdio antes de entrar com uma conta de fã.');
+      setErrorMsg('Cadastro de internautas temporariamente indisponível. Tente novamente em instantes.');
+      return;
+    }
+    if (fanAuthTab === 'register' && name.trim().length < 2) {
+      setErrorMsg('Informe seu nome ou apelido para criar seu cadastro.');
       return;
     }
     setSubmitting(true);
@@ -169,7 +173,11 @@ export const MediaModal: React.FC<MediaModalProps> = ({
         setErrorMsg(data.error || 'Erro ao acessar conta.');
       } else {
         await onFanAuthenticated(data.fan.email);
-        setSuccessMsg('Conta sincronizada com sucesso.');
+        setSuccessMsg(
+          fanAuthTab === 'register'
+            ? 'Cadastro realizado com sucesso! Bem-vindo ao acervo.'
+            : 'Conta sincronizada com sucesso.'
+        );
         setTimeout(() => {
           if (onOpenFanAccount) {
             onOpenFanAccount();
@@ -189,7 +197,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
     setErrorMsg(null);
     setSuccessMsg(null);
     if (!supabaseConnected) {
-      setErrorMsg('Banco de vendas ainda não conectado. Configure o Supabase no Estúdio da Criadora.');
+      setErrorMsg('Sistema de pedidos temporariamente em manutenção. Tente novamente em instantes.');
       return;
     }
     if (!email.trim() || !email.includes('@')) {
@@ -341,20 +349,8 @@ export const MediaModal: React.FC<MediaModalProps> = ({
           )}
         </div>
         {showMissingWaNotice && !waUrl && (
-          <div className="text-[11px] text-amber-200/90 border-t border-emerald-800/40 pt-2 flex flex-wrap items-center justify-between gap-2">
-            <span>WhatsApp da criadora ainda não cadastrado para envio direto.</span>
-            {onGoToProfileSetup && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onGoToProfileSetup();
-                }}
-                className="underline font-medium text-[#E5C158] cursor-pointer"
-              >
-                Cadastrar WhatsApp no Admin →
-              </button>
-            )}
+          <div className="text-[11px] text-amber-200/90 border-t border-emerald-800/40 pt-2">
+            WhatsApp de atendimento direto indisponível no momento. Seu pedido já fica vinculado ao seu e-mail cadastrado.
           </div>
         )}
       </div>
@@ -409,19 +405,76 @@ export const MediaModal: React.FC<MediaModalProps> = ({
           />
         )}
 
-        {/* MODE: FAN LOGIN */}
+        {/* MODE: FAN REGISTRATION & LOGIN */}
         {mode === 'fan_login' && (
           <div className="p-5 sm:p-8 max-w-lg mx-auto">
-            <p className="text-xs font-medium text-[#D4AF37] mb-2">Área do Assinante +18</p>
-            <h2 className="font-display text-2xl font-semibold text-zinc-50 mb-2">
-              Acessar minhas compras e Nível de Lealdade
-            </h2>
-            <p className="text-sm text-zinc-400 mb-6">
-              Digite o e-mail utilizado nas suas compras para restaurar sua assinatura VIP, conteúdos avulsos e acompanhar seu progresso para o badge <strong className="text-[#E5C158]">Fã VIP Ouro</strong>.
+            <p className="text-xs font-medium text-[#D4AF37] mb-2">
+              Cadastro & Acesso do Internauta +18
             </p>
+            <h2 className="font-display text-2xl font-semibold text-zinc-50 mb-2">
+              {fanAuthTab === 'register'
+                ? 'Crie seu Cadastro Gratuito'
+                : 'Acessar Minha Conta e Compras'}
+            </h2>
+            <p className="text-sm text-zinc-400 mb-5">
+              {fanAuthTab === 'register'
+                ? 'Cadastre-se em segundos para explorar o acervo, salvar favoritos, liberar prévia e acumular pontos rumo ao selo Fã VIP Ouro.'
+                : 'Informe seu e-mail cadastrado para restaurar sua assinatura VIP, conteúdos avulsos e acompanhar seu Nível de Lealdade.'}
+            </p>
+
+            {/* Register / Login Toggle Tabs */}
+            <div className="grid grid-cols-2 gap-1.5 rounded-sm border border-[#453F3B] bg-[#1C1918] p-1 mb-5">
+              <button
+                type="button"
+                onClick={() => {
+                  setFanAuthTab('register');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className={`min-h-[38px] rounded-sm text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
+                  fanAuthTab === 'register'
+                    ? 'bg-[#E5C158] text-[#1C1918]'
+                    : 'text-[#C7C1BA] hover:text-[#F4F1ED]'
+                }`}
+              >
+                Criar Cadastro
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFanAuthTab('login');
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                }}
+                className={`min-h-[38px] rounded-sm text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
+                  fanAuthTab === 'login'
+                    ? 'bg-[#E5C158] text-[#1C1918]'
+                    : 'text-[#C7C1BA] hover:text-[#F4F1ED]'
+                }`}
+              >
+                Já Tenho Conta
+              </button>
+            </div>
+
             <form onSubmit={handleFanLogin} className="space-y-4">
+              {fanAuthTab === 'register' && (
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                    Seu nome ou apelido *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Como prefere ser identificado"
+                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+              )}
+
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">Seu e-mail</label>
+                <label className="block text-xs font-medium text-zinc-300 mb-1.5">Seu e-mail *</label>
                 <input
                   type="email"
                   required
@@ -431,16 +484,22 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                   className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1.5">Nome ou apelido (opcional)</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Como prefere ser identificado"
-                  className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
-                />
-              </div>
+
+              {fanAuthTab === 'login' && (
+                <div>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1.5">
+                    Nome ou apelido (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Opcional"
+                    className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
+                  />
+                </div>
+              )}
+
               <label className="flex items-start gap-3 text-xs text-zinc-300 cursor-pointer pt-1">
                 <input
                   type="checkbox"
@@ -465,7 +524,11 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                 disabled={submitting}
                 className="w-full rounded-lg bg-[#E5C158] px-5 py-2.5 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
               >
-                {submitting ? 'Verificando no Supabase...' : 'Entrar e Abrir Minha Conta'}
+                {submitting
+                  ? 'Salvando sua conta...'
+                  : fanAuthTab === 'register'
+                  ? 'Concluir Cadastro e Abrir Minha Conta'
+                  : 'Entrar e Abrir Minha Conta'}
               </button>
             </form>
           </div>
@@ -658,20 +721,8 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                     </label>
 
                     {errorMsg && (
-                      <div className="rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200 space-y-2">
+                      <div className="rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200">
                         <p>{errorMsg}</p>
-                        {!supabaseConnected && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              onClose();
-                              onGoToSupabaseSetup();
-                            }}
-                            className="underline font-medium text-[#E5C158] cursor-pointer"
-                          >
-                            Ir para Conexão Supabase →
-                          </button>
-                        )}
                       </div>
                     )}
 
@@ -693,7 +744,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                       className="w-full rounded-lg bg-[#E5C158] px-5 py-3 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
                     >
                       {submitting
-                        ? 'Registrando no Banco de Vendas...'
+                        ? 'Confirmando liberação do conteúdo...'
                         : mediaItem.access_tier === 'vip'
                         ? `Assinar Clube VIP (${formatBrl(profile.vip_monthly_price_brl)})`
                         : `Desbloquear por ${formatBrl(mediaItem.price_brl)}`}
@@ -805,20 +856,8 @@ export const MediaModal: React.FC<MediaModalProps> = ({
               </label>
 
               {errorMsg && (
-                <div className="rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200 space-y-2">
+                <div className="rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200">
                   <p>{errorMsg}</p>
-                  {!supabaseConnected && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        onGoToSupabaseSetup();
-                      }}
-                      className="underline font-medium text-[#E5C158] cursor-pointer"
-                    >
-                      Conectar Supabase agora →
-                    </button>
-                  )}
                 </div>
               )}
 
@@ -1055,20 +1094,8 @@ export const MediaModal: React.FC<MediaModalProps> = ({
               </label>
 
               {errorMsg && (
-                <div className="rounded-sm border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200 space-y-2">
+                <div className="rounded-sm border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200">
                   <p>{errorMsg}</p>
-                  {!supabaseConnected && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        onGoToSupabaseSetup();
-                      }}
-                      className="underline font-medium text-[#E5C158] cursor-pointer"
-                    >
-                      Conectar Supabase agora →
-                    </button>
-                  )}
                 </div>
               )}
 
@@ -1254,19 +1281,9 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                 description={`Chamada 1a1 ${currentCallPlan.duration_minutes}m`}
               />
 
-              {!profile.pix_key?.trim() && onGoToProfileSetup && (
-                <div className="flex items-center justify-between rounded-sm border border-amber-500/40 bg-amber-950/25 px-3.5 py-2.5 text-xs text-amber-200">
-                  <span>Cadastre sua chave Pix no Admin para ativar o QR Code da vídeo chamada.</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onGoToProfileSetup();
-                    }}
-                    className="underline font-semibold text-[#E5C158] shrink-0 ml-2 cursor-pointer"
-                  >
-                    Configurar Pix →
-                  </button>
+              {!profile.pix_key?.trim() && (
+                <div className="rounded-sm border border-amber-500/40 bg-amber-950/25 px-3.5 py-2.5 text-xs text-amber-200">
+                  QR Code Pix indisponível no momento. Tente novamente em instantes ou envie o comprovante após confirmação.
                 </div>
               )}
 
@@ -1281,20 +1298,8 @@ export const MediaModal: React.FC<MediaModalProps> = ({
               </label>
 
               {errorMsg && (
-                <div className="rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200 space-y-2">
+                <div className="rounded-lg border border-rose-500/40 bg-rose-950/30 p-3 text-xs text-rose-200">
                   <p>{errorMsg}</p>
-                  {!supabaseConnected && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        onGoToSupabaseSetup();
-                      }}
-                      className="underline font-medium text-[#E5C158] cursor-pointer"
-                    >
-                      Conectar Supabase agora →
-                    </button>
-                  )}
                 </div>
               )}
 

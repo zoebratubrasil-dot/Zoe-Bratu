@@ -29,7 +29,6 @@ interface AboutCreatorPanelProps {
   onSelectVideoCallPlan: (plan: VideoCallPlan) => void;
   onOpenVipModal: () => void;
   onOpenTipModal: (presetAmount?: number) => void;
-  onNavigateToStudio: (tab?: 'overview' | 'upload' | 'supabase' | 'video_calls' | 'profile') => void;
 }
 
 const WAVE_BARS = [38, 72, 54, 92, 64, 84, 46, 76, 58, 88, 42, 68];
@@ -41,7 +40,6 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
   onSelectVideoCallPlan,
   onOpenVipModal,
   onOpenTipModal,
-  onNavigateToStudio,
 }) => {
   const about = useMemo(() => resolveCreatorAboutContent(profile.about_section), [profile.about_section]);
   const [activeTab, setActiveTab] = useState<AboutModuleTab>('carioca');
@@ -75,7 +73,10 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
   });
 
   return (
-    <div className="lg:col-span-5 bg-[#2B2725] text-[#F4F1ED] p-5 sm:p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-[#453F3B] flex flex-col justify-between gap-6">
+    <div
+      id="sobre-criadora"
+      className="lg:col-span-5 bg-[#2B2725] text-[#F4F1ED] p-5 sm:p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-[#453F3B] flex flex-col justify-between gap-6"
+    >
       <div className="space-y-6">
         {/* Header Bar */}
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-[#453F3B] pb-3.5">
@@ -87,18 +88,9 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
               {about.headline_tag}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-[11px] uppercase tracking-widest text-[#E5C158]">
-              +18 Privado
-            </span>
-            <button
-              type="button"
-              onClick={() => onNavigateToStudio('profile')}
-              className="text-[11px] font-semibold uppercase tracking-wider text-[#C7C1BA] hover:text-[#E5C158] underline underline-offset-4 cursor-pointer"
-            >
-              Editar no Admin
-            </button>
-          </div>
+          <span className="font-mono text-[11px] uppercase tracking-widest text-[#E5C158]">
+            +18 Privado
+          </span>
         </div>
 
         {/* Editorial Portrait + Live Signal Studio Module */}
@@ -499,15 +491,8 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
         </div>
 
         {whatsappPendingNotice && !profile.whatsapp_number && (
-          <div className="rounded-sm border border-[#453F3B] bg-[#1C1918] p-3 text-xs text-[#DED9D3] flex flex-wrap items-center justify-between gap-2">
-            <span>Número de WhatsApp da criadora ainda não cadastrado para recebimento automático.</span>
-            <button
-              type="button"
-              onClick={() => onNavigateToStudio('profile')}
-              className="font-semibold text-[#E5C158] underline cursor-pointer"
-            >
-              Cadastrar WhatsApp no Admin →
-            </button>
+          <div className="rounded-sm border border-[#453F3B] bg-[#1C1918] p-3 text-xs text-[#DED9D3]">
+            Atendimento via WhatsApp indisponível no momento. Seu acesso e comprovantes ficam vinculados ao seu e-mail cadastrado.
           </div>
         )}
       </div>

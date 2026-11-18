@@ -10,7 +10,6 @@ interface MimoShowcaseSectionProps {
   profile: CreatorProfile;
   avatarImgFailed: boolean;
   onOpenTipModal: (presetAmount?: number) => void;
-  onNavigateToStudio: (tab?: 'overview' | 'upload' | 'supabase' | 'video_calls' | 'mimos' | 'profile') => void;
 }
 
 const renderTierIcon = (icon: MimoGiftTier['icon'], featured?: boolean) => {
@@ -31,7 +30,6 @@ export const MimoShowcaseSection: React.FC<MimoShowcaseSectionProps> = ({
   profile,
   avatarImgFailed,
   onOpenTipModal,
-  onNavigateToStudio,
 }) => {
   const mimoConfig = useMemo(() => resolveMimoSectionConfig(profile.mimo_config), [profile.mimo_config]);
   const visibleTiers = useMemo(() => mimoConfig.tiers.filter((t) => t.active), [mimoConfig.tiers]);
@@ -113,18 +111,9 @@ export const MimoShowcaseSection: React.FC<MimoShowcaseSectionProps> = ({
               <span>{mimoConfig.cta_label}</span>
               <ArrowRight className="h-4 w-4 text-[#E5C158] transition-transform group-hover:translate-x-0.5" />
             </button>
-            <div className="flex flex-wrap items-center justify-between lg:justify-end gap-3 sm:gap-4">
-              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#C7C1BA]">
-                Pix instantâneo · Dedicatória privada
-              </p>
-              <button
-                type="button"
-                onClick={() => onNavigateToStudio('mimos')}
-                className="text-[11px] font-semibold uppercase tracking-wider text-[#E5C158] hover:underline underline-offset-4 cursor-pointer py-1"
-              >
-                Editar cartões no Admin
-              </button>
-            </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[#C7C1BA] text-center lg:text-right">
+              Pix instantâneo · Dedicatória privada
+            </p>
           </div>
         </div>
 
@@ -203,7 +192,7 @@ export const MimoShowcaseSection: React.FC<MimoShowcaseSectionProps> = ({
           </div>
         ) : (
           <div className="rounded-sm border border-[#453F3B] bg-[#23201E] p-6 text-center text-xs text-[#C7C1BA]">
-            Nenhum cartão de mimo ativo no momento. Ative os cartões na aba <strong className="text-[#E5C158]">6 Cartões de Mimos</strong> do Administrador.
+            Nenhuma opção de mimo disponível no momento. Você ainda pode enviar um valor personalizado clicando no botão acima.
           </div>
         )}
       </div>

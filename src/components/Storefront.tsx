@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Lock, Play, Eye, Search, UserCheck, Upload, Database, Image as ImageIcon, Film, Heart, Gift, Video, Clock, ArrowRight, Aperture, MessageCircle, Award } from 'lucide-react';
+import { Lock, Play, Eye, Search, UserCheck, UserPlus, Image as ImageIcon, Film, Heart, Gift, Video, Clock, ArrowRight, Aperture, MessageCircle, Award } from 'lucide-react';
 import type { CreatorProfile, FanAccount, MediaItem, StorefrontStats, VideoCallPlan } from '../types';
 import { formatBrl, formatDuration, formatDateShort } from '../lib/format';
 import { resolveVideoCallPlans } from '../lib/videoCalls';
@@ -33,8 +33,6 @@ const CinemaCameraMark: React.FC<{ className?: string }> = ({ className = 'h-5 w
 );
 
 interface StorefrontProps {
-  supabaseConnected: boolean;
-  schemaMissing?: boolean;
   loading: boolean;
   profile: CreatorProfile;
   mediaItems: MediaItem[];
@@ -44,10 +42,9 @@ interface StorefrontProps {
   onSelectVideoCallPlan: (plan: VideoCallPlan) => void;
   onOpenVipModal: () => void;
   onOpenTipModal: (presetAmount?: number) => void;
-  onOpenFanLogin: () => void;
+  onOpenFanLogin: (tab?: 'register' | 'login') => void;
   onOpenFanAccount: () => void;
   onLogoutFan: () => void;
-  onNavigateToStudio: (tab?: 'overview' | 'upload' | 'supabase' | 'video_calls' | 'mimos' | 'profile') => void;
   favoriteIds?: string[];
   onToggleFavorite?: (mediaId: string) => void;
 }
@@ -55,8 +52,6 @@ interface StorefrontProps {
 type TypeFilter = 'all' | 'photo' | 'video' | 'vip' | 'ppv' | 'free' | 'favorites';
 
 export const Storefront: React.FC<StorefrontProps> = ({
-  supabaseConnected,
-  schemaMissing,
   loading,
   profile,
   mediaItems,
@@ -69,7 +64,6 @@ export const Storefront: React.FC<StorefrontProps> = ({
   onOpenFanLogin,
   onOpenFanAccount,
   onLogoutFan,
-  onNavigateToStudio,
   favoriteIds = [],
   onToggleFavorite,
 }) => {
@@ -136,39 +130,16 @@ export const Storefront: React.FC<StorefrontProps> = ({
 
   return (
     <main className="mx-auto max-w-[1440px] border-x border-[#2B2725]/20 bg-[#E4E0DC]">
-      {/* Subtle Supabase Connection Setup Prompt when not yet connected */}
-      {(!supabaseConnected || schemaMissing) && (
-        <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2B2725]/25 bg-[#2B2725] text-[#F4F1ED] px-6 py-4 lg:px-10">
-          <div className="space-y-1">
-            <p className="text-sm font-semibold">
-              {!supabaseConnected
-                ? 'Conecte seu projeto Supabase para ativar uploads, vitrine e banco de vendas'
-                : 'Projeto conectado — finalize a criação das tabelas no Supabase'}
-            </p>
-            <p className="text-xs text-[#C7C1BA]">
-              Você pode criar um projeto novo no Supabase automaticamente ou conectar um existente em segundos.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => onNavigateToStudio('supabase')}
-            className="inline-flex items-center gap-2 rounded-sm bg-[#E5C158] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:bg-[#f0cf6b] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            <Database className="h-4 w-4" />
-            Conectar Supabase
-          </button>
-        </section>
-      )}
-
-      {/* Compact Mobile & Small-Tablet Section Jump Bar (keeps sticky Header strictly 1 row) */}
+      {/* Compact Mobile & Small-Tablet Section & Internauta Cadastro Jump Bar */}
       <nav
-        aria-label="Navegação rápida das seções"
+        aria-label="Navegação rápida das páginas públicas e cadastro"
         className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-[#2B2725]/25 bg-[#DDD8D2] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#1C1918]"
       >
         {[
-          { id: 'vitrine-grid', label: 'Galeria 35mm' },
+          { id: 'sobre-criadora', label: 'Sobre' },
           { id: 'video-chamada', label: 'Vídeo Chamada' },
           { id: 'enviar-mimo', label: '6 Mimos' },
+          { id: 'vitrine-grid', label: 'Galeria 35mm' },
           { id: 'clube-vip', label: 'Clube VIP' },
         ].map((navLink) => (
           <button
@@ -182,10 +153,10 @@ export const Storefront: React.FC<StorefrontProps> = ({
         ))}
         <button
           type="button"
-          onClick={fan ? onOpenFanAccount : onOpenFanLogin}
+          onClick={() => (fan ? onOpenFanAccount() : onOpenFanLogin('register'))}
           className="min-h-[36px] px-3 py-1.5 rounded-sm border border-[#1C1918] bg-[#1C1918] text-[#E5C158] whitespace-nowrap shrink-0 cursor-pointer"
         >
-          {fan ? 'Minha Conta' : 'Entrar / VIP'}
+          {fan ? 'Minha Conta' : 'Cadastro / Entrar'}
         </button>
       </nav>
 
@@ -256,10 +227,20 @@ export const Storefront: React.FC<StorefrontProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => onNavigateToStudio('overview')}
-                className="w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center text-xs font-semibold uppercase tracking-wider text-[#4A4440] hover:text-[#1C1918] underline underline-offset-4 px-2 py-2 whitespace-nowrap shrink-0 cursor-pointer"
+                onClick={() => (fan ? onOpenFanAccount() : onOpenFanLogin('register'))}
+                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-sm border border-[#2B2725]/35 bg-[#EAE6E2] px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:border-[#1C1918] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               >
-                Administração do Site
+                {fan ? (
+                  <>
+                    <UserCheck className="h-3.5 w-3.5 text-[#7A5412]" />
+                    <span>Minha Conta · {fan.loyalty?.tier_label || 'Assinante'}</span>
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="h-3.5 w-3.5 text-[#7A5412]" />
+                    <span>Criar Cadastro / Entrar</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -331,7 +312,6 @@ export const Storefront: React.FC<StorefrontProps> = ({
           onSelectVideoCallPlan={onSelectVideoCallPlan}
           onOpenVipModal={onOpenVipModal}
           onOpenTipModal={onOpenTipModal}
-          onNavigateToStudio={onNavigateToStudio}
         />
 
         {/* Right Light Stone Panel: Featured Vídeo Chamada ao Vivo (4 Editable Plans) */}
@@ -349,13 +329,9 @@ export const Storefront: React.FC<StorefrontProps> = ({
                 Vídeo Chamada Privativa 1:1
               </h2>
             </div>
-            <button
-              type="button"
-              onClick={() => onNavigateToStudio('video_calls')}
-              className="text-xs font-semibold uppercase tracking-wider text-[#4A4440] hover:text-[#1C1918] underline underline-offset-4 cursor-pointer self-start sm:self-auto"
-            >
-              Editar valores no Admin
-            </button>
+            <span className="font-mono text-[11px] uppercase tracking-widest text-[#7A5412] font-semibold self-start sm:self-auto">
+              Reserva Imediata · Pix
+            </span>
           </div>
 
           <p className="text-sm text-[#3D3835] leading-relaxed">
@@ -557,7 +533,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
             </div>
           ) : (
             <div className="border border-[#2B2725]/25 bg-[#EAE6E2] p-6 text-xs text-[#4A4440]">
-              Nenhum plano de Vídeo Chamada ativo no momento. Ative ou edite os planos no Administrador.
+              Agenda de vídeo chamadas privativas 1:1 temporariamente indisponível. Volte em breve ou envie um mimo para falar com {profile.display_name}.
             </div>
           )}
         </div>
@@ -568,7 +544,6 @@ export const Storefront: React.FC<StorefrontProps> = ({
         profile={profile}
         avatarImgFailed={avatarImgFailed}
         onOpenTipModal={onOpenTipModal}
-        onNavigateToStudio={onNavigateToStudio}
       />
 
       {/* BLOCK 3: Gallery Showcase ("ROLO DE CONTATO & PELÍCULA 35MM") */}
@@ -644,13 +619,23 @@ export const Storefront: React.FC<StorefrontProps> = ({
                 </div>
               );
             })() : (
-              <button
-                type="button"
-                onClick={onOpenFanLogin}
-                className="w-full sm:w-auto min-h-[42px] rounded-sm border border-[#2B2725]/35 bg-[#E4E0DC] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:border-[#1C1918] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-              >
-                Já sou assinante / Minhas compras
-              </button>
+              <div className="w-full sm:w-auto flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onOpenFanLogin('register')}
+                  className="flex-1 sm:flex-none min-h-[42px] inline-flex items-center justify-center gap-1.5 rounded-sm bg-[#1C1918] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#F4F1ED] hover:bg-[#383432] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <UserPlus className="h-3.5 w-3.5 text-[#E5C158]" />
+                  <span>Criar Cadastro</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenFanLogin('login')}
+                  className="flex-1 sm:flex-none min-h-[42px] rounded-sm border border-[#2B2725]/35 bg-[#E4E0DC] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:border-[#1C1918] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  Já Tenho Conta
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -870,21 +855,21 @@ export const Storefront: React.FC<StorefrontProps> = ({
             ))}
           </div>
         ) : filteredMedia.length === 0 ? (
-          <div className="rounded-sm border border-[#2B2725]/25 bg-[#E4E0DC] p-12 text-center space-y-4">
+          <div className="rounded-sm border border-[#2B2725]/25 bg-[#E4E0DC] p-8 sm:p-12 text-center space-y-4">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-sm border border-[#2B2725]/30 bg-[#2B2725] text-[#E5C158]">
-              <Upload className="h-5 w-5" />
+              <ImageIcon className="h-5 w-5" />
             </div>
             <div className="max-w-md mx-auto space-y-1.5">
               <h3 className="font-display text-2xl font-bold uppercase text-[#1C1918]">
                 {mediaItems.length === 0
-                  ? 'Nenhuma mídia publicada ainda'
+                  ? 'Acervo em atualização'
                   : filter === 'favorites'
                   ? 'Nenhum favorito salvo ainda'
                   : 'Nenhum item corresponde a esse filtro'}
               </h3>
               <p className="text-sm text-[#4A4440]">
                 {mediaItems.length === 0
-                  ? 'Acesse o Estúdio da Criadora para enviar suas primeiras fotos e vídeos diretamente para o seu Supabase.'
+                  ? 'Novos ensaios e vídeos estão sendo preparados para a vitrine. Crie seu cadastro para acompanhar as atualizações.'
                   : filter === 'favorites'
                   ? 'Toque no ícone de coração em qualquer foto ou vídeo para salvar e visualizar mais tarde.'
                   : 'Limpe os filtros ou tente outro termo de busca.'}
@@ -893,10 +878,10 @@ export const Storefront: React.FC<StorefrontProps> = ({
             {mediaItems.length === 0 ? (
               <button
                 type="button"
-                onClick={() => onNavigateToStudio(supabaseConnected ? 'upload' : 'supabase')}
+                onClick={() => (fan ? onOpenFanAccount() : onOpenFanLogin('register'))}
                 className="inline-flex items-center gap-2 rounded-sm bg-[#1C1918] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#F4F1ED] hover:bg-[#383432] transition-colors cursor-pointer"
               >
-                {supabaseConnected ? 'Enviar Primeira Foto ou Vídeo' : 'Conectar Supabase e Começar'}
+                {fan ? 'Abrir Minha Conta' : 'Criar Cadastro Grátis'}
               </button>
             ) : filter === 'favorites' ? (
               <button
