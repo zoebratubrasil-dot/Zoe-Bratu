@@ -12,6 +12,60 @@ export function inferMediaKind(file: File): 'photo' | 'video' | null {
   return null;
 }
 
+export function isValidMediaHttpUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl.trim());
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+export function inferMediaKindFromUrl(rawUrl: string): 'photo' | 'video' | null {
+  try {
+    const parsed = new URL(rawUrl.trim());
+    const pathname = parsed.pathname.toLowerCase();
+    const search = parsed.search.toLowerCase();
+    if (VIDEO_EXT_RE.test(pathname) || /\.(mp4|mov|webm|m4v)\b/.test(search) || pathname.includes('/video')) {
+      return 'video';
+    }
+    if (IMAGE_EXT_RE.test(pathname) || /\.(jpe?g|png|webp|gif|avif)\b/.test(search) || pathname.includes('/image')) {
+      return 'photo';
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function inferMimeTypeFromUrl(rawUrl: string, mediaType: 'photo' | 'video'): string {
+  const lower = rawUrl.split('?')[0].toLowerCase();
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg') || lower.endsWith('.jfif')) return 'image/jpeg';
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.gif')) return 'image/gif';
+  if (lower.endsWith('.avif')) return 'image/avif';
+  if (lower.endsWith('.mp4') || lower.endsWith('.m4v')) return 'video/mp4';
+  if (lower.endsWith('.mov')) return 'video/quicktime';
+  if (lower.endsWith('.webm')) return 'video/webm';
+  return mediaType === 'video' ? 'video/mp4' : 'image/jpeg';
+}
+
+export function extractTitleFromUrl(rawUrl: string): string {
+  try {
+    const parsed = new URL(rawUrl.trim());
+    const segments = parsed.pathname.split('/').filter(Boolean);
+    const last = decodeURIComponent(segments[segments.length - 1] || '');
+    const clean = last.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ').trim();
+    if (clean && clean.length >= 2) {
+      return clean.charAt(0).toUpperCase() + clean.slice(1).slice(0, 60);
+    }
+  } catch {
+    // ignore malformed URL
+  }
+  return 'Nova Mídia por Link';
+}
+
 export function inferMimeType(file: File): string {
   if (file.type) return file.type;
   const lower = file.name.toLowerCase();

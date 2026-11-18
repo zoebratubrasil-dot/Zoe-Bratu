@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, AlertCircle, Upload, RotateCcw } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Upload, RotateCcw, Link2 } from 'lucide-react';
 import type { CreatorAboutContent, CreatorProfile } from '../../types';
-import { inferMediaKind, uploadFileToSupabaseBucket } from '../../lib/uploadMedia';
+import { inferMediaKind, isValidMediaHttpUrl, uploadFileToSupabaseBucket } from '../../lib/uploadMedia';
 import { resolveCreatorAboutContent } from '../../lib/creatorAbout';
 import { ProtectedImage } from '../ProtectedMedia';
 import { AboutCreatorEditor } from './AboutCreatorEditor';
@@ -43,6 +43,8 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
   );
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || DEFAULT_AVATAR_URL);
   const [heroUrl, setHeroUrl] = useState(profile.hero_url || DEFAULT_HERO_URL);
+  const [avatarLinkInput, setAvatarLinkInput] = useState('');
+  const [heroLinkInput, setHeroLinkInput] = useState('');
   const [newAdminEmail, setNewAdminEmail] = useState(adminEmail || '');
   const [newAdminPassword, setNewAdminPassword] = useState('');
 
@@ -116,6 +118,49 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
       });
     } catch (err) {
       setMsg({ type: 'err', text: err instanceof Error ? err.message : 'Falha no upload.' });
+    } finally {
+      setUploadingAsset(null);
+    }
+  };
+
+  const applyAssetLinkUrl = async (rawUrl: string, target: 'avatar' | 'hero') => {
+    const cleanUrl = rawUrl.trim();
+    if (!supabaseReady) {
+      setMsg({ type: 'err', text: 'Conecte o Supabase antes de aplicar link de foto.' });
+      return;
+    }
+    if (!isValidMediaHttpUrl(cleanUrl)) {
+      setMsg({ type: 'err', text: 'Informe um link válido começando com http:// ou https://.' });
+      return;
+    }
+
+    setUploadingAsset(target);
+    setMsg(null);
+    try {
+      const patchResp = await fetch('/api/creator/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-creator-token': creatorToken,
+        },
+        body: JSON.stringify(target === 'avatar' ? { avatar_url: cleanUrl } : { hero_url: cleanUrl }),
+      });
+      const patchData = await patchResp.json();
+      if (!patchResp.ok) {
+        throw new Error(patchData.error || 'Erro ao aplicar link da imagem.');
+      }
+      if (target === 'avatar') setAvatarLinkInput('');
+      else setHeroLinkInput('');
+      await onUpdated();
+      setMsg({
+        type: 'ok',
+        text:
+          target === 'avatar'
+            ? 'Foto de perfil atualizada via link com proxy protegido!'
+            : 'Capa principal atualizada via link com proxy protegido!',
+      });
+    } catch (err) {
+      setMsg({ type: 'err', text: err instanceof Error ? err.message : 'Erro ao aplicar link.' });
     } finally {
       setUploadingAsset(null);
     }
@@ -260,8 +305,28 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
                 </div>
               </div>
             </div>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Link2 className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#7A726B]" />
+                <input
+                  type="url"
+                  value={avatarLinkInput}
+                  onChange={(e) => setAvatarLinkInput(e.target.value)}
+                  placeholder="Ou cole o link da foto (https://...)"
+                  className="w-full rounded-sm border border-[#181615]/20 bg-[#FAF8F5] pl-7 pr-2.5 py-1.5 font-mono text-[11px] text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+                />
+              </div>
+              <button
+                type="button"
+                disabled={uploadingAsset === 'avatar' || !avatarLinkInput.trim()}
+                onClick={() => applyAssetLinkUrl(avatarLinkInput, 'avatar')}
+                className="rounded-sm bg-[#181615] px-2.5 py-1.5 text-[11px] font-semibold text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-40 cursor-pointer shrink-0"
+              >
+                Aplicar
+              </button>
+            </div>
             <p className="text-[11px] text-[#524B45]">
-              Armazenada com endereço oculto e bloqueio contra cópia.
+              Armazenada ou espelhada via proxy protegido sem exposição de link.
             </p>
           </div>
 
@@ -302,6 +367,26 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
                   </button>
                 </div>
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Link2 className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[#7A726B]" />
+                <input
+                  type="url"
+                  value={heroLinkInput}
+                  onChange={(e) => setHeroLinkInput(e.target.value)}
+                  placeholder="Ou cole o link da capa (https://...)"
+                  className="w-full rounded-sm border border-[#181615]/20 bg-[#FAF8F5] pl-7 pr-2.5 py-1.5 font-mono text-[11px] text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+                />
+              </div>
+              <button
+                type="button"
+                disabled={uploadingAsset === 'hero' || !heroLinkInput.trim()}
+                onClick={() => applyAssetLinkUrl(heroLinkInput, 'hero')}
+                className="rounded-sm bg-[#181615] px-2.5 py-1.5 text-[11px] font-semibold text-[#FAF8F5] hover:bg-[#332E2C] disabled:opacity-40 cursor-pointer shrink-0"
+              >
+                Aplicar
+              </button>
             </div>
             <p className="text-[11px] text-[#524B45]">
               Exibição via streaming protegido sem exposição de link.

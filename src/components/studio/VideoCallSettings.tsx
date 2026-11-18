@@ -19,11 +19,29 @@ export const VideoCallSettings: React.FC<VideoCallSettingsProps> = ({
 }) => {
   const [plans, setPlans] = useState<VideoCallPlan[]>(() => resolveVideoCallPlans(profile.video_call_plans));
   const [saving, setSaving] = useState(false);
+  const [updatingSaleId, setUpdatingSaleId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   useEffect(() => {
     setPlans(resolveVideoCallPlans(profile.video_call_plans));
   }, [profile.video_call_plans]);
+
+  const handleStatusChange = async (saleId: string, status: 'paid' | 'pending' | 'refunded') => {
+    setUpdatingSaleId(saleId);
+    try {
+      await fetch(`/api/creator/sales/${saleId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-creator-token': creatorToken,
+        },
+        body: JSON.stringify({ status }),
+      });
+      await onUpdated();
+    } finally {
+      setUpdatingSaleId(null);
+    }
+  };
 
   const videoCallSales = useMemo(() => {
     return dashboard.sales.filter((s) => s.sale_type === 'video_call');
@@ -98,13 +116,13 @@ export const VideoCallSettings: React.FC<VideoCallSettingsProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#181615]/20 pb-5">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#524B45]">
-            Chamadas Ao Vivo
+            Chamada Privativa 1 a 1 · Somente Pix
           </p>
           <h2 className="font-display text-3xl sm:text-4xl font-bold uppercase tracking-tight text-[#181615] mt-1">
-            Planos de Vídeo Chamada
+            Planos de Vídeo Chamada (1:1)
           </h2>
           <p className="text-sm text-[#524B45] mt-1">
-            Edite títulos, durações em minutos, preços em R$, descrições e visibilidade dos 4 planos em destaque na página pública.
+            Sessão exclusiva entre 1 internauta + modelo liberada somente perante pagamento via Pix. Edite os 4 planos abaixo.
           </p>
         </div>
         <button
@@ -313,7 +331,24 @@ export const VideoCallSettings: React.FC<VideoCallSettingsProps> = ({
                       {formatBrl(sale.amount_brl)}
                     </td>
                     <td className="px-4 py-3 font-medium text-[#181615]">
-                      {sale.status === 'paid' ? 'Pago' : sale.status === 'pending' ? 'Pendente' : 'Estornado'}
+                      <select
+                        value={sale.status}
+                        disabled={updatingSaleId === sale.id}
+                        onChange={(e) =>
+                          handleStatusChange(sale.id, e.target.value as 'paid' | 'pending' | 'refunded')
+                        }
+                        className={`rounded-sm border border-[#181615]/25 bg-white px-2 py-1 text-xs font-semibold focus:outline-none ${
+                          sale.status === 'paid'
+                            ? 'text-emerald-800'
+                            : sale.status === 'pending'
+                            ? 'text-amber-800'
+                            : 'text-rose-800'
+                        }`}
+                      >
+                        <option value="paid">Pix Pago</option>
+                        <option value="pending">Pendente Pix</option>
+                        <option value="refunded">Estornado</option>
+                      </select>
                     </td>
                   </tr>
                 ))}

@@ -13,10 +13,18 @@ import {
   Play,
   Upload,
   X,
+  Link2,
 } from 'lucide-react';
-import type { AccessTier, MediaItem } from '../../types';
+import type { AccessTier, MediaItem, MediaType } from '../../types';
 import { formatBrl, formatBytes, formatDateShort, formatDuration } from '../../lib/format';
-import { inferMediaKind, inferMimeType, uploadFileToSupabaseBucket } from '../../lib/uploadMedia';
+import {
+  inferMediaKind,
+  inferMediaKindFromUrl,
+  inferMimeType,
+  inferMimeTypeFromUrl,
+  isValidMediaHttpUrl,
+  uploadFileToSupabaseBucket,
+} from '../../lib/uploadMedia';
 import { ProtectedImage, ProtectedVideo } from '../ProtectedMedia';
 
 interface MediaManagerProps {
@@ -45,9 +53,12 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
   const [newMediaFile, setNewMediaFile] = useState<File | null>(null);
   const [newMediaPreviewUrl, setNewMediaPreviewUrl] = useState<string | null>(null);
   const [newMediaDuration, setNewMediaDuration] = useState<number | null>(null);
+  const [newMediaLinkUrl, setNewMediaLinkUrl] = useState('');
+  const [newMediaLinkType, setNewMediaLinkType] = useState<'auto' | MediaType>('auto');
 
   const [newCoverFile, setNewCoverFile] = useState<File | null>(null);
   const [newCoverPreviewUrl, setNewCoverPreviewUrl] = useState<string | null>(null);
+  const [newCoverLinkUrl, setNewCoverLinkUrl] = useState('');
   const [removeCover, setRemoveCover] = useState(false);
 
   const [saving, setSaving] = useState(false);
@@ -70,8 +81,11 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
     setNewMediaFile(null);
     setNewMediaPreviewUrl(null);
     setNewMediaDuration(null);
+    setNewMediaLinkUrl('');
+    setNewMediaLinkType('auto');
     setNewCoverFile(null);
     setNewCoverPreviewUrl(null);
+    setNewCoverLinkUrl('');
     setRemoveCover(false);
     setSaveError(null);
   };
@@ -85,6 +99,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
     }
     setSaveError(null);
     setNewMediaFile(selected);
+    setNewMediaLinkUrl('');
     const objUrl = URL.createObjectURL(selected);
     setNewMediaPreviewUrl(objUrl);
 
@@ -105,6 +120,7 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
   const handleSelectReplacementCover = (selected: File | null) => {
     if (!selected || inferMediaKind(selected) !== 'photo') return;
     setNewCoverFile(selected);
+    setNewCoverLinkUrl('');
     setNewCoverPreviewUrl(URL.createObjectURL(selected));
     setRemoveCover(false);
   };
@@ -112,8 +128,21 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editing) return;
-    setSaving(true);
     setSaveError(null);
+
+    const trimmedMediaLink = newMediaLinkUrl.trim();
+    const trimmedCoverLink = newCoverLinkUrl.trim();
+
+    if (trimmedMediaLink && !isValidMediaHttpUrl(trimmedMediaLink)) {
+      setSaveError('O link substituto da mídia precisa começar com http:// ou https://.');
+      return;
+    }
+    if (trimmedCoverLink && !isValidMediaHttpUrl(trimmedCoverLink)) {
+      setSaveError('O link da capa de prévia precisa começar com http:// ou https://.');
+      return;
+    }
+
+    setSaving(true);
     try {
       const patchBody: Record<string, unknown> = {
         title: editTitle,
@@ -132,11 +161,22 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
         patchBody.file_size_bytes = newMediaFile.size;
         patchBody.mime_type = inferMimeType(newMediaFile);
         patchBody.duration_seconds = kind === 'video' ? newMediaDuration : null;
+      } else if (trimmedMediaLink) {
+        const resolvedKind: MediaType =
+          newMediaLinkType === 'auto'
+            ? inferMediaKindFromUrl(trimmedMediaLink) || editing.media_type
+            : newMediaLinkType;
+        patchBody.storage_path = trimmedMediaLink;
+        patchBody.media_type = resolvedKind;
+        patchBody.file_size_bytes = null;
+        patchBody.mime_type = inferMimeTypeFromUrl(trimmedMediaLink, resolvedKind);
       }
 
       if (newCoverFile) {
         const cov = await uploadFileToSupabaseBucket(newCoverFile, 'creator-previews', creatorToken);
         patchBody.preview_url = cov.publicUrl;
+      } else if (trimmedCoverLink) {
+        patchBody.preview_url = trimmedCoverLink;
       } else if (removeCover) {
         patchBody.preview_url = null;
       }
@@ -726,18 +766,22 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
               </div>
             )}
 
-            {/* Replace primary photo/video */}
-            <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-3.5 space-y-2">
+            {/* Replace primary photo/video (Arquivo ou Link URL) */}
+            <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-3.5 space-y-2.5">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold text-[#181615]">Substituir Arquivo (Foto ou Vídeo)</p>
+                  <p className="text-xs font-semibold text-[#181615]">Substituir Mídia (Arquivo ou Link)</p>
                   <p className="text-[11px] text-[#524B45]">
-                    {newMediaFile ? newMediaFile.name : 'Mantendo o arquivo atual no Supabase'}
+                    {newMediaFile
+                      ? newMediaFile.name
+                      : newMediaLinkUrl.trim()
+                      ? 'Novo link URL informado abaixo'
+                      : 'Mantendo a mídia atual'}
                   </p>
                 </div>
                 <label className="inline-flex items-center gap-1.5 rounded-sm border border-[#181615]/30 bg-white px-3 py-1.5 text-xs font-semibold text-[#181615] hover:border-[#181615] cursor-pointer shrink-0">
                   <Upload className="h-3.5 w-3.5" />
-                  Trocar Mídia
+                  Trocar Arquivo
                   <input
                     type="file"
                     accept="image/*,video/*"
@@ -746,21 +790,56 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                   />
                 </label>
               </div>
-              {newMediaPreviewUrl && (
+
+              {!newMediaFile && (
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                  <div className="sm:col-span-8 relative">
+                    <Link2 className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#7A726B]" />
+                    <input
+                      type="url"
+                      value={newMediaLinkUrl}
+                      onChange={(e) => setNewMediaLinkUrl(e.target.value)}
+                      placeholder="Ou cole o novo link (https://...)"
+                      className="w-full rounded-sm border border-[#181615]/25 bg-white pl-8 pr-3 py-1.5 font-mono text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+                    />
+                  </div>
+                  <div className="sm:col-span-4">
+                    <select
+                      value={newMediaLinkType}
+                      onChange={(e) => setNewMediaLinkType(e.target.value as 'auto' | MediaType)}
+                      aria-label="Tipo do novo link"
+                      className="w-full rounded-sm border border-[#181615]/25 bg-white px-2.5 py-1.5 text-xs text-[#181615] focus:border-[#181615] focus:outline-none"
+                    >
+                      <option value="auto">Tipo: Auto</option>
+                      <option value="photo">Foto</option>
+                      <option value="video">Vídeo</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {newMediaPreviewUrl && newMediaFile && (
                 <p className="text-[11px] font-semibold text-emerald-800">
-                  Novo arquivo pronto para envio ({(newMediaFile!.size / (1024 * 1024)).toFixed(1)} MB)
+                  Novo arquivo pronto para envio ({(newMediaFile.size / (1024 * 1024)).toFixed(1)} MB)
                 </p>
               )}
             </div>
 
-            {/* Replace or remove cover preview */}
-            <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-3.5 space-y-2">
+            {/* Replace or remove cover preview (Arquivo ou Link URL) */}
+            <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-3.5 space-y-2.5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  {(newCoverPreviewUrl || (!removeCover && editing.preview_url)) && (
+                  {(newCoverPreviewUrl ||
+                    (newCoverLinkUrl.trim() && isValidMediaHttpUrl(newCoverLinkUrl.trim())) ||
+                    (!removeCover && editing.preview_url)) && (
                     <div className="h-10 w-14 rounded-sm overflow-hidden border border-[#181615]/25 shrink-0">
                       <ProtectedImage
-                        src={newCoverPreviewUrl || editing.preview_url || ''}
+                        src={
+                          newCoverPreviewUrl ||
+                          (newCoverLinkUrl.trim() && isValidMediaHttpUrl(newCoverLinkUrl.trim())
+                            ? newCoverLinkUrl.trim()
+                            : editing.preview_url || '')
+                        }
                         alt="Capa"
                         className="h-full w-full object-cover"
                       />
@@ -771,6 +850,8 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                     <p className="text-[11px] text-[#524B45] truncate">
                       {newCoverFile
                         ? newCoverFile.name
+                        : newCoverLinkUrl.trim()
+                        ? 'Novo link de capa informado'
                         : removeCover
                         ? 'Capa será removida'
                         : editing.preview_url
@@ -790,12 +871,13 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                       onChange={(e) => handleSelectReplacementCover(e.target.files?.[0] || null)}
                     />
                   </label>
-                  {(editing.preview_url || newCoverFile) && !removeCover && (
+                  {(editing.preview_url || newCoverFile || newCoverLinkUrl.trim()) && !removeCover && (
                     <button
                       type="button"
                       onClick={() => {
                         setNewCoverFile(null);
                         setNewCoverPreviewUrl(null);
+                        setNewCoverLinkUrl('');
                         setRemoveCover(true);
                       }}
                       className="text-[11px] font-medium text-[#524B45] hover:text-rose-700 underline cursor-pointer"
@@ -805,6 +887,19 @@ export const MediaManager: React.FC<MediaManagerProps> = ({
                   )}
                 </div>
               </div>
+
+              {!newCoverFile && (
+                <input
+                  type="url"
+                  value={newCoverLinkUrl}
+                  onChange={(e) => {
+                    setNewCoverLinkUrl(e.target.value);
+                    if (e.target.value.trim()) setRemoveCover(false);
+                  }}
+                  placeholder="Ou cole o link da capa de prévia (https://...)"
+                  className="w-full rounded-sm border border-[#181615]/25 bg-white px-3 py-1.5 font-mono text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+                />
+              )}
             </div>
 
             <label className="flex items-center gap-2.5 text-xs font-medium text-[#181615] cursor-pointer">

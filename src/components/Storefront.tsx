@@ -343,10 +343,10 @@ export const Storefront: React.FC<StorefrontProps> = ({
             <div>
               <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7A5412]">
                 <CinemaCameraMark className="h-4 w-5 text-[#7A5412]" />
-                <span>Destaque · Ao Vivo na Câmera 1 a 1</span>
+                <span>Somente 1 Internauta + Modelo · Pagamento via Pix</span>
               </p>
               <h2 className="font-display text-3xl sm:text-4xl font-bold uppercase tracking-tight text-[#1C1918] mt-1">
-                Vídeo Chamada Privada
+                Vídeo Chamada Privativa 1:1
               </h2>
             </div>
             <button
@@ -359,7 +359,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
           </div>
 
           <p className="text-sm text-[#3D3835] leading-relaxed">
-            <strong>{profile.display_name}</strong> entra ao vivo frente à câmera em sala privada 1 a 1, disponível <strong>exclusivamente para quem comprar</strong> a vídeo chamada. Escolha a duração abaixo e receba o link particular após o pagamento.
+            <strong>Atendimento estritamente individual:</strong> apenas <strong>1 internauta + {profile.display_name}</strong> ao vivo frente à câmera em sala privada fechada (sem chamadas em grupo). Escolha sua duração e libere exclusivamente perante pagamento via <strong>Pix</strong>.
           </p>
 
           {/* Creative Live 1-on-1 Video Call Showcase Strip */}
@@ -376,7 +376,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
                 >
                   <ProtectedImage
                     src={CREATOR_LIVE_CALL_PHOTO}
-                    alt={`${profile.display_name} ao vivo na câmera em sala exclusiva de vídeo chamada 1 a 1`}
+                    alt={`${profile.display_name} ao vivo exclusivamente em chamada privada 1 a 1`}
                     containerClassName="absolute inset-0 h-full w-full"
                     className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
                     fallback={
@@ -398,11 +398,11 @@ export const Storefront: React.FC<StorefrontProps> = ({
                   <div className="pointer-events-none absolute top-4 left-4 right-4 z-20 flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-[0.1em]">
                     <span className="inline-flex items-center gap-1 text-[#E5C158] font-semibold">
                       <Video className="h-3 w-3" />
-                      AO VIVO 1 A 1
+                      1 INTERNAUTA + MODELO
                     </span>
                     <span className="inline-flex items-center gap-1 text-[#F4F1ED]/90">
                       <Lock className="h-3 w-3 text-[#E5C158]" />
-                      EXCLUSIVA
+                      VIA PIX
                     </span>
                   </div>
 
@@ -410,10 +410,10 @@ export const Storefront: React.FC<StorefrontProps> = ({
                   <div className="pointer-events-none absolute bottom-4 left-4 right-4 z-20 flex items-end justify-between gap-2">
                     <div>
                       <p className="font-display text-xl font-bold uppercase tracking-tight text-[#F4F1ED] leading-none">
-                        Só Para Você · {profile.display_name}
+                        Só Você + {profile.display_name}
                       </p>
                       <p className="text-[11px] text-[#DED9D3] mt-1">
-                        Ao vivo na câmera para quem comprar
+                        Privativa 1:1 liberada no Pix
                       </p>
                     </div>
                     <CinemaCameraMark className="h-6 w-8 shrink-0 text-[#E5C158]" />
@@ -440,33 +440,33 @@ export const Storefront: React.FC<StorefrontProps> = ({
                         <Aperture className="h-3 w-3" />
                         CÂMERA DEDICADA 4K
                       </span>
-                      <span className="text-[#F4F1ED]/80">TRANSMISSÃO PRIVADA</span>
+                      <span className="text-[#F4F1ED]/80">PIX OBRIGATÓRIO</span>
                     </div>
                   </div>
 
                   <div className="p-5 space-y-3 flex-1 flex flex-col justify-between">
                     <div className="space-y-2.5">
                       <p className="font-display text-xl font-bold uppercase tracking-tight text-[#E5C158] leading-tight">
-                        Sala Fechada Exclusiva Para Quem Comprar
+                        Somente 1 Internauta + Modelo · Liberada no Pix
                       </p>
                       <div className="space-y-1.5 text-xs text-[#DED9D3]">
                         <p className="flex items-center gap-2">
                           <Video className="h-3.5 w-3.5 text-[#E5C158] shrink-0" />
-                          <span>{profile.display_name} fica ao vivo frente à câmera só para você</span>
+                          <span>Chamada individual 1 a 1: apenas você e {profile.display_name}</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <Lock className="h-3.5 w-3.5 text-[#E5C158] shrink-0" />
-                          <span>Atendimento fechado 1 a 1, restrito a quem adquirir a sessão</span>
+                          <span>Ativação exclusiva mediante pagamento instantâneo via Pix</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <UserCheck className="h-3.5 w-3.5 text-[#E5C158] shrink-0" />
-                          <span>Link particular enviado no seu WhatsApp ou @Telegram</span>
+                          <span>Link particular enviado direto no seu WhatsApp ou @Telegram</span>
                         </p>
                       </div>
                     </div>
 
                     <div className="pt-2.5 border-t border-[#453F3B] flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[#E5C158]">
-                      <span>Garantir minha chamada ao vivo</span>
+                      <span>Reservar chamada 1:1 via Pix</span>
                       <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                     </div>
                   </div>
@@ -548,7 +548,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
                       }`}
                     >
                       <Video className="h-3.5 w-3.5" />
-                      <span>Comprar Vídeo Chamada</span>
+                      <span>Reservar 1:1 via Pix</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </button>
                   </article>

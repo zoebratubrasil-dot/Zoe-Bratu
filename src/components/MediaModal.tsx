@@ -113,6 +113,9 @@ export const MediaModal: React.FC<MediaModalProps> = ({
     } else if (activeCallPlans[0]?.id) {
       setSelectedCallPlanId((prev) => prev || activeCallPlans[0].id);
     }
+    if (mode === 'video_call') {
+      setPaymentMethod('pix');
+    }
     if (mode === 'tip') {
       setTipAmount(String(tipPresetAmount && tipPresetAmount >= 5 ? tipPresetAmount : 50));
       setTipNote('');
@@ -197,10 +200,16 @@ export const MediaModal: React.FC<MediaModalProps> = ({
       setErrorMsg('Selecione um plano de vídeo chamada válido.');
       return;
     }
+    if (saleType === 'video_call' && contactInfo.trim().length < 4) {
+      setErrorMsg('Informe seu WhatsApp ou @Telegram para receber o link privativo da sessão 1 a 1.');
+      return;
+    }
     if (!ageConfirmed) {
       setErrorMsg('É obrigatório declarar ser maior de 18 anos.');
       return;
     }
+
+    const effectivePaymentMethod: PaymentMethod = saleType === 'video_call' ? 'pix' : paymentMethod;
 
     setSubmitting(true);
     try {
@@ -220,7 +229,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
           mediaId: saleType === 'ppv' ? mediaItem?.id : undefined,
           videoCallPlanId: saleType === 'video_call' ? currentCallPlan?.id : undefined,
           amountBrl,
-          paymentMethod,
+          paymentMethod: effectivePaymentMethod,
           ageConfirmed18: ageConfirmed,
         }),
       });
@@ -233,12 +242,12 @@ export const MediaModal: React.FC<MediaModalProps> = ({
         if (data.loyalty) {
           setCheckoutLoyalty(data.loyalty as FanLoyaltySummary);
         }
-        const refLabel = orderRef ? ` (Pedido ${orderRef})` : '';
+        const refLabel = orderRef ? ` (Código 1:1 ${orderRef})` : '';
         setSuccessMsg(
           saleType === 'vip_subscription'
             ? 'Assinatura VIP ativada! Acesso liberado em todo o acervo VIP.'
             : saleType === 'video_call'
-            ? `Reserva de Vídeo Chamada (${currentCallPlan?.duration_minutes} min) confirmada${refLabel}! A criadora entrará em contato pelo e-mail/contato informado.`
+            ? `Reserva privativa 1 a 1 (${currentCallPlan?.duration_minutes} min) registrada via Pix${refLabel}! Envie o comprovante do Pix no botão abaixo para receber o link exclusivo no seu contato.`
             : saleType === 'ppv'
             ? 'Compra confirmada! Conteúdo desbloqueado abaixo.'
             : 'Mimo registrado com sucesso. Obrigado pelo apoio!'
@@ -1132,19 +1141,19 @@ export const MediaModal: React.FC<MediaModalProps> = ({
               </div>
 
               <div className="sm:col-span-8 p-5 flex flex-col justify-between gap-2 bg-[#1C1918]">
-                <div className="flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-[0.14em] text-[#E5C158]">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-[0.14em] text-[#E5C158]">
                   <span className="inline-flex items-center gap-1.5">
                     <Video className="h-3.5 w-3.5" />
-                    AO VIVO · EXCLUSIVO DO COMPRADOR
+                    1 INTERNAUTA + MODELO · AO VIVO
                   </span>
-                  <span className="text-[#F4F1ED]/85">SALA 1 A 1</span>
+                  <span className="text-[#F4F1ED]/90">SOMENTE VIA PIX</span>
                 </div>
                 <div>
                   <h2 className="font-display text-2xl sm:text-3xl font-bold uppercase tracking-tight text-[#F4F1ED] leading-tight">
-                    {currentCallPlan.title} — Ao Vivo Com {profile.display_name}
+                    {currentCallPlan.title} — Privativa 1:1 Com {profile.display_name}
                   </h2>
                   <p className="text-xs text-[#DED9D3] mt-1">
-                    Ela entra ao vivo na câmera exclusivamente para você após a confirmação do pagamento.
+                    Sessão fechada entre você e {profile.display_name} (nunca em grupo). Acesso liberado exclusivamente perante pagamento via Pix.
                   </p>
                 </div>
               </div>
@@ -1195,13 +1204,13 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                    WhatsApp ou @Telegram (para receber o link)
+                    WhatsApp ou @Telegram * (envio do link 1 a 1)
                   </label>
                   <input
                     type="text"
                     value={contactInfo}
                     onChange={(e) => setContactInfo(e.target.value)}
-                    placeholder="Ex: (11) 99999-9999 ou @usuario"
+                    placeholder="Ex: (21) 99999-9999 ou @usuario"
                     className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                   />
                 </div>
@@ -1213,48 +1222,52 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Nome para o agendamento"
+                  placeholder="Nome para o agendamento privado"
                   className="w-full rounded-lg border border-[#453F3B] bg-[#1C1918] px-3.5 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-[#D4AF37] focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('pix')}
-                  className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
-                    paymentMethod === 'pix'
-                      ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#E5C158]'
-                      : 'border-[#453F3B] bg-[#1C1918] text-zinc-300 hover:border-zinc-600'
-                  }`}
-                >
-                  <QrCode className="h-4 w-4" />
-                  Pix Instantâneo
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentMethod('card')}
-                  className={`flex items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
-                    paymentMethod === 'card'
-                      ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#E5C158]'
-                      : 'border-[#453F3B] bg-[#1C1918] text-zinc-300 hover:border-zinc-600'
-                  }`}
-                >
-                  <CreditCard className="h-4 w-4" />
-                  Cartão de Crédito
-                </button>
+              {/* Exclusivamente via Pix (Sem Cartão de Crédito para Vídeo Chamada) */}
+              <div className="rounded-sm border border-[#E5C158]/50 bg-[#1C1918] p-4 space-y-1.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#E5C158]">
+                    <QrCode className="h-4 w-4 shrink-0" />
+                    Pagamento Exclusivo via Pix
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[#DED9D3]">
+                    <Lock className="h-3 w-3 text-[#E5C158]" />
+                    Somente 1 internauta + modelo
+                  </span>
+                </div>
+                <p className="text-xs text-[#C7C1BA] leading-relaxed">
+                  A vídeo chamada privativa 1 a 1 é liberada apenas mediante pagamento via Pix. Efetue o Pix no QR Code abaixo e clique no botão para confirmar sua sessão.
+                </p>
               </div>
 
-              {paymentMethod === 'pix' && profile.pix_key && (
-                <PixQrCard
-                  compact
-                  pixKey={profile.pix_key}
-                  merchantName={profile.display_name}
-                  merchantCity={profile.location}
-                  amountBrl={currentCallPlan.price_brl}
-                  txid={`MPVC${currentCallPlan.duration_minutes}MIN`}
-                  description={`Video Chamada ${currentCallPlan.duration_minutes}m`}
-                />
+              <PixQrCard
+                compact
+                pixKey={profile.pix_key}
+                merchantName={profile.display_name}
+                merchantCity={profile.location}
+                amountBrl={currentCallPlan.price_brl}
+                txid={`MPVC${currentCallPlan.duration_minutes}MIN`}
+                description={`Chamada 1a1 ${currentCallPlan.duration_minutes}m`}
+              />
+
+              {!profile.pix_key?.trim() && onGoToProfileSetup && (
+                <div className="flex items-center justify-between rounded-sm border border-amber-500/40 bg-amber-950/25 px-3.5 py-2.5 text-xs text-amber-200">
+                  <span>Cadastre sua chave Pix no Admin para ativar o QR Code da vídeo chamada.</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onGoToProfileSetup();
+                    }}
+                    className="underline font-semibold text-[#E5C158] shrink-0 ml-2 cursor-pointer"
+                  >
+                    Configurar Pix →
+                  </button>
+                </div>
               )}
 
               <label className="flex items-start gap-2.5 text-xs text-zinc-400 cursor-pointer">
@@ -1264,7 +1277,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                   onChange={(e) => setAgeConfirmed(e.target.checked)}
                   className="mt-0.5 h-4 w-4 accent-[#D4AF37]"
                 />
-                <span>Declaro ter 18 anos ou mais e concordo com os termos de atendimento privado.</span>
+                <span>Declaro ter 18 anos ou mais, aceito os termos de atendimento privado 1 a 1 e sei que é proibida qualquer gravação.</span>
               </label>
 
               {errorMsg && (
@@ -1287,8 +1300,13 @@ export const MediaModal: React.FC<MediaModalProps> = ({
 
               {successMsg && (
                 <div className="space-y-3">
-                  <div className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3 text-xs text-emerald-200">
-                    {successMsg}
+                  <div className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3.5 text-xs text-emerald-200 space-y-1.5">
+                    <p>{successMsg}</p>
+                    {lastOrderRef && (
+                      <p className="font-mono text-[11px] text-[#E5C158]">
+                        Passe Único 1:1 (1 internauta + {profile.display_name}): {lastOrderRef}
+                      </p>
+                    )}
                   </div>
                   {renderLoyaltyFeedbackBanner()}
                 </div>
@@ -1301,12 +1319,12 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                 className="w-full rounded-lg bg-[#E5C158] px-5 py-3 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {submitting
-                  ? 'Confirmando Reserva no Supabase...'
-                  : `Confirmar Vídeo Chamada ${currentCallPlan.duration_minutes} min (${formatBrl(currentCallPlan.price_brl)})`}
+                  ? 'Confirmando Reserva Pix no Supabase...'
+                  : `Paguei via Pix · Confirmar Chamada 1:1 (${formatBrl(currentCallPlan.price_brl)})`}
               </button>
 
               {renderWhatsappReceiptCta(
-                `Vídeo Chamada ${currentCallPlan.duration_minutes} min (${currentCallPlan.title})`,
+                `Vídeo Chamada 1:1 ${currentCallPlan.duration_minutes} min (${currentCallPlan.title})`,
                 currentCallPlan.price_brl
               )}
             </div>

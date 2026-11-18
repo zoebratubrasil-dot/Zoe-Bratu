@@ -758,17 +758,56 @@ function streamLocalFile(req: Request, res: Response, assetPath: string, mimeHin
   fs.createReadStream(fullPath).pipe(res);
 }
 
+function isSafeExternalMediaUrl(rawUrl: string): boolean {
+  try {
+    const parsed = new URL(rawUrl.trim());
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return false;
+    }
+    const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+    if (
+      !host ||
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '0.0.0.0' ||
+      host === '::1' ||
+      host === '169.254.169.254' ||
+      host.endsWith('.local') ||
+      host.endsWith('.internal') ||
+      /^10\./.test(host) ||
+      /^192\.168\./.test(host) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(host) ||
+      /^127\./.test(host)
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function streamRemoteUrl(
   req: Request,
   res: Response,
   url: string,
   mimeHint?: string | null
 ) {
+  if (!isSafeExternalMediaUrl(url)) {
+    res.status(400).end();
+    return;
+  }
   const headers: Record<string, string> = {};
   if (req.headers.range) {
     headers.Range = String(req.headers.range);
   }
-  const upstream = await fetch(url, { headers });
+  let upstream: globalThis.Response;
+  try {
+    upstream = await fetch(url, { headers, redirect: 'follow' });
+  } catch {
+    res.status(502).end();
+    return;
+  }
   if (!upstream.ok && upstream.status !== 206) {
     res.status(upstream.status === 404 ? 404 : 502).end();
     return;
@@ -2273,6 +2312,19 @@ async function startServer() {
         }
         authoritativeAmount = Number(mediaRow.price_brl || 0);
       } else if (saleType === 'video_call') {
+        if (paymentMethod && paymentMethod !== 'pix') {
+          res.status(400).json({
+            error: 'A vídeo chamada privativa 1 a 1 aceita exclusivamente pagamento via Pix.',
+          });
+          return;
+        }
+        const trimmedContact = String(contactInfo || '').trim();
+        if (trimmedContact.length < 4) {
+          res.status(400).json({
+            error: 'Informe seu WhatsApp ou @Telegram para receber o link privativo da sessão 1 a 1.',
+          });
+          return;
+        }
         const { data: prof } = await client
           .from('creator_profile')
           .select('*')
@@ -2351,6 +2403,9 @@ async function startServer() {
           ? `VC-${selectedVideoCallPlan.duration_minutes}MIN-${crypto.randomBytes(3).toString('hex').toUpperCase()}`
           : `MP-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 
+      const resolvedPaymentMethod =
+        saleType === 'video_call' ? 'pix' : paymentMethod === 'card' ? 'card' : 'pix';
+
       const saleInsertBase = {
         fan_id: fanId,
         buyer_email: cleanEmail,
@@ -2358,7 +2413,7 @@ async function startServer() {
         sale_type: saleType,
         media_id: saleType === 'ppv' ? mediaId : null,
         amount_brl: authoritativeAmount,
-        payment_method: paymentMethod === 'card' ? 'card' : 'pix',
+        payment_method: resolvedPaymentMethod,
         status: 'paid',
         external_ref: externalRef,
       };
@@ -2716,10 +2771,39 @@ async function startServer() {
         isPublished,
       } = req.body || {};
 
-      if (!title || !storagePath || !['photo', 'video'].includes(mediaType)) {
-        res.status(400).json({ error: 'Título, tipo de mídia e caminho de armazenamento são obrigatórios.' });
+      const cleanStoragePath = String(storagePath || '').trim();
+      const cleanPreviewUrl = previewUrl ? String(previewUrl).trim() : '';
+
+      if (!title || !cleanStoragePath || !['photo', 'video'].includes(mediaType)) {
+        res.status(400).json({ error: 'Título, tipo de mídia e arquivo ou link são obrigatórios.' });
         return;
       }
+
+      const isExternalSource =
+        cleanStoragePath.startsWith('http://') ||
+        cleanStoragePath.startsWith('https://') ||
+        cleanStoragePath.includes('://') ||
+        /^(javascript|data|ftp|file):/i.test(cleanStoragePath);
+      if (isExternalSource && !isSafeExternalMediaUrl(cleanStoragePath)) {
+        res.status(400).json({ error: 'Informe um link externo válido começando com http:// ou https://.' });
+        return;
+      }
+
+      if (
+        cleanPreviewUrl &&
+        !cleanPreviewUrl.startsWith('/') &&
+        (cleanPreviewUrl.includes('://') || /^(http|javascript|data|ftp|file):/i.test(cleanPreviewUrl)) &&
+        !isSafeExternalMediaUrl(cleanPreviewUrl)
+      ) {
+        res.status(400).json({ error: 'O link da capa de prévia precisa começar com http:// ou https://.' });
+        return;
+      }
+
+      const resolvedMime =
+        mimeType ||
+        (cleanStoragePath.startsWith('http')
+          ? inferContentTypeFromPath(cleanStoragePath, mediaType === 'video' ? 'video/mp4' : 'image/jpeg')
+          : null);
 
       const { data, error } = await client
         .from('media_items')
@@ -2730,12 +2814,12 @@ async function startServer() {
           access_tier: ['free', 'vip', 'ppv'].includes(accessTier) ? accessTier : 'vip',
           price_brl: accessTier === 'ppv' ? Number(priceBrl || 29.9) : 0,
           collection_name: String(collectionName || 'Geral').trim() || 'Geral',
-          storage_path: String(storagePath),
-          media_url: String(storagePath),
-          preview_url: previewUrl || null,
+          storage_path: cleanStoragePath,
+          media_url: cleanStoragePath,
+          preview_url: cleanPreviewUrl || null,
           duration_seconds: durationSeconds ? Number(durationSeconds) : null,
           file_size_bytes: fileSizeBytes ? Number(fileSizeBytes) : null,
-          mime_type: mimeType || null,
+          mime_type: resolvedMime,
           is_published: isPublished !== false,
         })
         .select('*')
@@ -2794,11 +2878,37 @@ async function startServer() {
         updates.media_type = media_type;
       }
       if (storage_path !== undefined && String(storage_path).trim()) {
-        updates.storage_path = String(storage_path).trim();
-        updates.media_url = String(storage_path).trim();
+        const cleanNextPath = String(storage_path).trim();
+        const looksExternal =
+          cleanNextPath.startsWith('http://') ||
+          cleanNextPath.startsWith('https://') ||
+          cleanNextPath.includes('://') ||
+          /^(javascript|data|ftp|file):/i.test(cleanNextPath);
+        if (looksExternal && !isSafeExternalMediaUrl(cleanNextPath)) {
+          res.status(400).json({ error: 'O link da mídia precisa começar com http:// ou https://.' });
+          return;
+        }
+        updates.storage_path = cleanNextPath;
+        updates.media_url = cleanNextPath;
+        if (mime_type === undefined && cleanNextPath.startsWith('http')) {
+          updates.mime_type = inferContentTypeFromPath(
+            cleanNextPath,
+            media_type === 'video' ? 'video/mp4' : 'image/jpeg'
+          );
+        }
       }
       if (preview_url !== undefined) {
-        updates.preview_url = preview_url ? String(preview_url).trim() : null;
+        const cleanNextPreview = preview_url ? String(preview_url).trim() : '';
+        if (
+          cleanNextPreview &&
+          !cleanNextPreview.startsWith('/') &&
+          (cleanNextPreview.includes('://') || /^(http|javascript|data|ftp|file):/i.test(cleanNextPreview)) &&
+          !isSafeExternalMediaUrl(cleanNextPreview)
+        ) {
+          res.status(400).json({ error: 'O link da capa de prévia precisa começar com http:// ou https://.' });
+          return;
+        }
+        updates.preview_url = cleanNextPreview || null;
       }
       if (duration_seconds !== undefined) {
         updates.duration_seconds = duration_seconds === null ? null : Number(duration_seconds);
@@ -3046,10 +3156,20 @@ async function startServer() {
       if (vip_description !== undefined) payload.vip_description = String(vip_description).trim();
       if (pix_key !== undefined) payload.pix_key = String(pix_key).trim();
       if (avatar_url !== undefined && !String(avatar_url).startsWith('/api/profile/asset/')) {
-        payload.avatar_url = avatar_url;
+        const cleanAvatar = String(avatar_url).trim();
+        if (cleanAvatar.includes('://') && !isSafeExternalMediaUrl(cleanAvatar)) {
+          res.status(400).json({ error: 'Informe um link http:// ou https:// válido para a foto de perfil.' });
+          return;
+        }
+        payload.avatar_url = cleanAvatar;
       }
       if (hero_url !== undefined && !String(hero_url).startsWith('/api/profile/asset/')) {
-        payload.hero_url = hero_url;
+        const cleanHero = String(hero_url).trim();
+        if (cleanHero.includes('://') && !isSafeExternalMediaUrl(cleanHero)) {
+          res.status(400).json({ error: 'Informe um link http:// ou https:// válido para a capa hero.' });
+          return;
+        }
+        payload.hero_url = cleanHero;
       }
 
       const { data, error } = await client
@@ -3229,7 +3349,13 @@ async function startServer() {
         return;
       }
       const normalizedStatus = ['paid', 'pending', 'refunded'].includes(status) ? status : 'pending';
-      const method = paymentMethod === 'card' ? 'card' : 'pix';
+      if (saleType === 'video_call' && paymentMethod && paymentMethod !== 'pix') {
+        res.status(400).json({
+          error: 'Vídeo chamada privativa 1 a 1 aceita exclusivamente pagamento via Pix.',
+        });
+        return;
+      }
+      const method = saleType === 'video_call' ? 'pix' : paymentMethod === 'card' ? 'card' : 'pix';
 
       let authoritativeAmount = Number(amountBrl || 0);
       let vcDuration = 15;
