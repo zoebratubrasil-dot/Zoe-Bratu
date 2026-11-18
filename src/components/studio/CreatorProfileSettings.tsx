@@ -18,6 +18,7 @@ interface CreatorProfileSettingsProps {
   supabaseReady: boolean;
   onUpdated: () => Promise<void>;
   onOpenVideoCalls?: () => void;
+  onOpenMimos?: () => void;
 }
 
 export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
@@ -27,6 +28,7 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
   supabaseReady,
   onUpdated,
   onOpenVideoCalls,
+  onOpenMimos,
 }) => {
   const [displayName, setDisplayName] = useState(profile.display_name);
   const [handle, setHandle] = useState(profile.handle);
@@ -465,6 +467,24 @@ export const CreatorProfileSettings: React.FC<CreatorProfileSettingsProps> = ({
               className="rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-3.5 py-2 text-xs font-semibold text-[#181615] hover:border-[#181615] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
               Editar Planos de Vídeo Chamada →
+            </button>
+          </div>
+        )}
+
+        {onOpenMimos && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-sm border border-[#181615]/20 bg-white px-4 py-3.5">
+            <div>
+              <p className="text-xs font-semibold text-[#181615]">6 Cartões de Mimos Especiais</p>
+              <p className="text-xs text-[#524B45]">
+                Edite títulos, subtítulos, valores em R$, ícones, selos e descrições da área Enviar Mimo.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenMimos}
+              className="rounded-sm border border-[#181615]/30 bg-[#EFEBE5] px-3.5 py-2 text-xs font-semibold text-[#181615] hover:border-[#181615] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              Editar Cartões de Mimos →
             </button>
           </div>
         )}

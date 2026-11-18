@@ -114,44 +114,44 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
       </div>
 
       {/* Metrics Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#181615]/15 rounded-sm border border-[#181615]/20 bg-[#F3EFEA]">
-        <div className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+      <div className="grid grid-cols-2 lg:grid-cols-4 [&>*:nth-child(odd)]:border-r lg:[&>*:nth-child(odd)]:border-r-0 [&>*:nth-child(-n+2)]:border-b lg:[&>*:nth-child(-n+2)]:border-b-0 lg:divide-x divide-[#181615]/15 rounded-sm border border-[#181615]/20 bg-[#F3EFEA]">
+        <div className="p-3.5 sm:p-5">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
             Receita Total Confirmada
           </p>
-          <p className="font-mono text-2xl font-bold text-[#8A5A00] tabular-nums">
+          <p className="font-mono text-lg sm:text-2xl font-bold text-[#8A5A00] tabular-nums">
             {formatBrl(dashboard.metrics.totalRevenueBrl)}
           </p>
         </div>
-        <div className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+        <div className="p-3.5 sm:p-5">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
             Assinaturas Clube VIP
           </p>
-          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
+          <p className="font-mono text-lg sm:text-2xl font-bold text-[#181615] tabular-nums">
             {formatBrl(dashboard.metrics.vipRevenueBrl)}
           </p>
         </div>
-        <div className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+        <div className="p-3.5 sm:p-5">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
             Vendas Avulsas (PPV)
           </p>
-          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
+          <p className="font-mono text-lg sm:text-2xl font-bold text-[#181615] tabular-nums">
             {formatBrl(dashboard.metrics.ppvRevenueBrl)}
           </p>
         </div>
-        <div className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+        <div className="p-3.5 sm:p-5">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
             Assinantes VIP Ativos
           </p>
-          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
+          <p className="font-mono text-lg sm:text-2xl font-bold text-[#181615] tabular-nums">
             {dashboard.metrics.activeVipFans}
           </p>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-1 p-1 rounded-sm bg-[#EFEBE5] border border-[#181615]/20 w-fit">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-1 p-1 rounded-sm bg-[#EFEBE5] border border-[#181615]/20 overflow-x-auto no-scrollbar max-w-full sm:flex-wrap sm:w-fit">
           {(
             [
               { id: 'all', label: 'Todas' },
@@ -165,7 +165,7 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
               key={opt.id}
               type="button"
               onClick={() => setTypeFilter(opt.id)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-colors cursor-pointer ${
+              className={`min-h-[36px] px-3 py-1.5 text-xs font-medium rounded-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                 typeFilter === opt.id
                   ? 'bg-[#181615] text-[#FAF8F5] font-semibold'
                   : 'text-[#524B45] hover:text-[#181615]'
@@ -176,14 +176,14 @@ export const SalesLedger: React.FC<SalesLedgerProps> = ({
           ))}
         </div>
 
-        <div className="relative">
+        <div className="relative w-full sm:w-64">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#524B45]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Filtrar por e-mail ou referência..."
-            className="w-64 rounded-sm border border-[#181615]/25 bg-white pl-9 pr-3 py-2 text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+            className="w-full min-h-[40px] rounded-sm border border-[#181615]/25 bg-white pl-9 pr-3 py-2 text-sm sm:text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
           />
         </div>
       </div>

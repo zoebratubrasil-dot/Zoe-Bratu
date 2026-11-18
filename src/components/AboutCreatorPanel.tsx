@@ -75,7 +75,7 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
   });
 
   return (
-    <div className="lg:col-span-5 bg-[#2B2725] text-[#F4F1ED] p-6 sm:p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-[#453F3B] flex flex-col justify-between gap-6">
+    <div className="lg:col-span-5 bg-[#2B2725] text-[#F4F1ED] p-5 sm:p-8 lg:p-10 border-b lg:border-b-0 lg:border-r border-[#453F3B] flex flex-col justify-between gap-6">
       <div className="space-y-6">
         {/* Header Bar */}
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-[#453F3B] pb-3.5">
@@ -188,7 +188,7 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex items-center justify-center gap-1.5 px-2.5 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors cursor-pointer ${
+                  className={`relative min-h-[44px] flex items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-2.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.06em] sm:tracking-[0.08em] transition-colors cursor-pointer ${
                     isSelected ? 'text-[#E5C158] bg-[#1C1918]' : 'text-[#C7C1BA] hover:text-[#F4F1ED]'
                   }`}
                 >
@@ -281,7 +281,7 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
                 </div>
 
                 {/* Interactive 4-Step Tech Timeline */}
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-1.5">
                   {about.site_steps.map((step, idx) => {
                     const active = idx === activeStepIdx;
                     return (
@@ -289,7 +289,7 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
                         key={step.id}
                         type="button"
                         onClick={() => setActiveStepIdx(idx)}
-                        className={`rounded-sm border py-2 px-2 text-center transition-colors cursor-pointer ${
+                        className={`min-h-[44px] rounded-sm border py-2 px-2 text-center transition-colors cursor-pointer ${
                           active
                             ? 'border-[#E5C158] bg-[#2B2725] text-[#E5C158]'
                             : 'border-[#3A3431] bg-[#23201E] text-[#C7C1BA] hover:border-[#6F665E]'
@@ -460,18 +460,18 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
 
       {/* Bottom Action Bar */}
       <div className="space-y-3 pt-4 border-t border-[#453F3B]">
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5">
           <button
             type="button"
             onClick={onOpenVipModal}
-            className="rounded-sm bg-[#E5C158] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:bg-[#f0cf6b] transition-colors cursor-pointer"
+            className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center rounded-sm bg-[#E5C158] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:bg-[#f0cf6b] transition-colors cursor-pointer"
           >
             Assinar VIP ({formatBrl(profile.vip_monthly_price_brl)})
           </button>
           <button
             type="button"
             onClick={() => onOpenTipModal()}
-            className="mimo-shimmer-btn group inline-flex items-center gap-2 rounded-sm px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] transition-transform hover:-translate-y-0.5 cursor-pointer"
+            className="mimo-shimmer-btn group w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] transition-transform hover:-translate-y-0.5 cursor-pointer"
           >
             <Gift className="h-3.5 w-3.5 text-[#E5C158] transition-transform group-hover:rotate-[-10deg]" />
             <span>Enviar Mimo</span>
@@ -481,7 +481,7 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-sm border border-emerald-500/60 bg-emerald-950/50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-emerald-200 hover:bg-emerald-900/60 hover:border-emerald-400 transition-colors cursor-pointer"
+              className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-sm border border-emerald-500/60 bg-emerald-950/50 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-emerald-200 hover:bg-emerald-900/60 hover:border-emerald-400 transition-colors cursor-pointer"
             >
               <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
               Enviar Comprovante (WhatsApp)
@@ -490,7 +490,7 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
             <button
               type="button"
               onClick={() => setWhatsappPendingNotice((prev) => !prev)}
-              className="inline-flex items-center gap-2 rounded-sm border border-emerald-500/50 bg-emerald-950/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-emerald-200 hover:border-emerald-400 transition-colors cursor-pointer"
+              className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-sm border border-emerald-500/50 bg-emerald-950/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-emerald-200 hover:border-emerald-400 transition-colors cursor-pointer"
             >
               <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
               Enviar Comprovante (WhatsApp)

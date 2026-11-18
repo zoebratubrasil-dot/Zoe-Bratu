@@ -18,6 +18,7 @@ import {
   Users,
   QrCode,
   Video,
+  Gift,
 } from 'lucide-react';
 import type { CreatorDashboardData, CreatorProfile, SupabaseStatus } from '../types';
 import { getBrowserSupabaseClient } from '../lib/supabaseBrowser';
@@ -30,6 +31,7 @@ import { PixManager } from './studio/PixManager';
 import { SalesLedger } from './studio/SalesLedger';
 import { CreatorProfileSettings } from './studio/CreatorProfileSettings';
 import { VideoCallSettings } from './studio/VideoCallSettings';
+import { MimoSettings } from './studio/MimoSettings';
 import { SupabaseSetup } from './studio/SupabaseSetup';
 
 export type StudioTab =
@@ -37,6 +39,7 @@ export type StudioTab =
   | 'upload'
   | 'manage'
   | 'video_calls'
+  | 'mimos'
   | 'fans'
   | 'pix'
   | 'sales'
@@ -519,8 +522,8 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
 
   if (!creatorToken) {
     return (
-      <main className="mx-auto max-w-[1100px] px-6 py-12 lg:px-10">
-        <div className="rounded-sm bg-[#181615] p-3 sm:p-5 shadow-xl">
+      <main className="mx-auto max-w-[1100px] px-3 sm:px-6 py-6 sm:py-12 lg:px-10">
+        <div className="rounded-sm bg-[#181615] p-2.5 sm:p-5 shadow-xl">
           <div className="grid grid-cols-1 md:grid-cols-12 rounded-sm bg-[#FAF8F5] border border-[#181615]/20 overflow-hidden">
             {/* Editorial Photo Side Column */}
             <div className="hidden md:flex md:col-span-5 flex-col justify-between bg-[#F3EFEA] border-r border-[#181615]/15 p-5">
@@ -546,7 +549,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
             </div>
 
             {/* Login Form Column */}
-            <div className="md:col-span-7 p-6 sm:p-9 space-y-6">
+            <div className="md:col-span-7 p-4 sm:p-8 lg:p-9 space-y-5 sm:space-y-6">
               <div className="flex items-center gap-3.5 border-b border-[#181615]/15 pb-4">
                 <div className="flex h-11 w-11 items-center justify-center rounded-sm border border-[#181615]/25 bg-[#181615] text-[#FAF8F5] shrink-0">
                   <Lock className="h-5 w-5" />
@@ -943,6 +946,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
     { id: 'manage', label: 'Editar Fotos & Vídeos', icon: <FolderKanban className="h-4 w-4" /> },
     { id: 'upload', label: 'Enviar Fotos & Vídeos', icon: <Upload className="h-4 w-4" /> },
     { id: 'video_calls', label: 'Vídeo Chamadas', icon: <Video className="h-4 w-4" /> },
+    { id: 'mimos', label: '6 Cartões de Mimos', icon: <Gift className="h-4 w-4" /> },
     { id: 'profile', label: 'Informações & Capa', icon: <UserCog className="h-4 w-4" /> },
     { id: 'fans', label: 'Assinantes & VIPs', icon: <Users className="h-4 w-4" /> },
     { id: 'pix', label: 'Pix & QR Code', icon: <QrCode className="h-4 w-4" /> },
@@ -951,9 +955,9 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
   ];
 
   return (
-    <main className="mx-auto max-w-[1440px] px-4 sm:px-6 py-8 lg:px-10 space-y-8">
+    <main className="mx-auto max-w-[1440px] px-3 sm:px-6 py-5 sm:py-8 lg:px-10 space-y-5 sm:space-y-8">
       {/* Top Editorial Lookbook Masthead (framed in dark #181615 like the reference mockup) */}
-      <div className="rounded-sm bg-[#181615] p-3 sm:p-5 shadow-lg">
+      <div className="rounded-sm bg-[#181615] p-2 sm:p-5 shadow-lg">
         <div className="rounded-sm bg-[#FAF8F5] border border-[#181615]/20 overflow-hidden">
           {/* Top Editorial Mini Navigation */}
           <div className="hidden sm:flex items-center justify-between gap-4 border-b border-[#181615]/15 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#524B45]">
@@ -966,6 +970,9 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
               </button>
               <button type="button" onClick={() => setActiveTab('video_calls')} className="hover:text-[#181615] cursor-pointer">
                 Vídeo Chamada
+              </button>
+              <button type="button" onClick={() => setActiveTab('mimos')} className="hover:text-[#181615] cursor-pointer">
+                Mimos
               </button>
               <button type="button" onClick={() => setActiveTab('pix')} className="hover:text-[#181615] cursor-pointer">
                 Pix & QR
@@ -1017,14 +1024,14 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
           </div>
 
           {/* Masthead Title Row ("PORTFOLIO"-scale bold condensed title + creator tagline) */}
-          <div className="px-5 py-5 sm:px-7 sm:py-6 flex flex-col lg:flex-row lg:items-end justify-between gap-5">
+          <div className="px-4 py-4 sm:px-7 sm:py-6 flex flex-col lg:flex-row lg:items-end justify-between gap-4 sm:gap-5">
             <div>
-              <h1 className="font-display text-5xl sm:text-6xl lg:text-[4.25rem] font-bold uppercase tracking-[-0.02em] leading-[0.88] text-[#181615]">
+              <h1 className="font-display text-4xl sm:text-6xl lg:text-[4.25rem] font-bold uppercase tracking-[-0.02em] leading-[0.88] text-[#181615]">
                 ADMINISTRAÇÃO
               </h1>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 lg:gap-6">
               <div className="space-y-0.5">
                 <p className="font-display text-xl font-bold uppercase tracking-tight text-[#181615]">
                   {studioProfile.display_name}{' '}
@@ -1040,7 +1047,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
               <button
                 type="button"
                 onClick={onOpenStorefront}
-                className="inline-flex items-center justify-center gap-2 rounded-sm bg-[#181615] px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] hover:bg-[#332E2C] transition-colors shrink-0 cursor-pointer"
+                className="w-full sm:w-auto min-h-[42px] inline-flex items-center justify-center gap-2 rounded-sm bg-[#181615] px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] hover:bg-[#332E2C] transition-colors shrink-0 cursor-pointer"
               >
                 <ExternalLink className="h-3.5 w-3.5" />
                 Abrir Vitrine
@@ -1051,13 +1058,13 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
       </div>
 
       {/* Main 12-Col Editorial Workspace Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-7 items-start">
-        <aside className="lg:col-span-3 rounded-sm border border-[#181615]/20 bg-[#FAF8F5] p-4 space-y-5 shadow-sm">
-          <div className="px-2 pt-1 border-b border-[#181615]/15 pb-3">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-7 items-start">
+        <aside className="lg:col-span-3 rounded-sm border border-[#181615]/20 bg-[#FAF8F5] p-3.5 sm:p-4 space-y-4 sm:space-y-5 shadow-sm">
+          <div className="px-1 sm:px-2 pt-1 border-b border-[#181615]/15 pb-3">
             <p className="text-[11px] uppercase tracking-[0.16em] text-[#524B45] font-semibold">
               Navegação do Estúdio
             </p>
-            <p className="font-display text-2xl font-bold uppercase tracking-tight text-[#181615] truncate mt-1">
+            <p className="font-display text-xl sm:text-2xl font-bold uppercase tracking-tight text-[#181615] truncate mt-1">
               {studioProfile.display_name}
             </p>
             <p className="text-xs text-[#524B45] truncate mt-0.5">{adminEmail}</p>
@@ -1066,7 +1073,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
             </p>
           </div>
 
-          <nav className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-1">
+          <nav className="flex overflow-x-auto no-scrollbar sm:grid sm:grid-cols-3 lg:grid-cols-1 gap-1.5 sm:gap-1 pb-1 sm:pb-0">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -1074,10 +1081,10 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`relative w-full flex items-center gap-2.5 rounded-sm px-3 py-2.5 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                  className={`relative w-auto sm:w-full shrink-0 min-h-[40px] flex items-center gap-2 sm:gap-2.5 rounded-sm px-3 py-2 text-xs font-medium transition-colors whitespace-nowrap cursor-pointer ${
                     isActive
                       ? 'text-[#FAF8F5] font-semibold'
-                      : 'text-[#524B45] hover:bg-[#EFEBE5] hover:text-[#181615]'
+                      : 'text-[#524B45] bg-[#F3EFEA] sm:bg-transparent hover:bg-[#EFEBE5] hover:text-[#181615]'
                   }`}
                 >
                   {isActive && (
@@ -1087,7 +1094,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                       className="absolute inset-0 rounded-sm bg-[#181615]"
                     />
                   )}
-                  <span className="relative z-10 flex items-center gap-2.5 min-w-0">
+                  <span className="relative z-10 flex items-center gap-2 sm:gap-2.5 min-w-0">
                     {item.icon}
                     <span className="truncate">{item.label}</span>
                   </span>
@@ -1096,11 +1103,11 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
             })}
           </nav>
 
-          <div className="border-t border-[#181615]/15 pt-4">
+          <div className="border-t border-[#181615]/15 pt-3 sm:pt-4">
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full flex items-center gap-2.5 rounded-sm px-3 py-2 text-xs font-medium text-[#524B45] hover:text-[#181615] hover:bg-[#EFEBE5] transition-colors cursor-pointer"
+              className="w-full min-h-[40px] flex items-center gap-2.5 rounded-sm px-3 py-2 text-xs font-medium text-[#524B45] hover:text-[#181615] hover:bg-[#EFEBE5] transition-colors cursor-pointer"
             >
               <LogOut className="h-4 w-4" />
               Sair da Conta Adm
@@ -1108,7 +1115,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
           </div>
         </aside>
 
-        <section className="lg:col-span-9 min-w-0 rounded-sm border border-[#181615]/20 bg-[#FAF8F5] p-6 sm:p-8 shadow-sm">
+        <section className="lg:col-span-9 min-w-0 rounded-sm border border-[#181615]/20 bg-[#FAF8F5] p-4 sm:p-6 lg:p-8 shadow-sm">
           {loadingDash && dashboard.mediaItems.length === 0 && activeTab !== 'supabase' ? (
             <div className="rounded-sm border border-[#181615]/15 bg-[#F3EFEA] p-12 text-center text-xs text-[#524B45] mb-6">
               Sincronizando dados do Supabase...
@@ -1201,6 +1208,18 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                 />
               )}
 
+              {activeTab === 'mimos' && (
+                <MimoSettings
+                  creatorToken={creatorToken}
+                  profile={studioProfile}
+                  dashboard={dashboard}
+                  onUpdated={async () => {
+                    await fetchDashboard(creatorToken);
+                    await onRefreshStorefront();
+                  }}
+                />
+              )}
+
               {activeTab === 'profile' && (
                 <CreatorProfileSettings
                   creatorToken={creatorToken}
@@ -1208,6 +1227,7 @@ export const CreatorStudio: React.FC<CreatorStudioProps> = ({
                   profile={studioProfile}
                   supabaseReady={supabaseReady}
                   onOpenVideoCalls={() => setActiveTab('video_calls')}
+                  onOpenMimos={() => setActiveTab('mimos')}
                   onUpdated={async () => {
                     await fetchDashboard(creatorToken);
                     await onRefreshStorefront();

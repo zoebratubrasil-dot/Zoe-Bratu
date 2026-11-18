@@ -43,6 +43,32 @@ export interface CreatorAboutContent {
   signature_quote: string;
 }
 
+export type MimoGiftIcon = 'wine' | 'heart' | 'sparkles' | 'crown';
+
+export interface MimoGiftTier {
+  id: string;
+  title: string;
+  subtitle: string;
+  amount_brl: number;
+  badge: string;
+  perk: string;
+  icon: MimoGiftIcon;
+  featured: boolean;
+  active: boolean;
+}
+
+export interface MimoSectionConfig {
+  section_kicker: string;
+  section_tag: string;
+  section_title: string;
+  section_description: string;
+  cta_label: string;
+  card_cta_label: string;
+  modal_title: string;
+  modal_description: string;
+  tiers: MimoGiftTier[];
+}
+
 export interface CreatorProfile {
   id: string;
   slug: string;
@@ -58,6 +84,7 @@ export interface CreatorProfile {
   whatsapp_number?: string | null;
   video_call_plans?: VideoCallPlan[];
   about_section?: CreatorAboutContent;
+  mimo_config?: MimoSectionConfig;
   age_verified_18: boolean;
   updated_at: string;
 }
@@ -83,6 +110,34 @@ export interface MediaItem {
   is_unlocked?: boolean;
 }
 
+export type LoyaltyTierId = 'admirer' | 'bronze' | 'silver' | 'gold_vip';
+
+export interface FanLoyaltySummary {
+  tier_id: LoyaltyTierId;
+  tier_label: string;
+  badge_label: string | null;
+  is_gold_vip: boolean;
+  purchases_count: number;
+  recent_purchases_30d: number;
+  total_spent_brl: number;
+  gold_target_purchases: number;
+  remaining_for_next: number;
+  remaining_for_gold: number;
+  next_tier_label: string | null;
+  progress_percent: number;
+  perks: string[];
+}
+
+export interface FanRecentOrder {
+  id: string;
+  sale_type: SaleType;
+  amount_brl: number;
+  payment_method: PaymentMethod;
+  external_ref: string | null;
+  media_title?: string | null;
+  created_at: string;
+}
+
 export interface FanAccount {
   id: string;
   email: string;
@@ -91,6 +146,8 @@ export interface FanAccount {
   vip_expires_at: string | null;
   age_confirmed_18: boolean;
   created_at: string;
+  loyalty?: FanLoyaltySummary;
+  recent_orders?: FanRecentOrder[];
 }
 
 export interface SaleRecord {

@@ -1,4 +1,7 @@
-export async function onRequest(context) {
+export async function onRequest(context: {
+  request: Request;
+  env: { API_ORIGIN?: string };
+}) {
   const apiOrigin = (context.env.API_ORIGIN || "").replace(/\/+$/, "");
   if (!apiOrigin) {
     return Response.json(
@@ -12,7 +15,7 @@ export async function onRequest(context) {
   const headers = new Headers(context.request.headers);
   headers.delete("host");
 
-  const init = {
+  const init: RequestInit = {
     method: context.request.method,
     headers,
     redirect: "manual",

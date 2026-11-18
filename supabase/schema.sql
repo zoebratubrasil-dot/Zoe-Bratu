@@ -230,6 +230,10 @@ alter table public.creator_profile
 alter table public.creator_profile
   add column if not exists about_section jsonb;
 
+-- 9. Cartões Editáveis de Mimos Especiais
+alter table public.creator_profile
+  add column if not exists mimo_config jsonb;
+
 do $$
 begin
   alter table public.sales drop constraint if exists sales_sale_type_check;

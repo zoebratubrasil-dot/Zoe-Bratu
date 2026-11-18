@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Lock, Play, Eye, Search, UserCheck, Upload, Database, Image as ImageIcon, Film, Heart, Gift, Video, Clock, ArrowRight, Aperture, MessageCircle } from 'lucide-react';
+import { Lock, Play, Eye, Search, UserCheck, Upload, Database, Image as ImageIcon, Film, Heart, Gift, Video, Clock, ArrowRight, Aperture, MessageCircle, Award } from 'lucide-react';
 import type { CreatorProfile, FanAccount, MediaItem, StorefrontStats, VideoCallPlan } from '../types';
 import { formatBrl, formatDuration, formatDateShort } from '../lib/format';
 import { resolveVideoCallPlans } from '../lib/videoCalls';
 import { buildWhatsappReceiptUrl } from '../lib/whatsapp';
+import { computeFanLoyalty } from '../lib/loyalty';
 import { ProtectedImage, ProtectedVideo } from './ProtectedMedia';
 import { AboutCreatorPanel } from './AboutCreatorPanel';
 import { MimoShowcaseSection } from './MimoShowcaseSection';
+import { LoyaltyBadge } from './LoyaltyBadge';
 import videoCallCameraHero from '../assets/images/video_call_camera_hero_1794853603138.jpg';
 
 const CREATOR_LIVE_CALL_PHOTO = '/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG';
@@ -43,8 +45,9 @@ interface StorefrontProps {
   onOpenVipModal: () => void;
   onOpenTipModal: (presetAmount?: number) => void;
   onOpenFanLogin: () => void;
+  onOpenFanAccount: () => void;
   onLogoutFan: () => void;
-  onNavigateToStudio: (tab?: 'overview' | 'upload' | 'supabase' | 'video_calls' | 'profile') => void;
+  onNavigateToStudio: (tab?: 'overview' | 'upload' | 'supabase' | 'video_calls' | 'mimos' | 'profile') => void;
   favoriteIds?: string[];
   onToggleFavorite?: (mediaId: string) => void;
 }
@@ -64,6 +67,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
   onOpenVipModal,
   onOpenTipModal,
   onOpenFanLogin,
+  onOpenFanAccount,
   onLogoutFan,
   onNavigateToStudio,
   favoriteIds = [],
@@ -156,24 +160,53 @@ export const Storefront: React.FC<StorefrontProps> = ({
         </section>
       )}
 
+      {/* Compact Mobile & Small-Tablet Section Jump Bar (keeps sticky Header strictly 1 row) */}
+      <nav
+        aria-label="Navegação rápida das seções"
+        className="md:hidden flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-[#2B2725]/25 bg-[#DDD8D2] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-[#1C1918]"
+      >
+        {[
+          { id: 'vitrine-grid', label: 'Galeria 35mm' },
+          { id: 'video-chamada', label: 'Vídeo Chamada' },
+          { id: 'enviar-mimo', label: '6 Mimos' },
+          { id: 'clube-vip', label: 'Clube VIP' },
+        ].map((navLink) => (
+          <button
+            key={navLink.id}
+            type="button"
+            onClick={() => document.getElementById(navLink.id)?.scrollIntoView({ behavior: 'smooth' })}
+            className="min-h-[36px] px-3 py-1.5 rounded-sm border border-[#2B2725]/25 bg-[#EAE6E2] hover:border-[#1C1918] whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            {navLink.label}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={fan ? onOpenFanAccount : onOpenFanLogin}
+          className="min-h-[36px] px-3 py-1.5 rounded-sm border border-[#1C1918] bg-[#1C1918] text-[#E5C158] whitespace-nowrap shrink-0 cursor-pointer"
+        >
+          {fan ? 'Minha Conta' : 'Entrar / VIP'}
+        </button>
+      </nav>
+
       {/* BLOCK 1: Editorial Lookbook Hero Masthead */}
       <section className="bg-[#E4E0DC] text-[#1C1918] border-b border-[#2B2725]/25">
         {/* Top Masthead Index Line */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#2B2725]/20 px-6 py-3 lg:px-10 text-xs uppercase tracking-[0.12em] text-[#4A4440]">
+        <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-[#2B2725]/20 px-4 sm:px-6 py-2.5 sm:py-3 lg:px-10 text-[11px] sm:text-xs uppercase tracking-[0.1em] sm:tracking-[0.12em] text-[#4A4440]">
           <span className="font-display italic text-sm normal-case tracking-normal text-[#1C1918] font-semibold">
             Acervo Privado · Criadora Solo Verificada +18
           </span>
-          <span className="font-mono text-[11px]">
+          <span className="font-mono text-[10px] sm:text-[11px]">
             {profile.handle} · {profile.location}
           </span>
         </div>
 
         {/* Masthead Split Spread */}
         <div className="grid grid-cols-1 lg:grid-cols-12 lg:items-stretch">
-          <div className="lg:col-span-7 flex flex-col justify-between p-6 sm:p-10 lg:p-12 border-b lg:border-b-0 lg:border-r border-[#2B2725]/20">
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="h-14 w-14 overflow-hidden rounded-sm border border-[#2B2725]/35 bg-[#2B2725] shrink-0">
+          <div className="lg:col-span-7 flex flex-col justify-between p-5 sm:p-8 lg:p-12 border-b lg:border-b-0 lg:border-r border-[#2B2725]/20">
+            <div className="space-y-5 sm:space-y-6">
+              <div className="flex items-center gap-3.5 sm:gap-4">
+                <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-sm border border-[#2B2725]/35 bg-[#2B2725] shrink-0">
                   {profile.avatar_url && !avatarImgFailed ? (
                     <ProtectedImage
                       src={profile.avatar_url}
@@ -195,28 +228,28 @@ export const Storefront: React.FC<StorefrontProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl font-bold uppercase tracking-[-0.02em] text-[#1C1918] leading-[0.94]">
+              <div className="space-y-3 sm:space-y-4">
+                <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold uppercase tracking-[-0.02em] text-[#1C1918] leading-[0.94]">
                   {profile.display_name}
                 </h1>
-                <p className="text-base text-[#3D3835] leading-relaxed max-w-xl">
+                <p className="text-sm sm:text-base text-[#3D3835] leading-relaxed max-w-xl">
                   {profile.bio}
                 </p>
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-[#2B2725]/20 flex flex-wrap items-center gap-3">
+            <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-[#2B2725]/20 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
               <button
                 type="button"
                 onClick={onOpenVipModal}
-                className="rounded-sm bg-[#1C1918] px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#F4F1ED] hover:bg-[#383432] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center rounded-sm bg-[#1C1918] px-5 sm:px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#F4F1ED] hover:bg-[#383432] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Assinar Clube VIP · {formatBrl(profile.vip_monthly_price_brl)}/mês
               </button>
               <button
                 type="button"
                 onClick={() => onOpenTipModal()}
-                className="mimo-shimmer-btn group inline-flex items-center gap-2 rounded-sm px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] transition-transform duration-200 hover:-translate-y-0.5 whitespace-nowrap shrink-0 cursor-pointer"
+                className="mimo-shimmer-btn group w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-sm px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] transition-transform duration-200 hover:-translate-y-0.5 whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <Gift className="h-3.5 w-3.5 text-[#E5C158] transition-transform duration-200 group-hover:rotate-[-12deg] group-hover:scale-110" />
                 <span>Enviar Mimo · Surpreenda</span>
@@ -224,7 +257,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigateToStudio('overview')}
-                className="text-xs font-semibold uppercase tracking-wider text-[#4A4440] hover:text-[#1C1918] underline underline-offset-4 px-2 py-2 whitespace-nowrap shrink-0 cursor-pointer"
+                className="w-full sm:w-auto min-h-[40px] inline-flex items-center justify-center text-xs font-semibold uppercase tracking-wider text-[#4A4440] hover:text-[#1C1918] underline underline-offset-4 px-2 py-2 whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Administração do Site
               </button>
@@ -234,7 +267,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
           {/* Right Editorial Hero Portrait Block */}
           <div
             onContextMenu={(e) => e.preventDefault()}
-            className="lg:col-span-5 relative min-h-[360px] lg:min-h-[460px] overflow-hidden bg-[#2B2725] media-shield"
+            className="lg:col-span-5 relative aspect-[4/5] sm:aspect-[16/10] lg:aspect-auto min-h-[300px] sm:min-h-[360px] lg:min-h-[460px] overflow-hidden bg-[#2B2725] media-shield"
           >
             {profile.hero_url && !heroImgFailed ? (
               <ProtectedImage
@@ -242,7 +275,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
                 alt={`Retrato editorial de ${profile.display_name}`}
                 onError={() => setHeroImgFailed(true)}
                 containerClassName="h-full w-full lg:absolute lg:inset-0"
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover object-top"
               />
             ) : (
               <div className="flex h-full w-full flex-col items-center justify-center bg-[#23201E] p-10 text-center">
@@ -253,12 +286,12 @@ export const Storefront: React.FC<StorefrontProps> = ({
               </div>
             )}
             <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-t from-[#1C1918]/85 via-[#1C1918]/20 to-transparent" />
-            <div className="absolute bottom-6 left-6 right-6 z-20 flex items-end justify-between gap-4">
+            <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 z-20 flex items-end justify-between gap-4">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.12em] text-[#E5C158] font-medium">
+                <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] text-[#E5C158] font-medium">
                   Acervo Privado Exclusivo
                 </p>
-                <p className="font-display text-xl font-bold uppercase tracking-wide text-[#F4F1ED]">
+                <p className="font-display text-lg sm:text-xl font-bold uppercase tracking-wide text-[#F4F1ED]">
                   Fotos em alta resolução & vídeos privados
                 </p>
               </div>
@@ -268,22 +301,22 @@ export const Storefront: React.FC<StorefrontProps> = ({
       </section>
 
       {/* Full-Width 4-Column Espresso Charcoal Stats Ribbon */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#453F3B] border-b border-[#453F3B] bg-[#2B2725] text-[#F4F1ED]">
-        <div className="px-6 py-5 lg:px-10">
-          <p className="text-[11px] uppercase tracking-[0.1em] text-[#C7C1BA] mb-1">Fotos Exclusivas</p>
-          <p className="font-mono text-2xl font-semibold text-[#F4F1ED] tabular-nums">{stats.totalPhotos}</p>
+      <section className="grid grid-cols-2 lg:grid-cols-4 border-b border-[#453F3B] bg-[#2B2725] text-[#F4F1ED] [&>*:nth-child(odd)]:border-r lg:[&>*:nth-child(odd)]:border-r-0 [&>*:nth-child(-n+2)]:border-b lg:[&>*:nth-child(-n+2)]:border-b-0 lg:divide-x divide-[#453F3B]">
+        <div className="px-4 py-4 sm:px-6 sm:py-5 lg:px-10">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.1em] text-[#C7C1BA] mb-1">Fotos Exclusivas</p>
+          <p className="font-mono text-xl sm:text-2xl font-semibold text-[#F4F1ED] tabular-nums">{stats.totalPhotos}</p>
         </div>
-        <div className="px-6 py-5 lg:px-10">
-          <p className="text-[11px] uppercase tracking-[0.1em] text-[#C7C1BA] mb-1">Vídeos Privados</p>
-          <p className="font-mono text-2xl font-semibold text-[#F4F1ED] tabular-nums">{stats.totalVideos}</p>
+        <div className="px-4 py-4 sm:px-6 sm:py-5 lg:px-10">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.1em] text-[#C7C1BA] mb-1">Vídeos Privados</p>
+          <p className="font-mono text-xl sm:text-2xl font-semibold text-[#F4F1ED] tabular-nums">{stats.totalVideos}</p>
         </div>
-        <div className="px-6 py-5 lg:px-10">
-          <p className="text-[11px] uppercase tracking-[0.1em] text-[#C7C1BA] mb-1">Coleções Publicadas</p>
-          <p className="font-mono text-2xl font-semibold text-[#F4F1ED] tabular-nums">{stats.collectionsCount}</p>
+        <div className="px-4 py-4 sm:px-6 sm:py-5 lg:px-10">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.1em] text-[#C7C1BA] mb-1">Coleções Publicadas</p>
+          <p className="font-mono text-xl sm:text-2xl font-semibold text-[#F4F1ED] tabular-nums">{stats.collectionsCount}</p>
         </div>
-        <div className="px-6 py-5 lg:px-10">
-          <p className="text-[11px] uppercase tracking-[0.1em] text-[#C7C1BA] mb-1">Assinatura Mensal VIP</p>
-          <p className="font-mono text-2xl font-semibold text-[#E5C158] tabular-nums">
+        <div className="px-4 py-4 sm:px-6 sm:py-5 lg:px-10">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.1em] text-[#C7C1BA] mb-1">Assinatura Mensal VIP</p>
+          <p className="font-mono text-xl sm:text-2xl font-semibold text-[#E5C158] tabular-nums">
             {formatBrl(profile.vip_monthly_price_brl)}
           </p>
         </div>
@@ -304,7 +337,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
         {/* Right Light Stone Panel: Featured Vídeo Chamada ao Vivo (4 Editable Plans) */}
         <div
           id="video-chamada"
-          className="lg:col-span-7 bg-[#E4E0DC] text-[#1C1918] p-6 sm:p-8 lg:p-10 space-y-6"
+          className="lg:col-span-7 bg-[#E4E0DC] text-[#1C1918] p-5 sm:p-8 lg:p-10 space-y-5 sm:space-y-6"
         >
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b border-[#2B2725]/20 pb-4">
             <div>
@@ -508,7 +541,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
                         e.stopPropagation();
                         onSelectVideoCallPlan(plan);
                       }}
-                      className={`mt-5 w-full inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
+                      className={`mt-5 w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
                         isHighlight
                           ? 'bg-[#E5C158] text-[#1C1918] hover:bg-[#f0cf6b]'
                           : 'bg-[#1C1918] text-[#F4F1ED] hover:bg-[#383432]'
@@ -535,10 +568,11 @@ export const Storefront: React.FC<StorefrontProps> = ({
         profile={profile}
         avatarImgFailed={avatarImgFailed}
         onOpenTipModal={onOpenTipModal}
+        onNavigateToStudio={onNavigateToStudio}
       />
 
       {/* BLOCK 3: Gallery Showcase ("ROLO DE CONTATO & PELÍCULA 35MM") */}
-      <section id="vitrine-grid" className="bg-[#EAE6E2] text-[#1C1918] p-6 sm:p-8 lg:p-12 border-b border-[#2B2725]/25 space-y-7">
+      <section id="vitrine-grid" className="bg-[#EAE6E2] text-[#1C1918] p-4 sm:p-8 lg:p-12 border-b border-[#2B2725]/25 space-y-6 sm:space-y-7">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-[#2B2725]/20 pb-5">
           <div className="space-y-1.5">
             <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#7A5412]">
@@ -562,27 +596,58 @@ export const Storefront: React.FC<StorefrontProps> = ({
               <span>{mediaItems.filter((m) => m.access_tier === 'ppv').length} Avulsos</span>
             </div>
 
-            {fan ? (
-              <div className="flex items-center gap-3 rounded-sm border border-[#2B2725]/30 bg-[#E4E0DC] px-3.5 py-2 text-xs">
-                <UserCheck className="h-4 w-4 text-[#7A5412] shrink-0" />
-                <span className="text-[#1C1918] font-medium max-w-[180px] truncate">{fan.email}</span>
-                <span className="text-[#4A4440]">·</span>
-                <span className={fan.is_vip ? 'text-[#7A5412] font-semibold' : 'text-[#4A4440]'}>
-                  {fan.is_vip ? 'VIP Ativo' : 'Conta Padrão'}
-                </span>
-                <button
-                  type="button"
-                  onClick={onLogoutFan}
-                  className="text-[#4A4440] hover:text-[#1C1918] underline cursor-pointer ml-1"
-                >
-                  Sair
-                </button>
-              </div>
-            ) : (
+            {fan ? (() => {
+              const fanLoyalty = fan.loyalty || computeFanLoyalty([]);
+              return (
+                <div className="w-full sm:w-auto flex flex-wrap items-center justify-between gap-3 rounded-sm border border-[#2B2725]/35 bg-[#1C1918] text-[#F4F1ED] px-3.5 sm:px-4 py-2.5 text-xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <UserCheck className="h-4 w-4 text-[#E5C158] shrink-0" />
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-semibold text-[#F4F1ED] max-w-[140px] sm:max-w-[160px] truncate">
+                          {fan.display_name || fan.email}
+                        </span>
+                        <LoyaltyBadge loyalty={fanLoyalty} size="xs" />
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="h-1.5 w-20 sm:w-24 overflow-hidden rounded-sm bg-[#342F2C]">
+                          <div
+                            className="h-full bg-gradient-to-r from-[#8A611C] via-[#E5C158] to-[#FFF0B3]"
+                            style={{ width: `${fanLoyalty.progress_percent}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-[10px] text-[#E5C158] tabular-nums">
+                          {fanLoyalty.is_gold_vip
+                            ? '100% · VIP Ouro'
+                            : `${fanLoyalty.purchases_count}/${fanLoyalty.gold_target_purchases} compras`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5 pl-1 border-l border-[#3A3431]">
+                    <button
+                      type="button"
+                      onClick={onOpenFanAccount}
+                      className="inline-flex items-center gap-1.5 min-h-[34px] rounded-sm bg-[#E5C158] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#1C1918] hover:bg-[#f0cf6b] transition-colors cursor-pointer"
+                    >
+                      <Award className="h-3 w-3" />
+                      <span>Painel da Conta</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onLogoutFan}
+                      className="text-[#C7C1BA] hover:text-[#F4F1ED] underline cursor-pointer py-1"
+                    >
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              );
+            })() : (
               <button
                 type="button"
                 onClick={onOpenFanLogin}
-                className="rounded-sm border border-[#2B2725]/35 bg-[#E4E0DC] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:border-[#1C1918] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                className="w-full sm:w-auto min-h-[42px] rounded-sm border border-[#2B2725]/35 bg-[#E4E0DC] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:border-[#1C1918] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Já sou assinante / Minhas compras
               </button>
@@ -591,8 +656,8 @@ export const Storefront: React.FC<StorefrontProps> = ({
         </div>
 
         {/* Interactive Filter Controls */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-1 p-1 rounded-sm bg-[#DDD8D2] border border-[#2B2725]/20 w-fit">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-1 p-1 rounded-sm bg-[#DDD8D2] border border-[#2B2725]/20 overflow-x-auto no-scrollbar max-w-full sm:flex-wrap sm:w-fit">
             {filterOptions.map((opt) => {
               const isActive = filter === opt.id;
               return (
@@ -600,7 +665,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
                   key={opt.id}
                   type="button"
                   onClick={() => setFilter(opt.id)}
-                  className={`relative px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`relative min-h-[38px] px-3 sm:px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     isActive ? 'text-[#F4F1ED]' : 'text-[#4A4440] hover:text-[#1C1918]'
                   }`}
                 >
@@ -617,13 +682,13 @@ export const Storefront: React.FC<StorefrontProps> = ({
             })}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3 w-full md:w-auto">
             {collections.length > 1 && (
               <select
                 value={collectionFilter}
                 onChange={(e) => setCollectionFilter(e.target.value)}
                 aria-label="Filtrar por coleção"
-                className="rounded-sm border border-[#2B2725]/30 bg-[#E4E0DC] px-3 py-2 text-xs font-medium text-[#1C1918] focus:border-[#1C1918] focus:outline-none"
+                className="w-full sm:w-auto min-h-[40px] rounded-sm border border-[#2B2725]/30 bg-[#E4E0DC] px-3 py-2 text-xs font-medium text-[#1C1918] focus:border-[#1C1918] focus:outline-none"
               >
                 {collections.map((col) => (
                   <option key={col} value={col}>
@@ -633,14 +698,14 @@ export const Storefront: React.FC<StorefrontProps> = ({
               </select>
             )}
 
-            <div className="relative">
+            <div className="relative w-full sm:w-56 md:w-64">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#4A4440]" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Buscar título ou coleção..."
-                className="w-56 rounded-sm border border-[#2B2725]/30 bg-[#E4E0DC] pl-9 pr-3 py-2 text-xs text-[#1C1918] placeholder:text-[#6A635D] focus:border-[#1C1918] focus:outline-none"
+                className="w-full min-h-[40px] rounded-sm border border-[#2B2725]/30 bg-[#E4E0DC] pl-9 pr-3 py-2 text-sm sm:text-xs text-[#1C1918] placeholder:text-[#6A635D] focus:border-[#1C1918] focus:outline-none"
               />
             </div>
           </div>
@@ -650,21 +715,21 @@ export const Storefront: React.FC<StorefrontProps> = ({
         {!loading && filteredMedia.length > 0 && (
           <div className="rounded-sm border-2 border-[#181615] bg-[#181615] text-[#FAF8F5] overflow-hidden">
             {/* Film Reel Rebate Edge + Perforations Top */}
-            <div className="flex items-center justify-between gap-4 px-4 py-1.5 bg-[#12100F] text-[10px] font-mono uppercase tracking-[0.14em] text-[#C7C1BA] border-b border-[#2B2725]">
-              <span className="text-[#E5C158] font-semibold">
+            <div className="flex items-center justify-between gap-3 px-3 sm:px-4 py-1.5 bg-[#12100F] text-[10px] font-mono uppercase tracking-[0.12em] sm:tracking-[0.14em] text-[#C7C1BA] border-b border-[#2B2725]">
+              <span className="text-[#E5C158] font-semibold truncate">
                 ROLO PRINCIPAL · PRÉVIAS & VIP
               </span>
               <span className="hidden sm:inline">
                 PELÍCULA 35MM · PORTRA 400 · FILME 24FPS
               </span>
-              <span className="tabular-nums">
+              <span className="tabular-nums shrink-0">
                 {filteredMedia.length} QUADROS
               </span>
             </div>
             <div className="h-[18px] w-full film-perforations-light border-b border-[#2E2926]" aria-hidden="true" />
 
             {/* Continuous Scrolling Celluloid Frames */}
-            <div className="flex items-stretch gap-3 overflow-x-auto px-4 py-3.5 bg-[#181615]">
+            <div className="flex items-stretch gap-3 overflow-x-auto snap-x snap-mandatory px-3 sm:px-4 py-3.5 bg-[#181615]">
               {filteredMedia.slice(0, 12).map((item, idx) => {
                 const frameCode = `${String(idx + 1).padStart(2, '0')}A`;
                 const unlocked = Boolean(item.is_unlocked);
@@ -694,7 +759,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
                         onSelectMedia(item);
                       }
                     }}
-                    className="group w-[205px] sm:w-[230px] shrink-0 text-left flex flex-col bg-[#110F0E] border border-[#342F2C] hover:border-[#E5C158] transition-colors rounded-sm overflow-hidden cursor-pointer"
+                    className="group snap-start w-[188px] sm:w-[225px] shrink-0 text-left flex flex-col bg-[#110F0E] border border-[#342F2C] hover:border-[#E5C158] transition-colors rounded-sm overflow-hidden cursor-pointer"
                   >
                     <div className="flex items-center justify-between px-2.5 py-1 bg-[#141211] text-[10px] font-mono uppercase tracking-wider border-b border-[#2B2725]">
                       <span className="text-[#9B948D] tabular-nums">{frameCode}</span>
@@ -740,7 +805,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
                           }}
                           aria-label={isFav ? `Remover "${item.title}" dos favoritos` : `Salvar "${item.title}" nos favoritos`}
                           aria-pressed={isFav}
-                          className={`absolute top-1.5 right-1.5 z-30 flex h-7 w-7 items-center justify-center rounded-sm border transition-colors cursor-pointer ${
+                          className={`absolute top-1.5 right-1.5 z-30 flex h-8 w-8 sm:h-7 sm:w-7 items-center justify-center rounded-sm border transition-colors cursor-pointer ${
                             isFav
                               ? 'border-rose-400/80 bg-[#181615]/90 text-rose-400'
                               : 'border-white/25 bg-[#181615]/75 text-[#FAF8F5]/80 hover:border-[#E5C158] hover:text-[#E5C158]'
@@ -844,7 +909,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
             ) : null}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-7">
             {filteredMedia.map((item, idx) => {
               const unlocked = Boolean(item.is_unlocked);
               const isVideo = item.media_type === 'video';
@@ -1036,7 +1101,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
 
                   {/* Card Info Footer (Contrast-Matched to VIP Charcoal vs Prévia/Avulso Ivory Sheet) */}
                   <div
-                    className={`p-5 space-y-2.5 border-t ${
+                    className={`p-4 sm:p-5 space-y-2.5 border-t ${
                       isVip
                         ? 'border-[#383330] bg-[#1C1918]'
                         : 'border-[#181615]/15 bg-[#FAF8F5]'
@@ -1123,7 +1188,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
         className="bg-[#2B2725] text-[#F4F1ED]"
       >
         <div className="h-[18px] w-full film-perforations-dark border-b border-[#453F3B]" aria-hidden="true" />
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center p-6 sm:p-8 lg:p-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center p-5 sm:p-8 lg:p-12">
           <div className="lg:col-span-7 space-y-5">
             <p className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#E5C158]">
               <Film className="h-3.5 w-3.5 text-[#E5C158]" />
@@ -1143,7 +1208,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
               return (
                 <div className="rounded-sm border border-[#453F3B] bg-[#181615] overflow-hidden max-w-xl">
                   <div className="h-[14px] w-full film-perforations-dark border-b border-[#342F2C]" aria-hidden="true" />
-                  <div className="grid grid-cols-3 gap-2 p-2.5 bg-[#141211]">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-2 sm:p-2.5 bg-[#141211]">
                     {vipSamples.map((vipItem, i) => {
                       const unlocked = Boolean(vipItem.is_unlocked);
                       const isVipFav = favoriteSet.has(vipItem.id);
@@ -1237,7 +1302,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
               <button
                 type="button"
                 onClick={onOpenVipModal}
-                className="w-full rounded-sm bg-[#E5C158] px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:bg-[#f0cf6b] transition-colors cursor-pointer"
+                className="w-full min-h-[44px] rounded-sm bg-[#E5C158] px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:bg-[#f0cf6b] transition-colors cursor-pointer"
               >
                 {fan?.is_vip ? 'Renovar Acesso VIP' : 'Assinar Clube VIP Agora'}
               </button>
@@ -1254,7 +1319,7 @@ export const Storefront: React.FC<StorefrontProps> = ({
                     href={waVipUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-sm border border-emerald-500/60 bg-emerald-950/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-emerald-200 hover:bg-emerald-900/60 transition-colors cursor-pointer"
+                    className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-sm border border-emerald-500/60 bg-emerald-950/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-emerald-200 hover:bg-emerald-900/60 transition-colors cursor-pointer"
                   >
                     <MessageCircle className="h-3.5 w-3.5 text-emerald-400" />
                     Enviar Comprovante no WhatsApp

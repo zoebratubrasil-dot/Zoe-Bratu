@@ -19,19 +19,30 @@ import {
   Crown,
   Wine,
 } from 'lucide-react';
-import type { CreatorProfile, FanAccount, MediaItem, PaymentMethod, SaleType, VideoCallPlan } from '../types';
+import type {
+  CreatorProfile,
+  FanAccount,
+  FanLoyaltySummary,
+  MediaItem,
+  PaymentMethod,
+  SaleType,
+  VideoCallPlan,
+  MimoGiftTier,
+} from '../types';
 import { formatBrl, formatDuration, formatDateShort } from '../lib/format';
 import { resolveVideoCallPlans } from '../lib/videoCalls';
-import { MIMO_GIFT_TIERS, type MimoGiftTier } from '../lib/mimoGifts';
+import { resolveMimoSectionConfig } from '../lib/mimoGifts';
 import { buildWhatsappReceiptUrl } from '../lib/whatsapp';
 import { PixQrCard } from './PixQrCard';
 import { ProtectedImage, ProtectedVideo } from './ProtectedMedia';
+import { FanAccountPanel } from './FanAccountPanel';
+import { LoyaltyBadge } from './LoyaltyBadge';
 
 const CREATOR_LIVE_CALL_PHOTO = '/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG';
 
 interface MediaModalProps {
   isOpen: boolean;
-  mode: 'media' | 'vip' | 'tip' | 'fan_login' | 'video_call';
+  mode: 'media' | 'vip' | 'tip' | 'fan_login' | 'fan_account' | 'video_call';
   mediaItem: MediaItem | null;
   videoCallPlan?: VideoCallPlan | null;
   tipPresetAmount?: number;
@@ -41,6 +52,10 @@ interface MediaModalProps {
   onClose: () => void;
   onFanAuthenticated: (email: string) => Promise<void>;
   onPurchaseSuccess: (email: string) => Promise<void>;
+  onOpenFanAccount?: () => void;
+  onOpenVipModal?: () => void;
+  onOpenTipModal?: () => void;
+  onLogoutFan?: () => void;
   onGoToSupabaseSetup: () => void;
   onGoToProfileSetup?: () => void;
   isFavorite?: boolean;
@@ -59,6 +74,10 @@ export const MediaModal: React.FC<MediaModalProps> = ({
   onClose,
   onFanAuthenticated,
   onPurchaseSuccess,
+  onOpenFanAccount,
+  onOpenVipModal,
+  onOpenTipModal,
+  onLogoutFan,
   onGoToSupabaseSetup,
   onGoToProfileSetup,
   isFavorite = false,
@@ -76,6 +95,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [lastOrderRef, setLastOrderRef] = useState<string>('');
+  const [checkoutLoyalty, setCheckoutLoyalty] = useState<FanLoyaltySummary | null>(null);
   const [showMissingWaNotice, setShowMissingWaNotice] = useState(false);
 
   const activeCallPlans = resolveVideoCallPlans(profile.video_call_plans).filter((p) => p.active);
@@ -100,6 +120,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
     setErrorMsg(null);
     setSuccessMsg(null);
     setLastOrderRef('');
+    setCheckoutLoyalty(null);
     setShowMissingWaNotice(false);
   }, [isOpen, mode, mediaItem?.id, videoCallPlan?.id, tipPresetAmount, fan?.email, fan?.display_name]);
 
@@ -146,7 +167,13 @@ export const MediaModal: React.FC<MediaModalProps> = ({
       } else {
         await onFanAuthenticated(data.fan.email);
         setSuccessMsg('Conta sincronizada com sucesso.');
-        setTimeout(() => onClose(), 700);
+        setTimeout(() => {
+          if (onOpenFanAccount) {
+            onOpenFanAccount();
+          } else {
+            onClose();
+          }
+        }, 550);
       }
     } catch {
       setErrorMsg('Erro de conexão ao verificar conta.');
@@ -203,6 +230,9 @@ export const MediaModal: React.FC<MediaModalProps> = ({
       } else {
         const orderRef = data.sale?.external_ref ? String(data.sale.external_ref) : '';
         setLastOrderRef(orderRef);
+        if (data.loyalty) {
+          setCheckoutLoyalty(data.loyalty as FanLoyaltySummary);
+        }
         const refLabel = orderRef ? ` (Pedido ${orderRef})` : '';
         setSuccessMsg(
           saleType === 'vip_subscription'
@@ -220,6 +250,44 @@ export const MediaModal: React.FC<MediaModalProps> = ({
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const renderLoyaltyFeedbackBanner = () => {
+    if (!checkoutLoyalty) return null;
+    return (
+      <div className="rounded-sm border border-[#E5C158]/45 bg-[#1C1918] p-3.5 space-y-2 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <LoyaltyBadge loyalty={checkoutLoyalty} size="xs" />
+            <span className="font-semibold text-[#F4F1ED]">
+              {checkoutLoyalty.is_gold_vip
+                ? 'Você conquistou o badge Fã VIP Ouro!'
+                : `Nível de Lealdade · ${checkoutLoyalty.progress_percent}%`}
+            </span>
+          </div>
+          {onOpenFanAccount && (
+            <button
+              type="button"
+              onClick={onOpenFanAccount}
+              className="text-[11px] font-semibold uppercase tracking-wider text-[#E5C158] hover:underline cursor-pointer"
+            >
+              Ver Painel da Conta →
+            </button>
+          )}
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-sm bg-[#12100F] border border-[#342F2C]">
+          <div
+            className="h-full bg-gradient-to-r from-[#8A611C] via-[#E5C158] to-[#FFF0B3] transition-all duration-500"
+            style={{ width: `${checkoutLoyalty.progress_percent}%` }}
+          />
+        </div>
+        <p className="text-[11px] text-[#C7C1BA]">
+          {checkoutLoyalty.is_gold_vip
+            ? 'Seu perfil agora exibe o selo exclusivo Fã VIP Ouro.'
+            : `Falta${checkoutLoyalty.remaining_for_gold === 1 ? '' : 'm'} ${checkoutLoyalty.remaining_for_gold} compra${checkoutLoyalty.remaining_for_gold === 1 ? '' : 's'} para o badge Fã VIP Ouro.`}
+        </p>
+      </div>
+    );
   };
 
   const renderWhatsappReceiptCta = (itemLabel: string, amountBrl: number) => {
@@ -293,7 +361,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[#1C1918]/85 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#1C1918]/85 backdrop-blur-sm p-2 sm:p-4"
           role="dialog"
           aria-modal="true"
         >
@@ -303,26 +371,44 @@ export const MediaModal: React.FC<MediaModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: 6 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className="relative w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-sm border border-[#453F3B] bg-[#23201E] text-[#F4F1ED] shadow-2xl"
+            className="relative w-full max-w-4xl max-h-[94dvh] overflow-y-auto rounded-sm border border-[#453F3B] bg-[#23201E] text-[#F4F1ED] shadow-2xl"
           >
         <button
           type="button"
           onClick={onClose}
           aria-label="Fechar janela"
-          className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-sm border border-[#453F3B] bg-[#1C1918]/90 text-[#DED9D3] hover:text-[#F4F1ED] hover:border-[#E5C158] transition-colors cursor-pointer"
+          className="absolute right-3 top-3 sm:right-4 sm:top-4 z-20 flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-sm border border-[#453F3B] bg-[#1C1918]/95 text-[#DED9D3] hover:text-[#F4F1ED] hover:border-[#E5C158] transition-colors shadow-lg cursor-pointer"
         >
           <X className="h-5 w-5" />
         </button>
 
+        {/* MODE: FAN ACCOUNT & LOYALTY PANEL */}
+        {mode === 'fan_account' && fan && (
+          <FanAccountPanel
+            fan={fan}
+            profile={profile}
+            onOpenVipModal={() => {
+              if (onOpenVipModal) onOpenVipModal();
+            }}
+            onOpenTipModal={() => {
+              if (onOpenTipModal) onOpenTipModal();
+            }}
+            onLogoutFan={() => {
+              if (onLogoutFan) onLogoutFan();
+            }}
+            onClose={onClose}
+          />
+        )}
+
         {/* MODE: FAN LOGIN */}
         {mode === 'fan_login' && (
-          <div className="p-8 max-w-lg mx-auto">
+          <div className="p-5 sm:p-8 max-w-lg mx-auto">
             <p className="text-xs font-medium text-[#D4AF37] mb-2">Área do Assinante +18</p>
             <h2 className="font-display text-2xl font-semibold text-zinc-50 mb-2">
-              Acessar minhas compras e VIP
+              Acessar minhas compras e Nível de Lealdade
             </h2>
             <p className="text-sm text-zinc-400 mb-6">
-              Digite o e-mail utilizado nas suas compras para restaurar automaticamente sua assinatura VIP e conteúdos avulsos desbloqueados no Supabase.
+              Digite o e-mail utilizado nas suas compras para restaurar sua assinatura VIP, conteúdos avulsos e acompanhar seu progresso para o badge <strong className="text-[#E5C158]">Fã VIP Ouro</strong>.
             </p>
             <form onSubmit={handleFanLogin} className="space-y-4">
               <div>
@@ -370,7 +456,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                 disabled={submitting}
                 className="w-full rounded-lg bg-[#E5C158] px-5 py-2.5 text-sm font-semibold text-[#1C1918] hover:bg-[#f0cf6b] disabled:opacity-50 transition-colors cursor-pointer"
               >
-                {submitting ? 'Verificando no Supabase...' : 'Entrar e Sincronizar Acesso'}
+                {submitting ? 'Verificando no Supabase...' : 'Entrar e Abrir Minha Conta'}
               </button>
             </form>
           </div>
@@ -382,7 +468,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
             {/* Media Viewport */}
             <div
               onContextMenu={(e) => e.preventDefault()}
-              className="lg:col-span-7 bg-black flex items-center justify-center min-h-[340px] lg:min-h-[500px] relative border-b lg:border-b-0 lg:border-r border-[#453F3B] media-shield"
+              className="lg:col-span-7 bg-black flex items-center justify-center min-h-[250px] sm:min-h-[340px] lg:min-h-[500px] relative border-b lg:border-b-0 lg:border-r border-[#453F3B] media-shield"
             >
               {isMediaUnlocked && mediaItem.media_url ? (
                 mediaItem.media_type === 'video' ? (
@@ -390,19 +476,19 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                     src={mediaItem.media_url}
                     title={mediaItem.title}
                     controls
-                    containerClassName="relative w-full h-full min-h-[340px] lg:min-h-[500px] flex items-center justify-center bg-black"
-                    className="max-h-[75vh] w-full object-contain bg-black"
+                    containerClassName="relative w-full h-full min-h-[250px] sm:min-h-[340px] lg:min-h-[500px] flex items-center justify-center bg-black"
+                    className="max-h-[65dvh] sm:max-h-[75vh] w-full object-contain bg-black"
                   />
                 ) : (
                   <ProtectedImage
                     src={mediaItem.media_url}
                     alt={mediaItem.title}
                     containerClassName="relative w-full h-full flex items-center justify-center bg-black"
-                    className="max-h-[75vh] w-full object-contain"
+                    className="max-h-[65dvh] sm:max-h-[75vh] w-full object-contain"
                   />
                 )
               ) : (
-                <div className="relative w-full h-full min-h-[360px] flex flex-col items-center justify-center p-8 text-center overflow-hidden">
+                <div className="relative w-full h-full min-h-[260px] sm:min-h-[360px] flex flex-col items-center justify-center p-6 sm:p-8 text-center overflow-hidden">
                   {mediaItem.preview_url && (
                     <ProtectedImage
                       src={mediaItem.preview_url}
@@ -430,7 +516,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
             </div>
 
             {/* Info & Checkout Sidebar */}
-            <div className="lg:col-span-5 p-6 lg:p-8 flex flex-col justify-between">
+            <div className="lg:col-span-5 p-5 sm:p-6 lg:p-8 flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3">
                   <span className="inline-flex items-center gap-1 text-zinc-300">
@@ -480,9 +566,12 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                 )}
 
                 {isMediaUnlocked ? (
-                  <div className="rounded-lg border border-emerald-800/50 bg-emerald-950/20 p-4 text-sm text-emerald-200 flex items-center gap-3">
-                    <Check className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span>Acesso liberado na sua conta. Aproveite o conteúdo em alta definição.</span>
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-emerald-800/50 bg-emerald-950/20 p-4 text-sm text-emerald-200 flex items-center gap-3">
+                      <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+                      <span>Acesso liberado na sua conta. Aproveite o conteúdo em alta definição.</span>
+                    </div>
+                    {renderLoyaltyFeedbackBanner()}
                   </div>
                 ) : (
                   <div className="space-y-4 border-t border-[#453F3B] pt-5">
@@ -619,7 +708,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
 
         {/* MODE: VIP SUBSCRIPTION */}
         {mode === 'vip' && (
-          <div className="p-8 max-w-xl mx-auto">
+          <div className="p-5 sm:p-8 max-w-xl mx-auto">
             <p className="text-xs font-medium text-[#D4AF37] mb-2">Acesso Total Mensal</p>
             <h2 className="font-display text-2xl font-semibold text-zinc-50 mb-2">
               Clube VIP — {profile.display_name}
@@ -725,8 +814,11 @@ export const MediaModal: React.FC<MediaModalProps> = ({
               )}
 
               {successMsg && (
-                <div className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3 text-xs text-emerald-200">
-                  {successMsg}
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3 text-xs text-emerald-200">
+                    {successMsg}
+                  </div>
+                  {renderLoyaltyFeedbackBanner()}
                 </div>
               )}
 
@@ -748,8 +840,11 @@ export const MediaModal: React.FC<MediaModalProps> = ({
 
         {/* MODE: ELABORATE LUXURY MIMO / TIP CONCIERGE */}
         {mode === 'tip' && (() => {
+          const mimoConfig = resolveMimoSectionConfig(profile.mimo_config);
+          const activeTiers = mimoConfig.tiers.filter((t) => t.active);
+          const displayTiers = activeTiers.length > 0 ? activeTiers : mimoConfig.tiers;
           const parsedAmount = Number(tipAmount || 0);
-          const matchedTier: MimoGiftTier | undefined = MIMO_GIFT_TIERS.find(
+          const matchedTier: MimoGiftTier | undefined = displayTiers.find(
             (t) => Number(t.amount_brl) === parsedAmount
           );
           const renderSmallIcon = (icon: MimoGiftTier['icon'], active: boolean) => {
@@ -761,7 +856,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
           };
 
           return (
-            <div className="p-6 sm:p-8 max-w-2xl mx-auto space-y-6">
+            <div className="p-4 sm:p-8 max-w-2xl mx-auto space-y-5 sm:space-y-6">
               {/* Illuminated Portrait Hero Banner */}
               <div className="relative overflow-hidden rounded-sm border border-[#E5C158]/50 bg-gradient-to-r from-[#1C1918] via-[#2B221E] to-[#1C1918] p-5">
                 <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-4">
@@ -784,19 +879,19 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                   <div className="space-y-1.5">
                     <p className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-[#E5C158]">
                       <Gift className="h-3.5 w-3.5" />
-                      Gesto de Carinho · Mimo VIP
+                      {mimoConfig.section_kicker}
                     </p>
                     <h2 className="font-display text-2xl sm:text-3xl font-bold uppercase tracking-tight text-[#F4F1ED]">
-                      Surpreenda {profile.display_name} Com Um Mimo
+                      {mimoConfig.modal_title}
                     </h2>
                     <p className="text-xs text-[#DED9D3] leading-relaxed">
-                      Escolha um mimo abaixo ou defina um valor livre. Seu gesto ganha destaque imediato junto com seu recado pessoal para a Carioca.
+                      {mimoConfig.modal_description}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* 4 Luxury Preset Cards */}
+              {/* 6 Editable Luxury Preset Cards */}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-[#F4F1ED]">Selecione um mimo especial</span>
@@ -804,8 +899,8 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                     Destaque Instantâneo
                   </span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {MIMO_GIFT_TIERS.map((tier) => {
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {displayTiers.map((tier) => {
                     const isSelected = Number(tipAmount || 0) === tier.amount_brl;
                     return (
                       <button
@@ -969,27 +1064,30 @@ export const MediaModal: React.FC<MediaModalProps> = ({
               )}
 
               {successMsg && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="relative overflow-hidden rounded-sm border border-[#E5C158] bg-gradient-to-r from-[#2D2419] via-[#3A2B1D] to-[#2D2419] p-4 text-xs text-[#F4F1ED]"
-                >
-                  <div className="flex items-start gap-3">
-                    <motion.span
-                      animate={{ rotate: [0, 12, -12, 0], scale: [1, 1.15, 1] }}
-                      transition={{ duration: 0.9, repeat: 2 }}
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-[#E5C158] text-[#1C1918]"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                    </motion.span>
-                    <div>
-                      <p className="font-semibold text-[#E5C158] uppercase tracking-wider text-[11px]">
-                        Mimo Registrado Com Brilho!
-                      </p>
-                      <p className="mt-1 text-[#DED9D3]">{successMsg}</p>
+                <div className="space-y-3">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative overflow-hidden rounded-sm border border-[#E5C158] bg-gradient-to-r from-[#2D2419] via-[#3A2B1D] to-[#2D2419] p-4 text-xs text-[#F4F1ED]"
+                  >
+                    <div className="flex items-start gap-3">
+                      <motion.span
+                        animate={{ rotate: [0, 12, -12, 0], scale: [1, 1.15, 1] }}
+                        transition={{ duration: 0.9, repeat: 2 }}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-[#E5C158] text-[#1C1918]"
+                      >
+                        <Sparkles className="h-4 w-4" />
+                      </motion.span>
+                      <div>
+                        <p className="font-semibold text-[#E5C158] uppercase tracking-wider text-[11px]">
+                          Mimo Registrado Com Brilho!
+                        </p>
+                        <p className="mt-1 text-[#DED9D3]">{successMsg}</p>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                  {renderLoyaltyFeedbackBanner()}
+                </div>
               )}
 
               <button
@@ -1018,7 +1116,7 @@ export const MediaModal: React.FC<MediaModalProps> = ({
 
         {/* MODE: VIDEO CALL CHECKOUT */}
         {mode === 'video_call' && currentCallPlan && (
-          <div className="p-8 max-w-2xl mx-auto">
+          <div className="p-5 sm:p-8 max-w-2xl mx-auto">
             <div className="grid grid-cols-1 sm:grid-cols-12 overflow-hidden rounded-sm border border-[#453F3B] bg-[#1C1918] mb-5">
               <div className="relative sm:col-span-4 h-44 sm:h-40 overflow-hidden bg-[#23201E] border-b sm:border-b-0 sm:border-r border-[#453F3B]">
                 <ProtectedImage
@@ -1188,8 +1286,11 @@ export const MediaModal: React.FC<MediaModalProps> = ({
               )}
 
               {successMsg && (
-                <div className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3 text-xs text-emerald-200">
-                  {successMsg}
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-emerald-500/40 bg-emerald-950/30 p-3 text-xs text-emerald-200">
+                    {successMsg}
+                  </div>
+                  {renderLoyaltyFeedbackBanner()}
                 </div>
               )}
 

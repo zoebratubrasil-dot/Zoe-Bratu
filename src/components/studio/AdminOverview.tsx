@@ -142,47 +142,47 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       </div>
 
       {/* KPI Summary Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 divide-y lg:divide-y-0 lg:divide-x divide-[#181615]/15 rounded-sm border border-[#181615]/20 bg-[#F3EFEA]">
-        <div className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+      <div className="grid grid-cols-2 lg:grid-cols-4 [&>*:nth-child(odd)]:border-r lg:[&>*:nth-child(odd)]:border-r-0 [&>*:nth-child(-n+2)]:border-b lg:[&>*:nth-child(-n+2)]:border-b-0 lg:divide-x divide-[#181615]/15 rounded-sm border border-[#181615]/20 bg-[#F3EFEA]">
+        <div className="p-3.5 sm:p-5">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
             Receita Confirmada
           </p>
-          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
+          <p className="font-mono text-lg sm:text-2xl font-bold text-[#181615] tabular-nums">
             {formatBrl(dashboard.metrics.totalRevenueBrl)}
           </p>
         </div>
-        <div className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+        <div className="p-3.5 sm:p-5">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
             Acervo Total
           </p>
-          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
+          <p className="font-mono text-lg sm:text-2xl font-bold text-[#181615] tabular-nums">
             {dashboard.mediaItems.length}
-            <span className="text-xs font-sans font-normal text-[#524B45] ml-2">
+            <span className="text-[11px] sm:text-xs font-sans font-normal text-[#524B45] ml-1.5 sm:ml-2 block sm:inline">
               ({draftsCount} rascunho{draftsCount === 1 ? '' : 's'})
             </span>
           </p>
         </div>
-        <div className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+        <div className="p-3.5 sm:p-5">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
             Assinantes VIP Ativos
           </p>
-          <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums">
+          <p className="font-mono text-lg sm:text-2xl font-bold text-[#181615] tabular-nums">
             {dashboard.metrics.activeVipFans}
           </p>
         </div>
-        <div className="p-5">
-          <p className="text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
+        <div className="p-3.5 sm:p-5">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] font-semibold text-[#524B45] mb-1">
             Banco Supabase
           </p>
-          <div className="flex items-center gap-2 mt-1.5 text-sm font-semibold">
+          <div className="flex items-center gap-2 mt-1.5 text-xs sm:text-sm font-semibold">
             {supabaseReady ? (
               <>
-                <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+                <CheckCircle2 className="h-4 w-4 text-emerald-700 shrink-0" />
                 <span className="text-emerald-900">Conectado</span>
               </>
             ) : (
               <>
-                <AlertTriangle className="h-4 w-4 text-amber-700" />
+                <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0" />
                 <span className="text-amber-900">Pendente</span>
               </>
             )}

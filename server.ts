@@ -10,7 +10,9 @@ import crypto from 'node:crypto';
 import JSZip from 'jszip';
 import { createServer as createViteServer } from 'vite';
 import { DEFAULT_CREATOR_ABOUT, sanitizeCreatorAboutContent } from './src/lib/creatorAbout';
-import type { CreatorAboutContent } from './src/types';
+import { DEFAULT_MIMO_SECTION, sanitizeMimoSectionConfig } from './src/lib/mimoGifts';
+import { computeFanLoyalty } from './src/lib/loyalty';
+import type { CreatorAboutContent, MimoSectionConfig } from './src/types';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), override: true });
@@ -22,6 +24,7 @@ const EDGE_WELCOME_FN_PATH = path.resolve(process.cwd(), 'supabase/functions/wel
 const VIDEO_CALL_PLANS_PATH = path.resolve(process.cwd(), '.video-call-plans.json');
 const CREATOR_CONTACT_PATH = path.resolve(process.cwd(), '.creator-contact.json');
 const CREATOR_ABOUT_PATH = path.resolve(process.cwd(), '.creator-about.json');
+const CREATOR_MIMO_PATH = path.resolve(process.cwd(), '.creator-mimo-config.json');
 
 export interface VideoCallPlanConfig {
   id: string;
@@ -171,6 +174,29 @@ function resolveProfileAboutSection(profileRow: Record<string, unknown> | null |
   return readAboutSectionFallback();
 }
 
+function readMimoConfigFallback(): MimoSectionConfig {
+  try {
+    if (fs.existsSync(CREATOR_MIMO_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(CREATOR_MIMO_PATH, 'utf8'));
+      return sanitizeMimoSectionConfig(parsed);
+    }
+  } catch {
+    // ignore corrupt fallback
+  }
+  return sanitizeMimoSectionConfig(DEFAULT_MIMO_SECTION);
+}
+
+function saveMimoConfigFallback(mimoConfig: MimoSectionConfig): void {
+  fs.writeFileSync(CREATOR_MIMO_PATH, JSON.stringify(mimoConfig, null, 2) + '\n', 'utf8');
+}
+
+function resolveProfileMimoConfig(profileRow: Record<string, unknown> | null | undefined): MimoSectionConfig {
+  if (profileRow && profileRow.mimo_config && typeof profileRow.mimo_config === 'object') {
+    return sanitizeMimoSectionConfig(profileRow.mimo_config);
+  }
+  return readMimoConfigFallback();
+}
+
 function normalizeSaleRecord<T extends { sale_type: string; media_id?: string | null; external_ref?: string | null; amount_brl?: unknown }>(
   sale: T,
   mediaTitleMap: Map<string, string>
@@ -189,6 +215,81 @@ function normalizeSaleRecord<T extends { sale_type: string; media_id?: string | 
       : sale.media_id
       ? mediaTitleMap.get(sale.media_id) || 'Mídia removida'
       : null,
+  };
+}
+
+async function enrichFanWithLoyalty(
+  client: SupabaseClient,
+  fanRow: Record<string, unknown>,
+  mediaTitleMap?: Map<string, string>
+) {
+  const isVipActive =
+    Boolean(fanRow.is_vip) &&
+    (!fanRow.vip_expires_at || new Date(String(fanRow.vip_expires_at)).getTime() > Date.now());
+  const fanEmail = String(fanRow.email || '').trim().toLowerCase();
+
+  let paidSales: Array<{
+    id: string;
+    sale_type: string;
+    media_id?: string | null;
+    amount_brl: number | string;
+    payment_method: string;
+    status: string;
+    external_ref?: string | null;
+    created_at: string;
+  }> = [];
+
+  if (fanEmail) {
+    const { data: salesData } = await client
+      .from('sales')
+      .select('id, sale_type, media_id, amount_brl, payment_method, status, external_ref, created_at')
+      .eq('buyer_email', fanEmail)
+      .eq('status', 'paid')
+      .order('created_at', { ascending: false });
+    paidSales = salesData || [];
+  }
+
+  let resolvedTitleMap = mediaTitleMap;
+  if (!resolvedTitleMap) {
+    resolvedTitleMap = new Map<string, string>();
+    const mediaIds = Array.from(
+      new Set(
+        paidSales
+          .slice(0, 8)
+          .map((s) => s.media_id)
+          .filter((id): id is string => Boolean(id))
+      )
+    );
+    if (mediaIds.length > 0) {
+      const { data: mediaRows } = await client
+        .from('media_items')
+        .select('id, title')
+        .in('id', mediaIds);
+      for (const m of mediaRows || []) {
+        resolvedTitleMap.set(m.id, m.title);
+      }
+    }
+  }
+
+  const loyalty = computeFanLoyalty(paidSales);
+  const recentOrders = paidSales.slice(0, 8).map((s) => {
+    const norm = normalizeSaleRecord(s, resolvedTitleMap!);
+    return {
+      id: norm.id,
+      sale_type: norm.sale_type,
+      amount_brl: norm.amount_brl,
+      payment_method: norm.payment_method,
+      external_ref: norm.external_ref || null,
+      media_title: norm.media_title,
+      created_at: norm.created_at,
+    };
+  });
+
+  return {
+    ...fanRow,
+    is_vip: isVipActive,
+    loyalty,
+    recent_orders: recentOrders,
   };
 }
 
@@ -213,6 +314,7 @@ const DEFAULT_CREATOR_PROFILE = {
   whatsapp_number: '',
   video_call_plans: DEFAULT_VIDEO_CALL_PLANS,
   about_section: DEFAULT_CREATOR_ABOUT,
+  mimo_config: DEFAULT_MIMO_SECTION,
   age_verified_18: true,
   updated_at: new Date().toISOString(),
 };
@@ -1920,6 +2022,7 @@ async function startServer() {
           whatsapp_number: readWhatsappFallback(),
           video_call_plans: readVideoCallPlansFallback(),
           about_section: readAboutSectionFallback(),
+          mimo_config: readMimoConfigFallback(),
         }),
         mediaItems: [],
         fan: null,
@@ -1944,6 +2047,7 @@ async function startServer() {
       const resolvedPlans = resolveProfileVideoCallPlans(profileRow as Record<string, unknown> | null);
       const resolvedWhatsapp = resolveProfileWhatsapp(profileRow as Record<string, unknown> | null);
       const resolvedAbout = resolveProfileAboutSection(profileRow as Record<string, unknown> | null);
+      const resolvedMimo = resolveProfileMimoConfig(profileRow as Record<string, unknown> | null);
       const rawProfile = profileRow
         ? {
             ...DEFAULT_CREATOR_PROFILE,
@@ -1954,12 +2058,14 @@ async function startServer() {
             whatsapp_number: resolvedWhatsapp,
             video_call_plans: resolvedPlans,
             about_section: resolvedAbout,
+            mimo_config: resolvedMimo,
           }
         : {
             ...DEFAULT_CREATOR_PROFILE,
             whatsapp_number: resolvedWhatsapp,
             video_call_plans: resolvedPlans,
             about_section: resolvedAbout,
+            mimo_config: resolvedMimo,
           };
 
       const profile = maskProfileForClient(rawProfile);
@@ -1974,10 +2080,7 @@ async function startServer() {
           .eq('email', fanEmail)
           .maybeSingle();
         if (fanRow) {
-          const isVipActive =
-            Boolean(fanRow.is_vip) &&
-            (!fanRow.vip_expires_at || new Date(fanRow.vip_expires_at).getTime() > Date.now());
-          fan = { ...fanRow, is_vip: isVipActive };
+          fan = await enrichFanWithLoyalty(client, fanRow as Record<string, unknown>);
         }
         const { data: unlockedRows } = await client
           .from('unlocked_media')
@@ -2113,11 +2216,9 @@ async function startServer() {
         });
       }
 
-      const isVipActive =
-        Boolean(fan.is_vip) &&
-        (!fan.vip_expires_at || new Date(fan.vip_expires_at).getTime() > Date.now());
+      const enrichedFan = await enrichFanWithLoyalty(client, fan as Record<string, unknown>);
 
-      res.json({ fan: { ...fan, is_vip: isVipActive }, welcomeTriggered: isNewFanSignup });
+      res.json({ fan: enrichedFan, welcomeTriggered: isNewFanSignup });
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao acessar conta.' });
     }
@@ -2328,9 +2429,17 @@ async function startServer() {
         welcomeTriggered = true;
       }
 
+      const { data: fanPaidSales } = await client
+        .from('sales')
+        .select('amount_brl, status, created_at')
+        .eq('buyer_email', cleanEmail)
+        .eq('status', 'paid');
+      const loyalty = computeFanLoyalty(fanPaidSales || []);
+
       res.json({
         ok: true,
         sale: sale ? normalizeSaleRecord(sale, new Map()) : sale,
+        loyalty,
         welcomeTriggered,
       });
     } catch (err) {
@@ -2350,6 +2459,7 @@ async function startServer() {
           whatsapp_number: readWhatsappFallback(),
           video_call_plans: readVideoCallPlansFallback(),
           about_section: readAboutSectionFallback(),
+          mimo_config: readMimoConfigFallback(),
         }),
         dashboard: {
           mediaItems: [],
@@ -2381,6 +2491,7 @@ async function startServer() {
       const resolvedPlans = resolveProfileVideoCallPlans(profileRes.data as Record<string, unknown> | null);
       const resolvedWhatsapp = resolveProfileWhatsapp(profileRes.data as Record<string, unknown> | null);
       const resolvedAbout = resolveProfileAboutSection(profileRes.data as Record<string, unknown> | null);
+      const resolvedMimo = resolveProfileMimoConfig(profileRes.data as Record<string, unknown> | null);
       const rawProfile = profileRes.data
         ? {
             ...DEFAULT_CREATOR_PROFILE,
@@ -2391,12 +2502,14 @@ async function startServer() {
             whatsapp_number: resolvedWhatsapp,
             video_call_plans: resolvedPlans,
             about_section: resolvedAbout,
+            mimo_config: resolvedMimo,
           }
         : {
             ...DEFAULT_CREATOR_PROFILE,
             whatsapp_number: resolvedWhatsapp,
             video_call_plans: resolvedPlans,
             about_section: resolvedAbout,
+            mimo_config: resolvedMimo,
           };
 
       const profile = maskProfileForClient(rawProfile);
@@ -2436,7 +2549,23 @@ async function startServer() {
         .filter((s) => s.sale_type === 'video_call')
         .reduce((acc, s) => acc + s.amount_brl, 0);
 
-      const fansRows = fansRes.data || [];
+      const paidSalesByEmail = new Map<string, typeof paidSales>();
+      for (const sale of paidSales) {
+        const key = String(sale.buyer_email || '').trim().toLowerCase();
+        if (!key) continue;
+        const list = paidSalesByEmail.get(key) || [];
+        list.push(sale);
+        paidSalesByEmail.set(key, list);
+      }
+
+      const fansRows = (fansRes.data || []).map((f) => {
+        const key = String(f.email || '').trim().toLowerCase();
+        const fanPaid = paidSalesByEmail.get(key) || [];
+        return {
+          ...f,
+          loyalty: computeFanLoyalty(fanPaid),
+        };
+      });
       const activeVipFans = fansRows.filter(
         (f) => f.is_vip && (!f.vip_expires_at || new Date(f.vip_expires_at).getTime() > Date.now())
       ).length;
@@ -2973,18 +3102,31 @@ async function startServer() {
           .then(() => {}, () => {});
       }
 
+      let updatedMimo: MimoSectionConfig | null = null;
+      if (req.body?.mimo_config && typeof req.body.mimo_config === 'object') {
+        updatedMimo = sanitizeMimoSectionConfig(req.body.mimo_config);
+        saveMimoConfigFallback(updatedMimo);
+        await client
+          .from('creator_profile')
+          .update({ mimo_config: updatedMimo })
+          .eq('slug', 'solo')
+          .then(() => {}, () => {});
+      }
+
       const resolvedPlans = resolveProfileVideoCallPlans(data as Record<string, unknown>);
       const resolvedWhatsapp =
         whatsapp_number !== undefined
           ? sanitizeWhatsappNumber(whatsapp_number)
           : resolveProfileWhatsapp(data as Record<string, unknown>);
       const resolvedAbout = updatedAbout || resolveProfileAboutSection(data as Record<string, unknown>);
+      const resolvedMimo = updatedMimo || resolveProfileMimoConfig(data as Record<string, unknown>);
       res.json({
         profile: maskProfileForClient({
           ...data,
           whatsapp_number: resolvedWhatsapp,
           video_call_plans: resolvedPlans,
           about_section: resolvedAbout,
+          mimo_config: resolvedMimo,
         }),
       });
     } catch (err) {
@@ -3039,6 +3181,31 @@ async function startServer() {
       res.json({ ok: true, about_section: sanitized });
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao salvar seção Sobre a Criadora.' });
+    }
+  });
+
+  app.patch('/api/creator/mimos', requireCreatorAuth, async (req: Request, res: Response) => {
+    try {
+      const incoming = req.body?.mimo_config;
+      if (!incoming || typeof incoming !== 'object') {
+        res.status(400).json({ error: 'Configuração de Mimos Especiais inválida.' });
+        return;
+      }
+      const sanitized = sanitizeMimoSectionConfig(incoming);
+      saveMimoConfigFallback(sanitized);
+
+      const client = getAdminClient();
+      if (client) {
+        await client
+          .from('creator_profile')
+          .update({ mimo_config: sanitized, updated_at: new Date().toISOString() })
+          .eq('slug', 'solo')
+          .then(() => {}, () => {});
+      }
+
+      res.json({ ok: true, mimo_config: sanitized });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao salvar cartões de Mimos Especiais.' });
     }
   });
 

@@ -15,7 +15,9 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import type { FanAccount, WelcomeEmailOverview } from '../../types';
-import { formatDateShort } from '../../lib/format';
+import { formatBrl, formatDateShort } from '../../lib/format';
+import { computeFanLoyalty } from '../../lib/loyalty';
+import { LoyaltyBadge } from '../LoyaltyBadge';
 
 interface FansManagerProps {
   creatorToken: string;
@@ -32,7 +34,7 @@ export const FansManager: React.FC<FansManagerProps> = ({
 }) => {
   const [subTab, setSubTab] = useState<'fans' | 'welcome_email'>('fans');
   const [search, setSearch] = useState('');
-  const [tierFilter, setTierFilter] = useState<'all' | 'vip' | 'standard'>('all');
+  const [tierFilter, setTierFilter] = useState<'all' | 'vip' | 'gold_vip' | 'standard'>('all');
   const [newEmail, setNewEmail] = useState('');
   const [newName, setNewName] = useState('');
   const [newIsVip, setNewIsVip] = useState(true);
@@ -81,7 +83,9 @@ export const FansManager: React.FC<FansManagerProps> = ({
   const filteredFans = useMemo(() => {
     return fans.filter((f) => {
       const vipActive = isFanVipActive(f);
+      const isGold = Boolean(f.loyalty?.is_gold_vip);
       if (tierFilter === 'vip' && !vipActive) return false;
+      if (tierFilter === 'gold_vip' && !isGold) return false;
       if (tierFilter === 'standard' && vipActive) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -91,6 +95,11 @@ export const FansManager: React.FC<FansManagerProps> = ({
       return true;
     });
   }, [fans, tierFilter, search]);
+
+  const goldVipCount = useMemo(
+    () => fans.filter((f) => Boolean(f.loyalty?.is_gold_vip)).length,
+    [fans]
+  );
 
   const handleAddOrGrantFan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -401,12 +410,13 @@ export const FansManager: React.FC<FansManagerProps> = ({
           </form>
 
           {/* Filter Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-1 p-1 rounded-sm bg-[#EFEBE5] border border-[#181615]/20 w-fit">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-1 p-1 rounded-sm bg-[#EFEBE5] border border-[#181615]/20 overflow-x-auto no-scrollbar max-w-full sm:flex-wrap sm:w-fit">
               {(
                 [
                   { id: 'all', label: 'Todos' },
                   { id: 'vip', label: 'VIPs Ativos' },
+                  { id: 'gold_vip', label: `Fã VIP Ouro (${goldVipCount})` },
                   { id: 'standard', label: 'Padrão' },
                 ] as const
               ).map((opt) => (
@@ -414,7 +424,7 @@ export const FansManager: React.FC<FansManagerProps> = ({
                   key={opt.id}
                   type="button"
                   onClick={() => setTierFilter(opt.id)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-sm transition-colors cursor-pointer ${
+                  className={`min-h-[36px] px-3 py-1.5 text-xs font-medium rounded-sm transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     tierFilter === opt.id
                       ? 'bg-[#181615] text-[#FAF8F5] font-semibold'
                       : 'text-[#524B45] hover:text-[#181615]'
@@ -425,14 +435,14 @@ export const FansManager: React.FC<FansManagerProps> = ({
               ))}
             </div>
 
-            <div className="relative">
+            <div className="relative w-full sm:w-64">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#7A726B]" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar por e-mail ou nome..."
-                className="w-64 rounded-sm border border-[#181615]/25 bg-white pl-9 pr-3 py-2 text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
+                className="w-full min-h-[40px] rounded-sm border border-[#181615]/25 bg-white pl-9 pr-3 py-2 text-sm sm:text-xs text-[#181615] placeholder:text-[#7A726B] focus:border-[#181615] focus:outline-none"
               />
             </div>
           </div>
@@ -452,6 +462,7 @@ export const FansManager: React.FC<FansManagerProps> = ({
                   <tr>
                     <th className="px-4 py-3 font-semibold">Assinante</th>
                     <th className="px-4 py-3 font-semibold">Status VIP</th>
+                    <th className="px-4 py-3 font-semibold">Nível de Lealdade</th>
                     <th className="px-4 py-3 font-semibold">Expira em</th>
                     <th className="px-4 py-3 font-semibold">Cadastro</th>
                     <th className="px-4 py-3 font-semibold text-right">Ações</th>
@@ -460,6 +471,7 @@ export const FansManager: React.FC<FansManagerProps> = ({
                 <tbody className="divide-y divide-[#181615]/10">
                   {filteredFans.map((fan) => {
                     const activeVip = isFanVipActive(fan);
+                    const loyalty = fan.loyalty || computeFanLoyalty([]);
                     return (
                       <tr key={fan.id} className="hover:bg-[#FAF8F5] transition-colors">
                         <td className="px-4 py-3">
@@ -475,6 +487,23 @@ export const FansManager: React.FC<FansManagerProps> = ({
                           ) : (
                             <span className="text-[#524B45]">Conta Padrão</span>
                           )}
+                        </td>
+                        <td className="px-4 py-3 min-w-[190px]">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <LoyaltyBadge loyalty={loyalty} size="xs" />
+                              <span className="font-mono text-[10px] text-[#524B45] tabular-nums">
+                                {loyalty.purchases_count} compra{loyalty.purchases_count === 1 ? '' : 's'} ·{' '}
+                                {formatBrl(loyalty.total_spent_brl)}
+                              </span>
+                            </div>
+                            <div className="h-1.5 w-full overflow-hidden rounded-sm bg-[#E7E1D9]">
+                              <div
+                                className="h-full bg-gradient-to-r from-[#8A5A00] to-[#E5C158]"
+                                style={{ width: `${loyalty.progress_percent}%` }}
+                              />
+                            </div>
+                          </div>
                         </td>
                         <td className="px-4 py-3 font-mono text-[#524B45] tabular-nums">
                           {fan.vip_expires_at ? formatDateShort(fan.vip_expires_at) : '—'}

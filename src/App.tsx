@@ -12,6 +12,7 @@ import { MediaModal } from './components/MediaModal';
 import type { CreatorProfile, FanAccount, MediaItem, StorefrontStats, SupabaseStatus, VideoCallPlan } from './types';
 import { DEFAULT_VIDEO_CALL_PLANS } from './lib/videoCalls';
 import { DEFAULT_CREATOR_ABOUT } from './lib/creatorAbout';
+import { DEFAULT_MIMO_SECTION } from './lib/mimoGifts';
 import { buildWhatsappReceiptUrl } from './lib/whatsapp';
 import { useLocalFavorites } from './lib/favorites';
 
@@ -31,6 +32,7 @@ const INITIAL_PROFILE: CreatorProfile = {
   whatsapp_number: '',
   video_call_plans: DEFAULT_VIDEO_CALL_PLANS,
   about_section: DEFAULT_CREATOR_ABOUT,
+  mimo_config: DEFAULT_MIMO_SECTION,
   age_verified_18: true,
   updated_at: new Date().toISOString(),
 };
@@ -76,7 +78,7 @@ export default function App() {
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
-    mode: 'media' | 'vip' | 'tip' | 'fan_login' | 'video_call';
+    mode: 'media' | 'vip' | 'tip' | 'fan_login' | 'fan_account' | 'video_call';
     mediaItem: MediaItem | null;
     videoCallPlan: VideoCallPlan | null;
     tipPresetAmount?: number;
@@ -166,6 +168,7 @@ export default function App() {
         <Navbar
           brandName={profile.display_name}
           activeView={activeView}
+          fan={fan}
           onNavigateView={(view) => {
             setActiveView(view);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -174,6 +177,14 @@ export default function App() {
           onJumpToSection={handleJumpToSection}
           onOpenVipModal={() =>
             setModalState({ isOpen: true, mode: 'vip', mediaItem: null, videoCallPlan: null })
+          }
+          onOpenFanAccount={() =>
+            setModalState({
+              isOpen: true,
+              mode: fan ? 'fan_account' : 'fan_login',
+              mediaItem: null,
+              videoCallPlan: null,
+            })
           }
         />
 
@@ -216,6 +227,14 @@ export default function App() {
                   onOpenFanLogin={() =>
                     setModalState({ isOpen: true, mode: 'fan_login', mediaItem: null, videoCallPlan: null })
                   }
+                  onOpenFanAccount={() =>
+                    setModalState({
+                      isOpen: true,
+                      mode: fan ? 'fan_account' : 'fan_login',
+                      mediaItem: null,
+                      videoCallPlan: null,
+                    })
+                  }
                   onLogoutFan={handleLogoutFan}
                   onNavigateToStudio={(tab) => handleNavigateToStudio(tab || 'overview')}
                   favoriteIds={favoriteIds}
@@ -246,12 +265,12 @@ export default function App() {
           </AnimatePresence>
         </div>
 
-      <footer className="border-t border-[#453F3B] bg-[#23201E] py-8 px-6 lg:px-10">
-        <div className="mx-auto max-w-[1440px] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#C7C1BA]">
+      <footer className="border-t border-[#453F3B] bg-[#23201E] py-6 sm:py-8 px-4 sm:px-6 lg:px-10">
+        <div className="mx-auto max-w-[1440px] flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left text-xs text-[#C7C1BA]">
           <p>
             © {new Date().getFullYear()} {profile.display_name} · Conteúdo exclusivo para maiores de 18 anos (+18).
           </p>
-          <div className="flex flex-wrap items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-4 sm:gap-6">
             {(() => {
               const footerWaUrl = buildWhatsappReceiptUrl(profile.whatsapp_number, {
                 creatorName: profile.display_name,
@@ -262,7 +281,7 @@ export default function App() {
                   href={footerWaUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[#E5C158] hover:text-[#f0cf6b] transition-colors font-medium"
+                  className="text-[#E5C158] hover:text-[#f0cf6b] transition-colors font-medium py-1"
                 >
                   Enviar Comprovante (WhatsApp)
                 </a>
@@ -271,14 +290,14 @@ export default function App() {
             <button
               type="button"
               onClick={() => handleNavigateToStudio('supabase')}
-              className="hover:text-[#F4F1ED] transition-colors cursor-pointer"
+              className="hover:text-[#F4F1ED] transition-colors cursor-pointer py-1"
             >
               Conexão Supabase
             </button>
             <button
               type="button"
               onClick={() => handleNavigateToStudio('overview')}
-              className="hover:text-[#F4F1ED] transition-colors cursor-pointer"
+              className="hover:text-[#F4F1ED] transition-colors cursor-pointer py-1"
             >
               Administração do Site
             </button>
@@ -298,6 +317,16 @@ export default function App() {
         onClose={() => setModalState((prev) => ({ ...prev, isOpen: false }))}
         onFanAuthenticated={handleFanAuthenticated}
         onPurchaseSuccess={handleFanAuthenticated}
+        onOpenFanAccount={() =>
+          setModalState((prev) => ({ ...prev, isOpen: true, mode: 'fan_account', mediaItem: null, videoCallPlan: null }))
+        }
+        onOpenVipModal={() =>
+          setModalState({ isOpen: true, mode: 'vip', mediaItem: null, videoCallPlan: null })
+        }
+        onOpenTipModal={() =>
+          setModalState({ isOpen: true, mode: 'tip', mediaItem: null, videoCallPlan: null })
+        }
+        onLogoutFan={handleLogoutFan}
         onGoToSupabaseSetup={() => handleNavigateToStudio('supabase')}
         onGoToProfileSetup={() => handleNavigateToStudio('profile')}
         isFavorite={modalState.mediaItem ? isFavorite(modalState.mediaItem.id) : false}

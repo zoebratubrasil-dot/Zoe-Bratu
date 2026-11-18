@@ -8,7 +8,8 @@ alter table public.creator_profile
   add column if not exists whatsapp_number text default '',
   add column if not exists admin_email text,
   add column if not exists video_call_plans jsonb,
-  add column if not exists about_section jsonb;
+  add column if not exists about_section jsonb,
+  add column if not exists mimo_config jsonb;
 
 alter table public.fans
   add column if not exists welcome_email_sent_at timestamptz;
