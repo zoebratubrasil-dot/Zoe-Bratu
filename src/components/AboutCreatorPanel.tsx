@@ -19,6 +19,7 @@ import { resolveCreatorAboutContent } from '../lib/creatorAbout';
 import { formatBrl } from '../lib/format';
 import { buildWhatsappReceiptUrl } from '../lib/whatsapp';
 import { generateProfileImageAlt } from '../lib/mediaAlt';
+import { track } from '../lib/analytics';
 import { ProtectedImage } from './ProtectedMedia';
 
 type AboutModuleTab = 'carioca' | 'platform' | 'videocall';
@@ -54,6 +55,12 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
 
   const handleBookCreativeCall = () => {
     const plan = videoCallPlans[Math.min(activeExpIdx, Math.max(videoCallPlans.length - 1, 0))] || videoCallPlans[0];
+    track('video_call_click', {
+      label: plan ? `Sobre a Criadora · ${plan.title}` : 'Sobre a Criadora · Vídeo Chamada',
+      placement: 'about_panel',
+      amountBrl: plan?.price_brl,
+      targetId: plan?.id,
+    });
     if (plan) {
       onSelectVideoCallPlan(plan);
     } else {
@@ -457,14 +464,27 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5">
           <button
             type="button"
-            onClick={onOpenVipModal}
+            onClick={() => {
+              track('buy_click', {
+                label: 'Sobre a Criadora · Assinar VIP',
+                placement: 'about_panel_vip',
+                amountBrl: profile.vip_monthly_price_brl,
+              });
+              onOpenVipModal();
+            }}
             className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center rounded-sm bg-[#E5C158] px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:bg-[#f0cf6b] transition-colors cursor-pointer"
           >
             Assinar VIP ({formatBrl(profile.vip_monthly_price_brl)})
           </button>
           <button
             type="button"
-            onClick={() => onOpenTipModal()}
+            onClick={() => {
+              track('buy_click', {
+                label: 'Sobre a Criadora · Enviar Mimo',
+                placement: 'about_panel_mimo',
+              });
+              onOpenTipModal();
+            }}
             className="mimo-shimmer-btn group w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] transition-transform hover:-translate-y-0.5 cursor-pointer"
           >
             <Gift className="h-3.5 w-3.5 text-[#E5C158] transition-transform group-hover:rotate-[-10deg]" />

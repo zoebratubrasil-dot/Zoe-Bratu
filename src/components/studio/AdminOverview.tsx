@@ -15,10 +15,13 @@ import {
   AlertTriangle,
   QrCode,
   Video,
+  MousePointerClick,
+  Trash2,
 } from 'lucide-react';
 import type { CreatorDashboardData, CreatorProfile, SupabaseStatus } from '../../types';
-import { formatBrl, formatDateShort } from '../../lib/format';
+import { formatBrl, formatDateShort, formatDateTime } from '../../lib/format';
 import { resolveVideoCallPlans } from '../../lib/videoCalls';
+import { useFunnelMetrics, resetFunnelStats } from '../../lib/analytics';
 import type { StudioTab } from '../CreatorStudio';
 import { ProtectedImage } from '../ProtectedMedia';
 
@@ -37,6 +40,7 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   onNavigateTab,
   onOpenStorefront,
 }) => {
+  const funnel = useFunnelMetrics();
   const photosCount = dashboard.mediaItems.filter((m) => m.media_type === 'photo').length;
   const videosCount = dashboard.mediaItems.filter((m) => m.media_type === 'video').length;
   const draftsCount = dashboard.mediaItems.filter((m) => !m.is_published).length;
@@ -395,6 +399,125 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
             </div>
           )}
         </div>
+      </div>
+
+      {/* First-Party LocalStorage Conversion Funnel Panel (Zero 3P Cookies) */}
+      <div className="rounded-sm border border-[#181615]/20 bg-[#F3EFEA] p-5 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#181615]/15 pb-3">
+          <div className="flex items-start gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-sm border border-[#181615]/20 bg-white shrink-0">
+              <MousePointerClick className="h-4 w-4 text-[#181615]" />
+            </div>
+            <div>
+              <h3 className="font-display text-xl font-bold uppercase tracking-tight text-[#181615]">
+                Funil de Conversão Privado (LocalStorage)
+              </h3>
+              <p className="text-[11px] text-[#524B45]">
+                Medição de cliques em &quot;Comprar&quot; e &quot;Vídeo Chamada&quot; persistida localmente sem cookies de terceiros.
+              </p>
+            </div>
+          </div>
+          {funnel.recentEvents.length > 0 && (
+            <button
+              type="button"
+              onClick={() => resetFunnelStats()}
+              className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-sm border border-[#181615]/25 bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-[#181615] hover:border-[#181615] transition-colors cursor-pointer"
+            >
+              <Trash2 className="h-3 w-3" />
+              Limpar Funil Local
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="rounded-sm border border-[#181615]/15 bg-white p-3.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#524B45]">
+              Cliques · Comprar / VIP
+            </p>
+            <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums mt-1">
+              {funnel.buyClicks}
+            </p>
+            <p className="text-[11px] text-[#524B45] mt-0.5 tabular-nums">
+              {funnel.buyCheckouts} checkout{funnel.buyCheckouts === 1 ? '' : 's'} iniciado{funnel.buyCheckouts === 1 ? '' : 's'}
+            </p>
+          </div>
+
+          <div className="rounded-sm border border-[#181615]/15 bg-white p-3.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#524B45]">
+              Cliques · Vídeo Chamada
+            </p>
+            <p className="font-mono text-2xl font-bold text-[#181615] tabular-nums mt-1">
+              {funnel.videoCallClicks}
+            </p>
+            <p className="text-[11px] text-[#524B45] mt-0.5 tabular-nums">
+              {funnel.videoCallCheckouts} reserva{funnel.videoCallCheckouts === 1 ? '' : 's'} iniciada{funnel.videoCallCheckouts === 1 ? '' : 's'}
+            </p>
+          </div>
+
+          <div className="rounded-sm border border-[#181615]/15 bg-white p-3.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#524B45]">
+              Conversão · Comprar
+            </p>
+            <p className="font-mono text-2xl font-bold text-[#8A5A00] tabular-nums mt-1">
+              {funnel.buyConversionRate}%
+            </p>
+            <p className="text-[11px] text-[#524B45] mt-0.5 tabular-nums">
+              {funnel.buyConversions} concluída{funnel.buyConversions === 1 ? '' : 's'}
+            </p>
+          </div>
+
+          <div className="rounded-sm border border-[#181615]/15 bg-white p-3.5">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#524B45]">
+              Conversão · Vídeo Chamada
+            </p>
+            <p className="font-mono text-2xl font-bold text-[#8A5A00] tabular-nums mt-1">
+              {funnel.videoCallConversionRate}%
+            </p>
+            <p className="text-[11px] text-[#524B45] mt-0.5 tabular-nums">
+              {funnel.videoCallConversions} concluída{funnel.videoCallConversions === 1 ? '' : 's'}
+            </p>
+          </div>
+        </div>
+
+        {funnel.recentEvents.length === 0 ? (
+          <p className="text-xs text-[#524B45] py-2">
+            Nenhum evento registrado neste navegador ainda. Interaja com os botões &quot;Comprar / Assinar VIP&quot; ou &quot;Vídeo Chamada&quot; na vitrine pública para acompanhar o funil em tempo real.
+          </p>
+        ) : (
+          <div className="divide-y divide-[#181615]/15 rounded-sm border border-[#181615]/15 bg-white px-3.5">
+            {funnel.recentEvents.slice(0, 6).map((evt) => (
+              <div key={evt.id} className="py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase ${
+                      evt.event === 'purchase_completed'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : evt.category === 'video_call'
+                        ? 'bg-[#181615] text-[#E5C158]'
+                        : 'bg-[#E7E1D9] text-[#181615]'
+                    }`}
+                  >
+                    {evt.event === 'purchase_completed'
+                      ? 'Pago'
+                      : evt.event === 'checkout_submit'
+                      ? 'Checkout'
+                      : evt.category === 'video_call'
+                      ? 'Vídeo Chamada'
+                      : 'Comprar'}
+                  </span>
+                  <span className="font-medium text-[#181615] truncate">{evt.label}</span>
+                  <span className="text-[11px] text-[#524B45] hidden sm:inline">({evt.placement})</span>
+                </div>
+                <div className="flex items-center gap-3 shrink-0 font-mono text-[11px] text-[#524B45]">
+                  {typeof evt.amount_brl === 'number' && evt.amount_brl > 0 && (
+                    <span className="font-semibold text-[#8A5A00]">{formatBrl(evt.amount_brl)}</span>
+                  )}
+                  <span>{formatDateTime(evt.created_at)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

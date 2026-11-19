@@ -5,6 +5,7 @@ import type { CreatorProfile, MimoGiftTier } from '../types';
 import { resolveMimoSectionConfig } from '../lib/mimoGifts';
 import { formatBrl } from '../lib/format';
 import { generateProfileImageAlt } from '../lib/mediaAlt';
+import { track } from '../lib/analytics';
 import { ProtectedImage } from './ProtectedMedia';
 
 interface MimoShowcaseSectionProps {
@@ -106,7 +107,13 @@ export const MimoShowcaseSection: React.FC<MimoShowcaseSectionProps> = ({
           <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col items-stretch sm:items-center lg:items-end justify-end gap-3">
             <button
               type="button"
-              onClick={() => onOpenTipModal()}
+              onClick={() => {
+                track('buy_click', {
+                  label: 'Vitrine de Mimos · Enviar Mimo',
+                  placement: 'mimo_showcase_cta',
+                });
+                onOpenTipModal();
+              }}
               className="mimo-shimmer-btn group w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2.5 rounded-sm px-6 py-3.5 text-xs font-bold uppercase tracking-[0.14em] text-[#FAF8F5] transition-transform duration-200 hover:-translate-y-0.5 cursor-pointer"
             >
               <Gift className="h-4 w-4 text-[#E5C158] transition-transform duration-200 group-hover:rotate-[-10deg] group-hover:scale-110" />
@@ -129,7 +136,15 @@ export const MimoShowcaseSection: React.FC<MimoShowcaseSectionProps> = ({
                   key={tier.id}
                   whileHover={{ y: -4 }}
                   transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                  onClick={() => onOpenTipModal(tier.amount_brl)}
+                  onClick={() => {
+                    track('buy_click', {
+                      label: `Mimo · ${tier.title}`,
+                      placement: 'mimo_card',
+                      amountBrl: tier.amount_brl,
+                      targetId: tier.id,
+                    });
+                    onOpenTipModal(tier.amount_brl);
+                  }}
                   className={`mimo-card-sheen group relative flex flex-col justify-between rounded-sm border p-5 cursor-pointer transition-colors ${
                     isFeatured
                       ? 'border-[#E5C158] bg-gradient-to-b from-[#332924] via-[#2B2725] to-[#1E1A18] shadow-[0_12px_32px_-12px_rgba(229,193,88,0.35)]'

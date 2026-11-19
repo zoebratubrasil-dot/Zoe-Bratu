@@ -1,6 +1,7 @@
 import React from 'react';
 import { Crown, UserPlus, UserCheck } from 'lucide-react';
 import type { FanAccount } from '../types';
+import { track } from '../lib/analytics';
 
 export type AppView = 'storefront' | 'studio';
 
@@ -49,7 +50,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => onJumpToSection('video-chamada')}
+            onClick={() => {
+              track('video_call_click', {
+                label: 'Menu Superior · Vídeo Chamada',
+                placement: 'navbar',
+              });
+              onJumpToSection('video-chamada');
+            }}
             className="py-1.5 whitespace-nowrap shrink-0 hover:text-[#1C1918] transition-colors cursor-pointer"
           >
             Vídeo Chamada
@@ -115,7 +122,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             type="button"
-            onClick={onOpenVipModal}
+            onClick={() => {
+              track('buy_click', {
+                label: 'Menu Superior · Assinar VIP',
+                placement: 'navbar_vip',
+              });
+              onOpenVipModal();
+            }}
             className="min-h-[38px] sm:min-h-[40px] px-3 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-[#F4F1ED] bg-[#1C1918] rounded-sm hover:bg-[#383432] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             <span className="sm:hidden">VIP</span>

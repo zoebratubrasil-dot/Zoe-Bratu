@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import type { CreatorProfile, StorefrontStats } from '../types';
-import { buildStorefrontJsonLd } from '../lib/seo';
+import { buildDynamicSeoMeta, buildStorefrontJsonLd } from '../lib/seo';
 
 interface SeoHeadManagerProps {
   activeView: 'storefront' | 'studio';
@@ -36,20 +36,10 @@ export const SeoHeadManager: React.FC<SeoHeadManagerProps> = ({
   useEffect(() => {
     const origin = window.location.origin;
     const isAdmin = activeView === 'studio';
-    const canonicalUrl = isAdmin ? `${origin}/admin` : `${origin}/`;
-    const shareImage = `${origin}/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG`;
+    const meta = buildDynamicSeoMeta(profile, stats, origin);
+    const canonicalUrl = isAdmin ? `${origin}/admin` : meta.canonicalUrl;
 
-    const publicTitle =
-      profile.display_name && profile.display_name !== 'Lorena Noir'
-        ? `Vídeo Chamada Modelo Feminina Atraente ${profile.display_name}`
-        : 'Vídeo Chamada Modelo Feminina Atraente Lorena Noir';
-
-    const publicDescription =
-      'Vídeo chamada privativa 1 a 1 via Pix somente entre 1 internauta e modelo, 6 cartões de mimos especiais, Clube VIP e acervo exclusivo +18 de Lorena Noir.';
-
-    document.title = isAdmin
-      ? `Administração · ${publicTitle}`
-      : publicTitle;
+    document.title = isAdmin ? `Administração · ${meta.title}` : meta.title;
 
     upsertLink('canonical', canonicalUrl);
 
@@ -69,30 +59,28 @@ export const SeoHeadManager: React.FC<SeoHeadManagerProps> = ({
       );
     }
 
-    upsertMeta('name', 'description', publicDescription);
-    upsertMeta(
-      'name',
-      'keywords',
-      'vídeo chamada privada 1 a 1, Lorena Noir, vídeo chamada via Pix, modelo feminina atraente, Clube VIP, mimos especiais, acervo 35mm exclusivo +18'
-    );
+    upsertMeta('name', 'description', meta.description);
+    upsertMeta('name', 'keywords', meta.keywords);
     upsertMeta('name', 'author', profile.display_name);
 
-    // OpenGraph
+    // OpenGraph dynamic tags with live DB statistics
     upsertMeta('property', 'og:type', 'website');
     upsertMeta('property', 'og:locale', 'pt_BR');
-    upsertMeta('property', 'og:site_name', publicTitle);
-    upsertMeta('property', 'og:title', publicTitle);
-    upsertMeta('property', 'og:description', publicDescription);
+    upsertMeta('property', 'og:site_name', meta.siteName);
+    upsertMeta('property', 'og:title', meta.ogTitle);
+    upsertMeta('property', 'og:description', meta.ogDescription);
     upsertMeta('property', 'og:url', canonicalUrl);
-    upsertMeta('property', 'og:image', shareImage);
-    upsertMeta('property', 'og:image:alt', `Retrato editorial de ${profile.display_name}`);
+    upsertMeta('property', 'og:image', meta.imageUrl);
+    upsertMeta('property', 'og:image:secure_url', meta.imageUrl);
+    upsertMeta('property', 'og:image:type', 'image/jpeg');
+    upsertMeta('property', 'og:image:alt', meta.imageAlt);
 
-    // Twitter / X Cards
+    // Twitter / X dynamic cards
     upsertMeta('name', 'twitter:card', 'summary_large_image');
-    upsertMeta('name', 'twitter:title', publicTitle);
-    upsertMeta('name', 'twitter:description', publicDescription);
-    upsertMeta('name', 'twitter:image', shareImage);
-    upsertMeta('name', 'twitter:image:alt', `Retrato editorial de ${profile.display_name}`);
+    upsertMeta('name', 'twitter:title', meta.ogTitle);
+    upsertMeta('name', 'twitter:description', meta.ogDescription);
+    upsertMeta('name', 'twitter:image', meta.imageUrl);
+    upsertMeta('name', 'twitter:image:alt', meta.imageAlt);
 
     // Live Schema.org @graph JSON-LD (only on public storefront)
     const scriptId = 'dynamic-seo-jsonld';

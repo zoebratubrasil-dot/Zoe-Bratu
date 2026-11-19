@@ -7,6 +7,7 @@ import { resolveVideoCallPlans } from '../lib/videoCalls';
 import { buildWhatsappReceiptUrl } from '../lib/whatsapp';
 import { computeFanLoyalty } from '../lib/loyalty';
 import { generateMediaAlt, generateProfileImageAlt } from '../lib/mediaAlt';
+import { track } from '../lib/analytics';
 import { ProtectedImage, ProtectedVideo } from './ProtectedMedia';
 import { AboutCreatorPanel } from './AboutCreatorPanel';
 import { MimoShowcaseSection } from './MimoShowcaseSection';
@@ -151,7 +152,15 @@ export const Storefront: React.FC<StorefrontProps> = ({
           <button
             key={navLink.id}
             type="button"
-            onClick={() => document.getElementById(navLink.id)?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => {
+              if (navLink.id === 'video-chamada') {
+                track('video_call_click', {
+                  label: 'Barra Rápida Mobile · Vídeo Chamada',
+                  placement: 'mobile_nav',
+                });
+              }
+              document.getElementById(navLink.id)?.scrollIntoView({ behavior: 'smooth' });
+            }}
             className="min-h-[36px] px-3 py-1.5 rounded-sm border border-[#2B2725]/25 bg-[#EAE6E2] hover:border-[#1C1918] whitespace-nowrap shrink-0 cursor-pointer"
           >
             {navLink.label}
@@ -219,14 +228,27 @@ export const Storefront: React.FC<StorefrontProps> = ({
             <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-[#2B2725]/20 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
               <button
                 type="button"
-                onClick={onOpenVipModal}
+                onClick={() => {
+                  track('buy_click', {
+                    label: 'Hero · Assinar Clube VIP',
+                    placement: 'hero_vip',
+                    amountBrl: profile.vip_monthly_price_brl,
+                  });
+                  onOpenVipModal();
+                }}
                 className="w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center rounded-sm bg-[#1C1918] px-5 sm:px-6 py-3 text-xs font-semibold uppercase tracking-wider text-[#F4F1ED] hover:bg-[#383432] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
               >
                 Assinar Clube VIP · {formatBrl(profile.vip_monthly_price_brl)}/mês
               </button>
               <button
                 type="button"
-                onClick={() => onOpenTipModal()}
+                onClick={() => {
+                  track('buy_click', {
+                    label: 'Hero · Enviar Mimo',
+                    placement: 'hero_mimo',
+                  });
+                  onOpenTipModal();
+                }}
                 className="mimo-shimmer-btn group w-full sm:w-auto min-h-[44px] inline-flex items-center justify-center gap-2 rounded-sm px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[#FAF8F5] transition-transform duration-200 hover:-translate-y-0.5 whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <Gift className="h-3.5 w-3.5 text-[#E5C158] transition-transform duration-200 group-hover:rotate-[-12deg] group-hover:scale-110" />
@@ -354,7 +376,16 @@ export const Storefront: React.FC<StorefrontProps> = ({
                 {/* Main Frame: Uploaded Creator Photo Live on Camera for Buyer */}
                 <button
                   type="button"
-                  onClick={() => featuredPlan && onSelectVideoCallPlan(featuredPlan)}
+                  onClick={() => {
+                    if (!featuredPlan) return;
+                    track('video_call_click', {
+                      label: `Card Ao Vivo · ${featuredPlan.title}`,
+                      placement: 'video_call_live_card',
+                      amountBrl: featuredPlan.price_brl,
+                      targetId: featuredPlan.id,
+                    });
+                    onSelectVideoCallPlan(featuredPlan);
+                  }}
                   disabled={!featuredPlan}
                   className="group relative sm:col-span-5 aspect-[4/5] sm:aspect-auto sm:min-h-[280px] overflow-hidden rounded-sm border border-[#2B2725] bg-[#1C1918] text-left cursor-pointer disabled:cursor-default"
                 >
@@ -408,7 +439,16 @@ export const Storefront: React.FC<StorefrontProps> = ({
                 {/* Right Card: Cinema Camera + Buyer Exclusive Room Access */}
                 <button
                   type="button"
-                  onClick={() => featuredPlan && onSelectVideoCallPlan(featuredPlan)}
+                  onClick={() => {
+                    if (!featuredPlan) return;
+                    track('video_call_click', {
+                      label: `Card Câmera 4K · ${featuredPlan.title}`,
+                      placement: 'video_call_camera_card',
+                      amountBrl: featuredPlan.price_brl,
+                      targetId: featuredPlan.id,
+                    });
+                    onSelectVideoCallPlan(featuredPlan);
+                  }}
                   disabled={!featuredPlan}
                   className="group sm:col-span-7 flex flex-col justify-between overflow-hidden rounded-sm border border-[#2B2725] bg-[#2B2725] text-[#F4F1ED] text-left cursor-pointer disabled:cursor-default"
                 >
@@ -468,7 +508,15 @@ export const Storefront: React.FC<StorefrontProps> = ({
                 return (
                   <article
                     key={plan.id}
-                    onClick={() => onSelectVideoCallPlan(plan)}
+                    onClick={() => {
+                      track('video_call_click', {
+                        label: `Plano Chamada · ${plan.title}`,
+                        placement: 'video_call_plan_card',
+                        amountBrl: plan.price_brl,
+                        targetId: plan.id,
+                      });
+                      onSelectVideoCallPlan(plan);
+                    }}
                     className={`group relative flex flex-col justify-between rounded-sm border p-5 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer ${
                       isHighlight
                         ? 'border-[#1C1918] bg-[#2B2725] text-[#F4F1ED]'
@@ -525,6 +573,12 @@ export const Storefront: React.FC<StorefrontProps> = ({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
+                        track('video_call_click', {
+                          label: `Botão Chamada · ${plan.title}`,
+                          placement: 'video_call_plan_button',
+                          amountBrl: plan.price_brl,
+                          targetId: plan.id,
+                        });
                         onSelectVideoCallPlan(plan);
                       }}
                       className={`mt-5 w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-sm px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer ${
@@ -747,10 +801,28 @@ export const Storefront: React.FC<StorefrontProps> = ({
                     key={`strip-${item.id}`}
                     role="button"
                     tabIndex={0}
-                    onClick={() => onSelectMedia(item)}
+                    onClick={() => {
+                      if (!unlocked && item.access_tier !== 'free') {
+                        track('buy_click', {
+                          label: `${item.access_tier === 'vip' ? 'VIP' : 'Comprar'} · ${item.title}`,
+                          placement: 'filmstrip_card',
+                          amountBrl: item.access_tier === 'vip' ? profile.vip_monthly_price_brl : item.price_brl,
+                          targetId: item.id,
+                        });
+                      }
+                      onSelectMedia(item);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
+                        if (!unlocked && item.access_tier !== 'free') {
+                          track('buy_click', {
+                            label: `${item.access_tier === 'vip' ? 'VIP' : 'Comprar'} · ${item.title}`,
+                            placement: 'filmstrip_card',
+                            amountBrl: item.access_tier === 'vip' ? profile.vip_monthly_price_brl : item.price_brl,
+                            targetId: item.id,
+                          });
+                        }
                         onSelectMedia(item);
                       }
                     }}
@@ -923,7 +995,17 @@ export const Storefront: React.FC<StorefrontProps> = ({
               return (
                 <article
                   key={item.id}
-                  onClick={() => onSelectMedia(item)}
+                  onClick={() => {
+                    if (!unlocked && item.access_tier !== 'free') {
+                      track('buy_click', {
+                        label: `${item.access_tier === 'vip' ? 'VIP' : 'Comprar'} · ${item.title}`,
+                        placement: 'gallery_card',
+                        amountBrl: item.access_tier === 'vip' ? profile.vip_monthly_price_brl : item.price_brl,
+                        targetId: item.id,
+                      });
+                    }
+                    onSelectMedia(item);
+                  }}
                   className={`group cursor-pointer overflow-hidden rounded-sm border-2 transition-all duration-200 hover:-translate-y-0.5 flex flex-col justify-between ${
                     isVip
                       ? 'border-[#181615] bg-[#1C1918] text-[#FAF8F5]'
@@ -1227,10 +1309,28 @@ export const Storefront: React.FC<StorefrontProps> = ({
                           key={`vip-strip-${vipItem.id}`}
                           role="button"
                           tabIndex={0}
-                          onClick={() => onSelectMedia(vipItem)}
+                          onClick={() => {
+                            if (!unlocked) {
+                              track('buy_click', {
+                                label: `Teaser VIP · ${vipItem.title}`,
+                                placement: 'vip_teaser_card',
+                                amountBrl: profile.vip_monthly_price_brl,
+                                targetId: vipItem.id,
+                              });
+                            }
+                            onSelectMedia(vipItem);
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
+                              if (!unlocked) {
+                                track('buy_click', {
+                                  label: `Teaser VIP · ${vipItem.title}`,
+                                  placement: 'vip_teaser_card',
+                                  amountBrl: profile.vip_monthly_price_brl,
+                                  targetId: vipItem.id,
+                                });
+                              }
                               onSelectMedia(vipItem);
                             }
                           }}
@@ -1306,7 +1406,14 @@ export const Storefront: React.FC<StorefrontProps> = ({
               </div>
               <button
                 type="button"
-                onClick={onOpenVipModal}
+                onClick={() => {
+                  track('buy_click', {
+                    label: 'Bloco Clube VIP · Assinar Agora',
+                    placement: 'vip_section',
+                    amountBrl: profile.vip_monthly_price_brl,
+                  });
+                  onOpenVipModal();
+                }}
                 className="w-full min-h-[44px] rounded-sm bg-[#E5C158] px-5 py-3 text-xs font-semibold uppercase tracking-wider text-[#1C1918] hover:bg-[#f0cf6b] transition-colors cursor-pointer"
               >
                 {fan?.is_vip ? 'Renovar Acesso VIP' : 'Assinar Clube VIP Agora'}

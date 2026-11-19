@@ -12,7 +12,7 @@ import { createServer as createViteServer } from 'vite';
 import { DEFAULT_CREATOR_ABOUT, sanitizeCreatorAboutContent } from './src/lib/creatorAbout';
 import { DEFAULT_MIMO_SECTION, sanitizeMimoSectionConfig } from './src/lib/mimoGifts';
 import { DEFAULT_FAN_TESTIMONIALS, sanitizeTestimonials, computeTestimonialStats } from './src/lib/testimonials';
-import { STOREFRONT_FAQS, buildStorefrontJsonLd } from './src/lib/seo';
+import { STOREFRONT_FAQS, buildDynamicSeoMeta, buildStorefrontJsonLd } from './src/lib/seo';
 import { computeFanLoyalty } from './src/lib/loyalty';
 import type { CreatorAboutContent, FanTestimonial, MimoSectionConfig } from './src/types';
 
@@ -4039,15 +4039,19 @@ async function startServer() {
     let collectionsCount = 0;
 
     if (client) {
-      const [{ data: prof }, { data: pubMedia }] = await Promise.all([
-        client.from('creator_profile').select('*').eq('slug', 'solo').maybeSingle(),
-        client.from('media_items').select('media_type, collection_name').eq('is_published', true),
-      ]);
-      profileRow = prof as Record<string, unknown> | null;
-      const rows = pubMedia || [];
-      totalPhotos = rows.filter((m) => m.media_type === 'photo').length;
-      totalVideos = rows.filter((m) => m.media_type === 'video').length;
-      collectionsCount = new Set(rows.map((m) => m.collection_name || 'Geral')).size;
+      try {
+        const [{ data: prof }, { data: pubMedia }] = await Promise.all([
+          client.from('creator_profile').select('*').eq('slug', 'solo').maybeSingle(),
+          client.from('media_items').select('media_type, collection_name').eq('is_published', true),
+        ]);
+        profileRow = prof as Record<string, unknown> | null;
+        const rows = pubMedia || [];
+        totalPhotos = rows.filter((m) => m.media_type === 'photo').length;
+        totalVideos = rows.filter((m) => m.media_type === 'video').length;
+        collectionsCount = new Set(rows.map((m) => m.collection_name || 'Geral')).size;
+      } catch {
+        // Fallback to default SEO snapshot if DB query is temporarily unreachable
+      }
     }
 
     const plans = resolveProfileVideoCallPlans(profileRow);
@@ -4246,6 +4250,80 @@ async function startServer() {
     });
   });
 
+  const escapeHtmlAttr = (value: string): string =>
+    String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+  const escapeHtmlText = (value: string): string =>
+    String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+  const replaceMetaTag = (html: string, attr: 'name' | 'property', key: string, content: string): string => {
+    const escaped = escapeHtmlAttr(content);
+    const pattern = new RegExp(`<meta\\s+${attr}="${key}"[^>]*>`, 'i');
+    const replacement = `<meta ${attr}="${key}" content="${escaped}" />`;
+    if (pattern.test(html)) {
+      return html.replace(pattern, replacement);
+    }
+    return html.replace('</head>', `    ${replacement}\n  </head>`);
+  };
+
+  const injectDynamicSeoIntoHtml = async (rawHtml: string, req: Request): Promise<string> => {
+    const origin = resolveOriginUrl(req);
+    const isAdminRoute = req.path.toLowerCase().startsWith('/admin');
+    if (isAdminRoute) {
+      let adminHtml = rawHtml
+        .replace(/<title>[\s\S]*?<\/title>/i, '<title>Administração · Lorena Noir</title>')
+        .replace(/<script\s+id="dynamic-seo-jsonld"[^>]*>[\s\S]*?<\/script>/i, '');
+      adminHtml = replaceMetaTag(adminHtml, 'name', 'robots', 'noindex, nofollow, noarchive');
+      adminHtml = replaceMetaTag(adminHtml, 'name', 'googlebot', 'noindex, nofollow');
+      return adminHtml;
+    }
+
+    const { profile, stats } = await loadPublicSeoSnapshot();
+    const meta = buildDynamicSeoMeta(profile, stats, origin);
+    const jsonLdString = JSON.stringify(buildStorefrontJsonLd(profile, stats, origin)).replace(/</g, '\\u003c');
+
+    let html = rawHtml;
+    html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtmlText(meta.title)}</title>`);
+    html = replaceMetaTag(html, 'name', 'description', meta.description);
+    html = replaceMetaTag(html, 'name', 'keywords', meta.keywords);
+    html = replaceMetaTag(html, 'name', 'author', profile.display_name);
+    html = replaceMetaTag(html, 'property', 'og:site_name', meta.siteName);
+    html = replaceMetaTag(html, 'property', 'og:title', meta.ogTitle);
+    html = replaceMetaTag(html, 'property', 'og:description', meta.ogDescription);
+    html = replaceMetaTag(html, 'property', 'og:url', meta.canonicalUrl);
+    html = replaceMetaTag(html, 'property', 'og:image', meta.imageUrl);
+    html = replaceMetaTag(html, 'property', 'og:image:secure_url', meta.imageUrl);
+    html = replaceMetaTag(html, 'property', 'og:image:type', 'image/jpeg');
+    html = replaceMetaTag(html, 'property', 'og:image:alt', meta.imageAlt);
+    html = replaceMetaTag(html, 'name', 'twitter:title', meta.ogTitle);
+    html = replaceMetaTag(html, 'name', 'twitter:description', meta.ogDescription);
+    html = replaceMetaTag(html, 'name', 'twitter:image', meta.imageUrl);
+    html = replaceMetaTag(html, 'name', 'twitter:image:alt', meta.imageAlt);
+
+    const canonicalTag = `<link rel="canonical" href="${escapeHtmlAttr(meta.canonicalUrl)}" />`;
+    if (/<link\s+rel="canonical"[^>]*>/i.test(html)) {
+      html = html.replace(/<link\s+rel="canonical"[^>]*>/i, canonicalTag);
+    } else {
+      html = html.replace('</head>', `    ${canonicalTag}\n  </head>`);
+    }
+
+    const jsonLdTag = `<script id="dynamic-seo-jsonld" type="application/ld+json">${jsonLdString}</script>`;
+    if (/<script\s+id="dynamic-seo-jsonld"[^>]*>[\s\S]*?<\/script>/i.test(html)) {
+      html = html.replace(/<script\s+id="dynamic-seo-jsonld"[^>]*>[\s\S]*?<\/script>/i, jsonLdTag);
+    } else {
+      html = html.replace('</head>', `    ${jsonLdTag}\n  </head>`);
+    }
+
+    return html;
+  };
+
   // --- VITE / STATIC SERVING ---
 
   if (process.env.NODE_ENV !== 'production') {
@@ -4253,12 +4331,32 @@ async function startServer() {
       server: { middlewareMode: true },
       appType: 'spa',
     });
+
+    app.get(['/', '/index.html', '/admin', '/admin/*'], async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const indexPath = path.resolve(process.cwd(), 'index.html');
+        const template = fs.readFileSync(indexPath, 'utf8');
+        const transformed = await vite.transformIndexHtml(req.originalUrl, template);
+        const enrichedHtml = await injectDynamicSeoIntoHtml(transformed, req);
+        res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').setHeader('Cache-Control', 'no-store').send(enrichedHtml);
+      } catch (err) {
+        next(err);
+      }
+    });
+
     app.use(vite.middlewares);
   } else {
     const distPath = path.resolve(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+    app.use(express.static(distPath, { index: false }));
+    app.get('*', async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const distIndexPath = path.join(distPath, 'index.html');
+        const rawHtml = fs.readFileSync(distIndexPath, 'utf8');
+        const enrichedHtml = await injectDynamicSeoIntoHtml(rawHtml, req);
+        res.status(200).setHeader('Content-Type', 'text/html; charset=utf-8').setHeader('Cache-Control', 'no-store').send(enrichedHtml);
+      } catch (err) {
+        next(err);
+      }
     });
   }
 

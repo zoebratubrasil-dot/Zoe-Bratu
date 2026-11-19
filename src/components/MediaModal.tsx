@@ -34,6 +34,7 @@ import { resolveVideoCallPlans } from '../lib/videoCalls';
 import { resolveMimoSectionConfig } from '../lib/mimoGifts';
 import { buildWhatsappReceiptUrl } from '../lib/whatsapp';
 import { generateMediaAlt, generateProfileImageAlt } from '../lib/mediaAlt';
+import { track } from '../lib/analytics';
 import { PixQrCard } from './PixQrCard';
 import { ProtectedImage, ProtectedVideo } from './ProtectedMedia';
 import { FanAccountPanel } from './FanAccountPanel';
@@ -219,6 +220,24 @@ export const MediaModal: React.FC<MediaModalProps> = ({
     }
 
     const effectivePaymentMethod: PaymentMethod = saleType === 'video_call' ? 'pix' : paymentMethod;
+    const funnelCategory = saleType === 'video_call' ? 'video_call' : 'buy';
+    const funnelLabel =
+      saleType === 'video_call'
+        ? `Vídeo Chamada · ${currentCallPlan?.title || 'Sessão 1:1'}`
+        : saleType === 'vip_subscription'
+        ? 'Assinatura Clube VIP'
+        : saleType === 'ppv'
+        ? `Comprar Avulso · ${mediaItem?.title || 'Mídia'}`
+        : `Mimo · ${formatBrl(amountBrl)}`;
+    const funnelTargetId = saleType === 'video_call' ? currentCallPlan?.id : mediaItem?.id;
+
+    track('checkout_submit', {
+      category: funnelCategory,
+      label: funnelLabel,
+      placement: 'modal_checkout',
+      amountBrl,
+      targetId: funnelTargetId,
+    });
 
     setSubmitting(true);
     try {
@@ -246,6 +265,13 @@ export const MediaModal: React.FC<MediaModalProps> = ({
       if (!resp.ok) {
         setErrorMsg(data.error || 'Não foi possível concluir o pagamento.');
       } else {
+        track('purchase_completed', {
+          category: funnelCategory,
+          label: funnelLabel,
+          placement: 'modal_checkout',
+          amountBrl,
+          targetId: data.sale?.id ? String(data.sale.id) : funnelTargetId,
+        });
         const orderRef = data.sale?.external_ref ? String(data.sale.external_ref) : '';
         setLastOrderRef(orderRef);
         if (data.loyalty) {
