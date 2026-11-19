@@ -11,7 +11,8 @@ import JSZip from 'jszip';
 import { createServer as createViteServer } from 'vite';
 import { DEFAULT_CREATOR_ABOUT, sanitizeCreatorAboutContent } from './src/lib/creatorAbout';
 import { DEFAULT_MIMO_SECTION, sanitizeMimoSectionConfig } from './src/lib/mimoGifts';
-import { DEFAULT_FAN_TESTIMONIALS, sanitizeTestimonials } from './src/lib/testimonials';
+import { DEFAULT_FAN_TESTIMONIALS, sanitizeTestimonials, computeTestimonialStats } from './src/lib/testimonials';
+import { STOREFRONT_FAQS, buildStorefrontJsonLd } from './src/lib/seo';
 import { computeFanLoyalty } from './src/lib/loyalty';
 import type { CreatorAboutContent, FanTestimonial, MimoSectionConfig } from './src/types';
 
@@ -4013,6 +4014,236 @@ async function startServer() {
     } catch (err) {
       res.status(500).json({ error: err instanceof Error ? err.message : 'Erro ao gerar arquivo ZIP.' });
     }
+  });
+
+  // --- SEO & AI CRAWLER DISCOVERABILITY (robots.txt, sitemap.xml, llms.txt, AI JSON-LD) ---
+
+  const resolveOriginUrl = (req: Request): string => {
+    if (process.env.APP_URL && /^https?:\/\//i.test(process.env.APP_URL)) {
+      return process.env.APP_URL.replace(/\/+$/, '');
+    }
+    const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https')
+      .split(',')[0]
+      .trim();
+    const host = String(req.headers['x-forwarded-host'] || req.get('host') || `localhost:${PORT}`)
+      .split(',')[0]
+      .trim();
+    return `${proto}://${host}`;
+  };
+
+  const loadPublicSeoSnapshot = async () => {
+    const client = getAdminClient();
+    let profileRow: Record<string, unknown> | null = null;
+    let totalPhotos = 0;
+    let totalVideos = 0;
+    let collectionsCount = 0;
+
+    if (client) {
+      const [{ data: prof }, { data: pubMedia }] = await Promise.all([
+        client.from('creator_profile').select('*').eq('slug', 'solo').maybeSingle(),
+        client.from('media_items').select('media_type, collection_name').eq('is_published', true),
+      ]);
+      profileRow = prof as Record<string, unknown> | null;
+      const rows = pubMedia || [];
+      totalPhotos = rows.filter((m) => m.media_type === 'photo').length;
+      totalVideos = rows.filter((m) => m.media_type === 'video').length;
+      collectionsCount = new Set(rows.map((m) => m.collection_name || 'Geral')).size;
+    }
+
+    const plans = resolveProfileVideoCallPlans(profileRow);
+    const about = resolveProfileAboutSection(profileRow);
+    const mimo = resolveProfileMimoConfig(profileRow);
+    const testimonials = resolveProfileTestimonials(profileRow, { stripEmail: true }).filter(
+      (t) => t.is_published
+    );
+
+    const profile = {
+      ...DEFAULT_CREATOR_PROFILE,
+      ...(profileRow || {}),
+      vip_monthly_price_brl: Number(profileRow?.vip_monthly_price_brl || DEFAULT_CREATOR_PROFILE.vip_monthly_price_brl),
+      video_call_plans: plans,
+      about_section: about,
+      mimo_config: mimo,
+      testimonials,
+    };
+
+    const stats = {
+      totalPhotos,
+      totalVideos,
+      collectionsCount,
+      vipPriceBrl: profile.vip_monthly_price_brl,
+      activeVipCount: 0,
+    };
+
+    return { profile, stats, plans, about, mimo, testimonials };
+  };
+
+  // Prevent search/AI indexing of private /admin and /api/* responses at HTTP header level
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith('/admin') || req.path.startsWith('/api/')) {
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    }
+    next();
+  });
+
+  app.get('/robots.txt', (req: Request, res: Response) => {
+    const origin = resolveOriginUrl(req);
+    const body = [
+      'User-agent: *',
+      'Allow: /',
+      'Disallow: /admin',
+      'Disallow: /admin/',
+      'Disallow: /api/creator/',
+      'Disallow: /api/supabase/',
+      '',
+      'User-agent: Googlebot',
+      'Allow: /',
+      'Disallow: /admin',
+      '',
+      'User-agent: Google-Extended',
+      'Allow: /',
+      'Disallow: /admin',
+      '',
+      'User-agent: OAI-SearchBot',
+      'Allow: /',
+      'Disallow: /admin',
+      '',
+      'User-agent: GPTBot',
+      'Allow: /',
+      'Disallow: /admin',
+      '',
+      'User-agent: ChatGPT-User',
+      'Allow: /',
+      'Disallow: /admin',
+      '',
+      'User-agent: PerplexityBot',
+      'Allow: /',
+      'Disallow: /admin',
+      '',
+      'User-agent: Perplexity-User',
+      'Allow: /',
+      'Disallow: /admin',
+      '',
+      'User-agent: ClaudeBot',
+      'Allow: /',
+      'Disallow: /admin',
+      '',
+      'User-agent: anthropic-ai',
+      'Allow: /',
+      'Disallow: /admin',
+      '',
+      'User-agent: Applebot-Extended',
+      'Allow: /',
+      'Disallow: /admin',
+      '',
+      'User-agent: Bingbot',
+      'Allow: /',
+      'Disallow: /admin',
+      '',
+      `Sitemap: ${origin}/sitemap.xml`,
+    ].join('\n');
+
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(body);
+  });
+
+  app.get('/sitemap.xml', async (req: Request, res: Response) => {
+    const origin = resolveOriginUrl(req);
+    const { profile } = await loadPublicSeoSnapshot();
+    const lastmod = String(profile.updated_at || new Date().toISOString()).slice(0, 10);
+    const heroImg = `${origin}/assets/aistudio/Capturarjhjhhjhjh_2c54840b.JPG`;
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>${origin}/</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>${heroImg}</image:loc>
+      <image:title>Vídeo Chamada Modelo Feminina Atraente ${profile.display_name}</image:title>
+      <image:caption>${profile.display_name} (${profile.handle}) — Vídeo Chamada Privativa 1:1 via Pix, Mimos e Clube VIP +18</image:caption>
+    </image:image>
+  </url>
+</urlset>`;
+
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=1800');
+    res.send(xml);
+  });
+
+  app.get(['/llms.txt', '/llms-full.txt'], async (req: Request, res: Response) => {
+    const origin = resolveOriginUrl(req);
+    const isFull = req.path === '/llms-full.txt';
+    const { profile, stats, plans, mimo, testimonials } = await loadPublicSeoSnapshot();
+    const ratingStats = computeTestimonialStats(testimonials);
+    const activePlans = plans.filter((p) => p.active);
+    const activeMimos = mimo.tiers.filter((t) => t.active);
+
+    const lines: string[] = [
+      `# Vídeo Chamada Modelo Feminina Atraente ${profile.display_name}`,
+      '',
+      `> ${profile.bio} Localização: ${profile.location}. Handle: ${profile.handle}. Site oficial: ${origin}/`,
+      '',
+      '## Resumo dos Serviços Públicos (+18)',
+      `- **Vídeo Chamada Privativa 1:1 via Pix**: Somente 1 internauta + ${profile.display_name} ao vivo frente à câmera em sala privada fechada, mediante pagamento exclusivo via Pix.`,
+      ...activePlans.map(
+        (p) =>
+          `  - ${p.title} (${p.duration_minutes} min): R$ ${Number(p.price_brl).toFixed(2)} via Pix — ${p.description}`
+      ),
+      `- **6 Cartões de Mimos Especiais**: ${mimo.section_description}`,
+      ...activeMimos.map(
+        (m) => `  - ${m.title} (${m.badge}): R$ ${Number(m.amount_brl).toFixed(2)} — ${m.perk}`
+      ),
+      `- **Clube VIP Mensal**: R$ ${Number(profile.vip_monthly_price_brl).toFixed(2)}/mês — ${profile.vip_description}`,
+      `- **Galeria & Acervo 35mm**: ${stats.totalPhotos} fotos exclusivas e ${stats.totalVideos} vídeos em ${stats.collectionsCount} coleções.`,
+      `- **Avaliação Verificada dos Fãs**: Nota média ${ratingStats.averageRating.toFixed(1)}/5.0 com ${ratingStats.verifiedCount} depoimentos verificados (${ratingStats.satisfactionPercent}% de satisfação).`,
+      '',
+      '## Navegação Pública',
+      `- [Vitrine Oficial](${origin}/)`,
+      `- [Sobre ${profile.display_name}](${origin}/#sobre-criadora)`,
+      `- [Vídeo Chamada 1:1 via Pix](${origin}/#video-chamada)`,
+      `- [6 Cartões de Mimos Especiais](${origin}/#enviar-mimo)`,
+      `- [Galeria 35mm](${origin}/#vitrine-grid)`,
+      `- [Depoimentos Verificados dos Fãs](${origin}/#depoimentos-fas)`,
+      `- [Clube VIP](${origin}/#clube-vip)`,
+      `- [Perguntas Frequentes](${origin}/#perguntas-frequentes)`,
+    ];
+
+    if (isFull) {
+      lines.push('', '## Depoimentos Verificados dos Fãs (Homens Atendidos)');
+      for (const item of testimonials.slice(0, 10)) {
+        lines.push(
+          `- **${item.author_name}** (${item.author_location}) [${item.rating}/5 · Compra Verificada]: "${item.comment}"`
+        );
+      }
+      lines.push('', '## Perguntas Frequentes (FAQ / Respostas Diretas)');
+      for (const faq of STOREFRONT_FAQS) {
+        lines.push(`### ${faq.question}`, faq.answer, '');
+      }
+    }
+
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=900');
+    res.send(lines.join('\n'));
+  });
+
+  app.get('/.well-known/ai-discover.json', async (req: Request, res: Response) => {
+    const origin = resolveOriginUrl(req);
+    const { profile, stats } = await loadPublicSeoSnapshot();
+    res.setHeader('Cache-Control', 'public, max-age=900');
+    res.json({
+      name: `Vídeo Chamada Modelo Feminina Atraente ${profile.display_name}`,
+      language: 'pt-BR',
+      canonical_url: `${origin}/`,
+      llms_txt: `${origin}/llms.txt`,
+      llms_full_txt: `${origin}/llms-full.txt`,
+      sitemap_xml: `${origin}/sitemap.xml`,
+      schema_org: buildStorefrontJsonLd(profile, stats, origin),
+    });
   });
 
   // --- VITE / STATIC SERVING ---

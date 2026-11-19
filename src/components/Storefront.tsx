@@ -6,10 +6,12 @@ import { formatBrl, formatDuration, formatDateShort } from '../lib/format';
 import { resolveVideoCallPlans } from '../lib/videoCalls';
 import { buildWhatsappReceiptUrl } from '../lib/whatsapp';
 import { computeFanLoyalty } from '../lib/loyalty';
+import { generateMediaAlt, generateProfileImageAlt } from '../lib/mediaAlt';
 import { ProtectedImage, ProtectedVideo } from './ProtectedMedia';
 import { AboutCreatorPanel } from './AboutCreatorPanel';
 import { MimoShowcaseSection } from './MimoShowcaseSection';
 import { FanTestimonialsSection } from './FanTestimonialsSection';
+import { FaqAeoSection } from './FaqAeoSection';
 import { LoyaltyBadge } from './LoyaltyBadge';
 import videoCallCameraHero from '../assets/images/video_call_camera_hero_1794853603138.jpg';
 
@@ -185,7 +187,8 @@ export const Storefront: React.FC<StorefrontProps> = ({
                   {profile.avatar_url && !avatarImgFailed ? (
                     <ProtectedImage
                       src={profile.avatar_url}
-                      alt={profile.display_name}
+                      alt={generateProfileImageAlt('avatar', profile.display_name, profile.location)}
+                      loading="lazy"
                       onError={() => setAvatarImgFailed(true)}
                       className="h-full w-full object-cover"
                     />
@@ -257,7 +260,8 @@ export const Storefront: React.FC<StorefrontProps> = ({
             {profile.hero_url && !heroImgFailed ? (
               <ProtectedImage
                 src={profile.hero_url}
-                alt={`Retrato editorial de ${profile.display_name}`}
+                alt={generateProfileImageAlt('hero', profile.display_name, profile.location)}
+                loading="lazy"
                 onError={() => setHeroImgFailed(true)}
                 containerClassName="h-full w-full lg:absolute lg:inset-0"
                 className="h-full w-full object-cover object-top"
@@ -356,7 +360,8 @@ export const Storefront: React.FC<StorefrontProps> = ({
                 >
                   <ProtectedImage
                     src={CREATOR_LIVE_CALL_PHOTO}
-                    alt={`${profile.display_name} ao vivo exclusivamente em chamada privada 1 a 1`}
+                    alt={generateProfileImageAlt('video_call', profile.display_name, profile.location)}
+                    loading="lazy"
                     containerClassName="absolute inset-0 h-full w-full"
                     className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
                     fallback={
@@ -410,7 +415,8 @@ export const Storefront: React.FC<StorefrontProps> = ({
                   <div className="relative h-32 sm:h-36 w-full overflow-hidden border-b border-[#453F3B] bg-[#1C1918]">
                     <ProtectedImage
                       src={videoCallCameraHero}
-                      alt="Câmera de filmar dedicada para transmissão privada 1 a 1"
+                      alt={generateProfileImageAlt('camera', profile.display_name, profile.location)}
+                      loading="lazy"
                       containerClassName="h-full w-full"
                       className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                     />
@@ -780,7 +786,8 @@ export const Storefront: React.FC<StorefrontProps> = ({
                       ) : (
                         <ProtectedImage
                           src={thumbSrc}
-                          alt={item.title}
+                          alt={generateMediaAlt(item, { creatorName: profile.display_name, context: 'filmstrip' })}
+                          loading="lazy"
                           blurred={!unlocked}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
                         />
@@ -979,7 +986,8 @@ export const Storefront: React.FC<StorefrontProps> = ({
                         ) : (
                           <ProtectedImage
                             src={coverSrc}
-                            alt={item.title}
+                            alt={generateMediaAlt(item, { creatorName: profile.display_name, context: 'gallery' })}
+                            loading="lazy"
                             blurred={!unlocked}
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                           />
@@ -1231,7 +1239,8 @@ export const Storefront: React.FC<StorefrontProps> = ({
                         >
                           <ProtectedImage
                             src={vipSrc}
-                            alt={vipItem.title}
+                            alt={generateMediaAlt(vipItem, { creatorName: profile.display_name, context: 'vip_teaser' })}
+                            loading="lazy"
                             blurred={!unlocked}
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
                           />
@@ -1331,6 +1340,9 @@ export const Storefront: React.FC<StorefrontProps> = ({
         </div>
         <div className="h-[18px] w-full film-perforations-dark border-t border-[#453F3B]" aria-hidden="true" />
       </section>
+
+      {/* BLOCK 5: Visible On-Page AEO / Perguntas Frequentes */}
+      <FaqAeoSection creatorName={profile.display_name} />
     </main>
   );
 };

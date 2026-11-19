@@ -18,6 +18,7 @@ import type { CreatorProfile, VideoCallPlan } from '../types';
 import { resolveCreatorAboutContent } from '../lib/creatorAbout';
 import { formatBrl } from '../lib/format';
 import { buildWhatsappReceiptUrl } from '../lib/whatsapp';
+import { generateProfileImageAlt } from '../lib/mediaAlt';
 import { ProtectedImage } from './ProtectedMedia';
 
 type AboutModuleTab = 'carioca' | 'platform' | 'videocall';
@@ -102,7 +103,8 @@ export const AboutCreatorPanel: React.FC<AboutCreatorPanelProps> = ({
             {profile.avatar_url && !avatarImgFailed ? (
               <ProtectedImage
                 src={profile.avatar_url}
-                alt={profile.display_name}
+                alt={generateProfileImageAlt('avatar', profile.display_name, profile.location)}
+                loading="lazy"
                 containerClassName="h-full w-full"
                 className="h-full w-full object-cover object-top"
               />

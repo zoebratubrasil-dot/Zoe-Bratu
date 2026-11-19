@@ -15,6 +15,8 @@ interface ProtectedImageProps {
   className?: string;
   containerClassName?: string;
   blurred?: boolean;
+  loading?: 'lazy' | 'eager';
+  decoding?: 'async' | 'sync' | 'auto';
   onError?: () => void;
   fallback?: React.ReactNode;
 }
@@ -30,115 +32,62 @@ export const ProtectedImage: React.FC<ProtectedImageProps> = ({
   className = 'h-full w-full object-cover',
   containerClassName = 'relative h-full w-full overflow-hidden select-none',
   blurred = false,
+  loading = 'lazy',
+  decoding = 'async',
   onError,
   fallback,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
-    setFailed(false);
-    setLoaded(false);
-
-    if (!src) {
+  const drawFromElement = (img: HTMLImageElement | null) => {
+    if (!img || !img.complete) return;
+    const width = img.naturalWidth;
+    const height = img.naturalHeight;
+    if (!width || !height) {
       setFailed(true);
+      onError?.();
       return;
     }
 
-    let cancelled = false;
-    const controller = new AbortController();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      setFailed(true);
+      onError?.();
+      return;
+    }
 
-    const drawToCanvas = async () => {
-      try {
-        const resp = await fetch(src, {
-          credentials: 'same-origin',
-          cache: 'no-store',
-          signal: controller.signal,
-        });
-        if (!resp.ok) {
-          throw new Error(`HTTP ${resp.status}`);
-        }
-        const blob = await resp.blob();
-        if (cancelled) return;
+    ctx.clearRect(0, 0, width, height);
+    if (blurred) {
+      ctx.filter = 'blur(22px) brightness(0.72)';
+      const pad = Math.round(Math.max(width, height) * 0.04);
+      ctx.drawImage(img, -pad, -pad, width + pad * 2, height + pad * 2);
+    } else {
+      ctx.filter = 'none';
+      ctx.drawImage(img, 0, 0, width, height);
+    }
 
-        let bitmap: ImageBitmap | null = null;
-        let fallbackImg: HTMLImageElement | null = null;
-        let tempObjUrl: string | null = null;
+    setLoaded(true);
+  };
 
-        try {
-          if (typeof createImageBitmap === 'function') {
-            bitmap = await createImageBitmap(blob);
-          }
-        } catch {
-          bitmap = null;
-        }
+  useEffect(() => {
+    setFailed(!src);
+    setLoaded(false);
+  }, [src]);
 
-        if (!bitmap) {
-          tempObjUrl = URL.createObjectURL(blob);
-          fallbackImg = await new Promise<HTMLImageElement>((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = tempObjUrl!;
-          });
-        }
-
-        try {
-          if (cancelled) return;
-          const canvas = canvasRef.current;
-          if (!canvas) return;
-
-          const width = bitmap ? bitmap.width : fallbackImg!.naturalWidth;
-          const height = bitmap ? bitmap.height : fallbackImg!.naturalHeight;
-          if (!width || !height) {
-            throw new Error('Dimensões inválidas');
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            throw new Error('Canvas 2D indisponível');
-          }
-
-          ctx.clearRect(0, 0, width, height);
-          if (blurred) {
-            ctx.filter = 'blur(22px) brightness(0.72)';
-            const pad = Math.round(Math.max(width, height) * 0.04);
-            if (bitmap) {
-              ctx.drawImage(bitmap, -pad, -pad, width + pad * 2, height + pad * 2);
-            } else if (fallbackImg) {
-              ctx.drawImage(fallbackImg, -pad, -pad, width + pad * 2, height + pad * 2);
-            }
-          } else {
-            ctx.filter = 'none';
-            if (bitmap) {
-              ctx.drawImage(bitmap, 0, 0, width, height);
-            } else if (fallbackImg) {
-              ctx.drawImage(fallbackImg, 0, 0, width, height);
-            }
-          }
-
-          setLoaded(true);
-        } finally {
-          if (bitmap) bitmap.close();
-          if (tempObjUrl) URL.revokeObjectURL(tempObjUrl);
-        }
-      } catch (err) {
-        if (cancelled || (err instanceof DOMException && err.name === 'AbortError')) return;
-        setFailed(true);
-        onError?.();
-      }
-    };
-
-    drawToCanvas();
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [src, blurred, onError]);
+  useEffect(() => {
+    if (!src) return;
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      drawFromElement(img);
+    }
+  }, [src, blurred]);
 
   if (failed || !src) {
     return (
@@ -163,10 +112,26 @@ export const ProtectedImage: React.FC<ProtectedImageProps> = ({
       onCopy={blockEvent}
       className={`${containerClassName} media-shield`}
     >
+      {/* Native lazy-loaded img supplies semantic alt + deferred network fetch before painting onto the shielded canvas */}
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        loading={loading}
+        decoding={decoding}
+        draggable={false}
+        onContextMenu={blockEvent}
+        onDragStart={blockEvent}
+        onLoad={(e) => drawFromElement(e.currentTarget)}
+        onError={() => {
+          setFailed(true);
+          onError?.();
+        }}
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-0 select-none"
+      />
       <canvas
         ref={canvasRef}
-        role="img"
-        aria-label={alt}
+        aria-hidden="true"
         draggable={false}
         onContextMenu={blockEvent}
         onDragStart={blockEvent}

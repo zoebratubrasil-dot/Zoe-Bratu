@@ -9,6 +9,7 @@ import { Navbar, type AppView } from './components/Navbar';
 import { Storefront } from './components/Storefront';
 import { CreatorStudio, type StudioTab } from './components/CreatorStudio';
 import { MediaModal } from './components/MediaModal';
+import { SeoHeadManager } from './components/SeoHeadManager';
 import type { CreatorProfile, FanAccount, MediaItem, StorefrontStats, SupabaseStatus, VideoCallPlan } from './types';
 import { DEFAULT_VIDEO_CALL_PLANS } from './lib/videoCalls';
 import { DEFAULT_CREATOR_ABOUT } from './lib/creatorAbout';
@@ -105,12 +106,7 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  useEffect(() => {
-    document.title =
-      activeView === 'studio'
-        ? 'Administração · Vídeo Chamada Modelo Feminina Atraente Lorena Noir'
-        : 'Vídeo Chamada Modelo Feminina Atraente Lorena Noir';
-  }, [activeView]);
+  // SeoHeadManager keeps document.title, canonical, OpenGraph, robots, and JSON-LD synced
 
   const refreshSupabaseStatus = useCallback(async () => {
     try {
@@ -193,6 +189,7 @@ export default function App() {
   if (activeView === 'studio') {
     return (
       <MotionConfig reducedMotion="user">
+        <SeoHeadManager activeView={activeView} profile={profile} stats={stats} />
         <div className="min-h-screen flex flex-col bg-[#D2CCC4] text-[#181615]">
           <CreatorStudio
             initialTab={studioTab}
@@ -209,6 +206,7 @@ export default function App() {
 
   return (
     <MotionConfig reducedMotion="user">
+      <SeoHeadManager activeView={activeView} profile={profile} stats={stats} />
       <div className="min-h-screen flex flex-col bg-[#D8D4CF] text-[#1C1918]">
         <Navbar
           brandName={profile.display_name}
@@ -331,6 +329,13 @@ export default function App() {
                 className="hover:text-[#F4F1ED] transition-colors cursor-pointer py-1"
               >
                 Clube VIP
+              </button>
+              <button
+                type="button"
+                onClick={() => handleJumpToSection('perguntas-frequentes')}
+                className="hover:text-[#F4F1ED] transition-colors cursor-pointer py-1"
+              >
+                Perguntas Frequentes
               </button>
               <button
                 type="button"

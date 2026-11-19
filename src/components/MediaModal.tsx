@@ -33,6 +33,7 @@ import { formatBrl, formatDuration, formatDateShort } from '../lib/format';
 import { resolveVideoCallPlans } from '../lib/videoCalls';
 import { resolveMimoSectionConfig } from '../lib/mimoGifts';
 import { buildWhatsappReceiptUrl } from '../lib/whatsapp';
+import { generateMediaAlt, generateProfileImageAlt } from '../lib/mediaAlt';
 import { PixQrCard } from './PixQrCard';
 import { ProtectedImage, ProtectedVideo } from './ProtectedMedia';
 import { FanAccountPanel } from './FanAccountPanel';
@@ -554,7 +555,8 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                 ) : (
                   <ProtectedImage
                     src={mediaItem.media_url}
-                    alt={mediaItem.title}
+                    alt={generateMediaAlt(mediaItem, { creatorName: profile.display_name, context: 'modal' })}
+                    loading="lazy"
                     containerClassName="relative w-full h-full flex items-center justify-center bg-black"
                     className="max-h-[65dvh] sm:max-h-[75vh] w-full object-contain"
                   />
@@ -564,7 +566,8 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                   {mediaItem.preview_url && (
                     <ProtectedImage
                       src={mediaItem.preview_url}
-                      alt={mediaItem.title}
+                      alt={generateMediaAlt(mediaItem, { creatorName: profile.display_name, context: 'modal' })}
+                      loading="lazy"
                       blurred
                       containerClassName="absolute inset-0 h-full w-full"
                       className="h-full w-full object-cover opacity-35 scale-110"
@@ -918,7 +921,8 @@ export const MediaModal: React.FC<MediaModalProps> = ({
                     <div className="h-full w-full overflow-hidden rounded-sm border border-[#E5C158] bg-[#1C1918]">
                       <ProtectedImage
                         src={profile.avatar_url || CREATOR_LIVE_CALL_PHOTO}
-                        alt={profile.display_name}
+                        alt={generateProfileImageAlt('mimo', profile.display_name, profile.location)}
+                        loading="lazy"
                         containerClassName="h-full w-full"
                         className="h-full w-full object-cover object-top"
                       />
@@ -1157,7 +1161,8 @@ export const MediaModal: React.FC<MediaModalProps> = ({
               <div className="relative sm:col-span-4 h-44 sm:h-40 overflow-hidden bg-[#23201E] border-b sm:border-b-0 sm:border-r border-[#453F3B]">
                 <ProtectedImage
                   src={CREATOR_LIVE_CALL_PHOTO}
-                  alt={`${profile.display_name} ao vivo exclusivamente para quem comprar a vídeo chamada`}
+                  alt={generateProfileImageAlt('video_call', profile.display_name, profile.location)}
+                  loading="lazy"
                   containerClassName="h-full w-full"
                   className="h-full w-full object-cover object-top"
                 />

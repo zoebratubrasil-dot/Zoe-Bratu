@@ -4,6 +4,7 @@ import { Gift, Heart, Sparkles, Crown, Wine, ArrowRight, Flame } from 'lucide-re
 import type { CreatorProfile, MimoGiftTier } from '../types';
 import { resolveMimoSectionConfig } from '../lib/mimoGifts';
 import { formatBrl } from '../lib/format';
+import { generateProfileImageAlt } from '../lib/mediaAlt';
 import { ProtectedImage } from './ProtectedMedia';
 
 interface MimoShowcaseSectionProps {
@@ -68,7 +69,8 @@ export const MimoShowcaseSection: React.FC<MimoShowcaseSectionProps> = ({
                 {profile.avatar_url && !avatarImgFailed ? (
                   <ProtectedImage
                     src={profile.avatar_url}
-                    alt={profile.display_name}
+                    alt={generateProfileImageAlt('mimo', profile.display_name, profile.location)}
+                    loading="lazy"
                     containerClassName="h-full w-full"
                     className="h-full w-full object-cover object-top"
                   />
